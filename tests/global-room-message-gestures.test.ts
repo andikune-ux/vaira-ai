@@ -12,6 +12,8 @@ describe("Room Global message gestures", () => {
     expect(source).toContain("distance >= 52");
     expect(source).toContain("triggerReply(item)");
     expect(source).toContain("swipeReplyHint");
+    expect(source).toContain("resetSwipeReply");
+    expect(source).toContain("swipeReplyX.stopAnimation()");
   });
 
   it("keeps long-press actions available and suppresses accidental profile navigation", () => {
@@ -20,5 +22,9 @@ describe("Room Global message gestures", () => {
     expect(source).toContain('accessibilityLabel="Balas pesan"');
     expect(source).toContain('accessibilityLabel="Pilih teks pesan"');
     expect(source).toContain('accessibilityLabel="Laporkan pesan"');
+    expect(source).toContain("KeyboardAvoidingView");
+    expect(source).toContain("MAX_ROOM_IMAGE_BYTES");
+    expect(source).toContain("MAX_ROOM_VOICE_BYTES");
+    expect(source).toContain("isRoomSending");
   });
 });

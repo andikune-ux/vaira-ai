@@ -27,6 +27,14 @@ const parseModelJson = (content: unknown): Record<string, unknown> => {
 
 const MEDIA_DATA_URL = /^data:([^;]+);base64,([A-Za-z0-9+/=]+)$/;
 const MAX_AIRA_MEDIA_BYTES = 5_500_000;
+const AIRA_MODEL_TIMEOUT_MS = 12_000;
+
+function withServiceTimeout<T>(promise: Promise<T>, milliseconds: number, message: string) {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), milliseconds);
+    promise.then((value) => { clearTimeout(timer); resolve(value); }, (error) => { clearTimeout(timer); reject(error); });
+  });
+}
 
 function getLastUserText(messages: Array<{ role: string; content: unknown }>) {
   const last = [...messages].reverse().find((message) => message.role === "user");
@@ -521,14 +529,14 @@ export const appRouter = router({
           let lastModelError: unknown;
           for (const model of modelCandidates) {
             try {
-              const response = await invokeLLM({
+              const response = await withServiceTimeout(invokeLLM({
                 model,
                 messages: [
                   { role: "system", content: systemPrompt },
                   ...messages,
                 ],
                 response_format: { type: "json_object" as const },
-              });
+              }), AIRA_MODEL_TIMEOUT_MS, `Model Aira ${model} melewati batas waktu respons.`);
               const candidate = parseModelJson(response.choices[0]?.message?.content);
               if (!String(candidate.reply || "").trim()) throw new Error("Model mengembalikan respons tanpa isi.");
               parsed = candidate;
@@ -575,7 +583,7 @@ export const appRouter = router({
               ? detail
               : upstreamUnavailable
                 ? `${buildOfflineAiraReply(input.messages, input.language)}\n\nStatus provider: ${detail.includes("usage exhausted") ? "batas penggunaan layanan tercapai" : "provider belum tersedia"}.`
-                : "Aira belum menerima respons. Kemungkinan penyebabnya adalah internet tidak stabil, sesi login kedaluwarsa, server sedang sibuk, atau model belum mengembalikan jawaban valid. Periksa koneksi, login ulang bila perlu, lalu tekan Ulang.",
+                : `${buildOfflineAiraReply(input.messages, input.language)}\n\nLayanan AI utama belum merespons dalam batas waktu aman. Pesan Anda tetap tersimpan; periksa koneksi dan sesi login kedaluwarsa, lalu tekan Ulang saat provider kembali tersedia.`,
             expertResponses: [],
             suggestedTransaction: null,
             suggestedMemory: null,

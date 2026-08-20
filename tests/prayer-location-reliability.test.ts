@@ -7,10 +7,12 @@ const config = fs.readFileSync(path.resolve(__dirname, "..", "app.config.ts"), "
 
 describe("keandalan lokasi waktu salat", () => {
   it("membatasi pencarian lokasi presisi dan pemeriksaan layanan", () => {
-    expect(source).toContain("const LOCATION_TIMEOUT_MS = 8_000");
+    expect(source).toContain("const LOCATION_TIMEOUT_MS = 60_000");
     expect(source).toContain("withTimeout(Location.requestForegroundPermissionsAsync()")
     expect(source).toContain("withTimeout(Location.hasServicesEnabledAsync(), 3_000");
     expect(source).toContain("withTimeout(Location.getCurrentPositionAsync");
+    expect(source).toContain("locationSearchLabel");
+    expect(source).toContain("/60 dtk");
   });
 
   it("memastikan build Android meminta lokasi presisi dan mendiagnosis provider GPS", () => {

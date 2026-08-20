@@ -41,6 +41,11 @@ export default function QiblaCompassScreen() {
   const qiblaBearing = useMemo(() => calculateQiblaBearing(latitude, longitude), [latitude, longitude]);
   const qiblaHeading = heading === null ? null : normalizeDegrees(qiblaBearing - heading);
   const isAligned = qiblaHeading !== null && Math.abs(shortestAngleDelta(0, qiblaHeading)) <= 5;
+  const sensorGuidance = heading === null
+    ? "Menunggu sensor arah perangkat…"
+    : isAligned
+      ? "Alhamdulillah, arah kiblat sudah sejajar. Jaga perangkat tetap datar."
+      : "Putar perangkat perlahan hingga penunjuk emas mengarah tepat ke atas.";
 
   useEffect(() => {
     let mounted = true;
@@ -83,15 +88,18 @@ export default function QiblaCompassScreen() {
       <View style={[styles.locationCard, { backgroundColor: colors.surface, borderColor: colors.border }]}><MaterialIcons name="location-on" size={18} color={colors.primary} /><View style={styles.copy}><Text style={[styles.locationTitle, { color: colors.foreground }]}>{source}</Text><Text style={[styles.locationDetail, { color: colors.muted }]}>Arah kiblat dihitung dari koordinat lokasi ini.</Text></View></View>
       <View style={[styles.compassCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.compassFrame}>
-          <View style={[styles.compassDisc, { borderColor: `${colors.primary}45`, backgroundColor: colors.background, transform: [{ rotate: `${compassRotation}deg` }] }]}>
+          <View pointerEvents="none" style={[styles.qiblaHalo, { borderColor: `${colors.warning}55` }]} />
+          <View style={[styles.compassDisc, { borderColor: `${colors.primary}45`, backgroundColor: colors.background, transform: [{ rotate: `${compassRotation}deg` }] }]}> 
             <Text style={[styles.north, { color: colors.error }]}>N</Text><Text style={[styles.east, { color: colors.muted }]}>E</Text><Text style={[styles.south, { color: colors.muted }]}>S</Text><Text style={[styles.west, { color: colors.muted }]}>W</Text>
             <View style={[styles.needle, { backgroundColor: colors.error }]} /><View style={[styles.needleTail, { backgroundColor: colors.muted }]} />
           </View>
-          <View style={[styles.qiblaArrow, { borderBottomColor: colors.warning, transform: [{ rotate: `${arrowRotation}deg` }] }]}><MaterialIcons name="navigation" size={34} color={colors.warning} /></View>
+          <View style={[styles.qiblaArrow, { borderBottomColor: colors.warning, transform: [{ rotate: `${arrowRotation}deg` }] }]}><MaterialIcons name="navigation" size={34} color={colors.warning} /><View style={[styles.kaabaMarker, { backgroundColor: isAligned ? colors.success : colors.warning }]}><MaterialIcons name="mosque" size={12} color="#FFFFFF" /></View></View>
           <View style={[styles.centerDot, { backgroundColor: colors.primary, borderColor: colors.background }]} />
         </View>
         <Text style={[styles.bearing, { color: colors.foreground }]}>{formatBearing(qiblaBearing)} · {directionLabel(qiblaBearing)}</Text>
-        <Text style={[styles.instruction, { color: colors.muted }]}>{isAligned ? "Arah kiblat sudah tepat di depan Anda." : heading === null ? "Menunggu sensor arah perangkat…" : "Putar perangkat sampai penunjuk emas mengarah ke kiblat."}</Text>
+        <Text style={[styles.qiblaPlace, { color: colors.warning }]}>{"Ka'bah · Makkah al-Mukarramah"}</Text>
+        <Text style={[styles.instruction, { color: colors.muted }]}>{sensorGuidance}</Text>
+        <View style={[styles.compassMeta, { backgroundColor: `${colors.primary}0D`, borderColor: `${colors.primary}24` }]}><MaterialIcons name={isAligned ? "verified" : "screen-rotation"} size={16} color={isAligned ? colors.success : colors.primary} /><Text style={[styles.compassMetaText, { color: isAligned ? colors.success : colors.muted }]}>{isAligned ? "Sejajar dalam toleransi 5°" : "Arah kiblat dihitung dari posisi Anda ke Ka'bah"}</Text></View>
         <View style={[styles.status, { borderColor: isAligned ? colors.success : colors.border, backgroundColor: isAligned ? `${colors.success}12` : colors.background }]}>{heading === null ? <ActivityIndicator size="small" color={colors.primary} /> : <MaterialIcons name={isAligned ? "check-circle" : "sync"} size={17} color={isAligned ? colors.success : colors.primary} />}<Text style={[styles.statusText, { color: isAligned ? colors.success : colors.muted }]}>{status}{accuracy !== null ? ` · sensor ${accuracy}` : ""}</Text></View>
       </View>
       <View style={styles.note}><MaterialIcons name="info-outline" size={17} color={colors.muted} /><Text style={[styles.noteText, { color: colors.muted }]}>Jauhkan perangkat dari magnet, casing logam, dan benda elektronik saat mengkalibrasi.</Text></View>
@@ -112,6 +120,7 @@ const styles = StyleSheet.create({
   locationDetail: { fontSize: 10, marginTop: 3 },
   compassCard: { alignItems: "center", borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, flex: 1, justifyContent: "center", minHeight: 420, padding: 18 },
   compassFrame: { alignItems: "center", height: 280, justifyContent: "center", width: 280 },
+  qiblaHalo: { borderRadius: 138, borderStyle: "dashed", borderWidth: 1, height: 276, position: "absolute", width: 276 },
   compassDisc: { alignItems: "center", borderRadius: 130, borderWidth: 3, height: 260, justifyContent: "center", width: 260 },
   north: { fontSize: 22, fontWeight: "900", position: "absolute", top: 18 },
   east: { fontSize: 18, fontWeight: "800", position: "absolute", right: 23 },
@@ -119,10 +128,14 @@ const styles = StyleSheet.create({
   west: { fontSize: 18, fontWeight: "800", left: 23, position: "absolute" },
   needle: { height: 96, position: "absolute", width: 3 },
   needleTail: { height: 54, position: "absolute", transform: [{ rotate: "180deg" }], width: 3 },
-  qiblaArrow: { position: "absolute", top: 6 },
+  qiblaArrow: { alignItems: "center", position: "absolute", top: 2 },
+  kaabaMarker: { alignItems: "center", borderRadius: 10, height: 20, justifyContent: "center", marginTop: -2, width: 20 },
   centerDot: { borderRadius: 9, borderWidth: 3, height: 18, position: "absolute", width: 18 },
   bearing: { fontSize: 20, fontWeight: "900", marginTop: 8 },
+  qiblaPlace: { fontSize: 10, fontWeight: "900", letterSpacing: 0.35, marginTop: 3, textTransform: "uppercase" },
   instruction: { fontSize: 12, lineHeight: 18, marginTop: 5, textAlign: "center" },
+  compassMeta: { alignItems: "center", borderRadius: 12, borderWidth: 1, flexDirection: "row", gap: 6, marginTop: 10, paddingHorizontal: 10, paddingVertical: 7 },
+  compassMetaText: { fontSize: 10, fontWeight: "800" },
   status: { alignItems: "center", borderRadius: 999, borderWidth: 1, flexDirection: "row", gap: 6, marginTop: 12, paddingHorizontal: 11, paddingVertical: 7 },
   statusText: { fontSize: 10, fontWeight: "700" },
   note: { alignItems: "flex-start", flexDirection: "row", gap: 7, paddingHorizontal: 3 },

@@ -40,7 +40,7 @@ function delaySeconds(value: string) {
   return Number.isInteger(seconds) && seconds >= 1 && seconds <= 300 ? seconds : null;
 }
 
-const LOCATION_TIMEOUT_MS = 8_000;
+const LOCATION_TIMEOUT_MS = 60_000;
 const LAST_KNOWN_MAX_AGE_MS = 15 * 60_000;
 
 function withTimeout<T>(promise: Promise<T>, milliseconds: number, message: string) {
@@ -55,6 +55,7 @@ export default function PrayerTimesScreen() {
   const { state, updateProfile } = useFinance();
   const [items, setItems] = useState<PrayerTime[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [locationElapsedSeconds, setLocationElapsedSeconds] = useState(0);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationLabel, setLocationLabel] = useState(state.profile.prayerLocation?.label ?? "Lokasi belum dipilih");
   const [locationSource, setLocationSource] = useState(state.profile.prayerLocation?.source ?? "manual");
@@ -77,7 +78,12 @@ export default function PrayerTimesScreen() {
 
   const refresh = async () => {
     setIsLoading(true);
+    setLocationElapsedSeconds(0);
     setLocationError(null);
+    const locationAttemptStartedAt = Date.now();
+    const locationProgressTimer = setInterval(() => {
+      setLocationElapsedSeconds(Math.min(60, Math.floor((Date.now() - locationAttemptStartedAt) / 1000)));
+    }, 1_000);
     try {
       const permission = await withTimeout(Location.requestForegroundPermissionsAsync(), LOCATION_TIMEOUT_MS, "Permintaan izin lokasi terlalu lama.");
       if (permission.status !== "granted") {
@@ -115,7 +121,7 @@ export default function PrayerTimesScreen() {
       if (!result) {
         const message = provider?.gpsAvailable === false && provider?.networkAvailable === false
           ? "GPS dan lokasi jaringan tidak tersedia. Nyalakan Lokasi perangkat dan pastikan mode akurasi tinggi aktif, lalu coba lagi."
-          : "Lokasi presisi belum diperoleh dalam 8 detik. Pastikan GPS aktif dan izin lokasi diberikan, lalu coba lagi.";
+          : "Lokasi presisi belum diperoleh dalam 60 detik. Pastikan GPS aktif, gunakan area terbuka, dan tunggu hingga perangkat memperoleh sinyal lokasi.";
         setLocationError(message);
         Alert.alert("Lokasi belum ditemukan", message);
         return;
@@ -136,7 +142,7 @@ export default function PrayerTimesScreen() {
       const message = error instanceof Error && error.message.includes("jadwal") ? "Layanan jadwal salat belum merespons. Periksa koneksi lalu coba lagi." : "Lokasi belum tersedia. Periksa izin dan GPS, lalu coba lagi.";
       setLocationError(message);
       Alert.alert("Jadwal belum dapat dimuat", message);
-    } finally { setIsLoading(false); }
+    } finally { clearInterval(locationProgressTimer); setIsLoading(false); }
   };
 
   const savedPrayerLocation = state.profile.prayerLocation;
@@ -242,13 +248,14 @@ export default function PrayerTimesScreen() {
     const location = state.profile.prayerLocation;
     router.push({ pathname: "/qibla-compass", params: location ? { latitude: String(location.latitude), longitude: String(location.longitude), label: location.label, source: location.source } : { label: locationLabel } });
   };
+  const locationSearchLabel = isLoading ? `Mencari lokasi presisi… ${Math.min(60, locationElapsedSeconds)}/60 dtk` : "Gunakan lokasi presisi";
 
   return <ScreenContainer className="px-5" edges={["top", "bottom", "left", "right"]}><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
     <View style={styles.header}><Pressable onPress={() => router.back()} style={({ pressed }) => [styles.back, { backgroundColor: colors.surface, borderColor: colors.border }, pressed && styles.pressed]}><MaterialIcons name="arrow-back" size={21} color={colors.foreground} /></Pressable><View style={styles.headerCopy}><Text style={[styles.title, { color: colors.foreground }]}>Waktu salat</Text><Text style={[styles.subtitle, { color: colors.muted }]}>{locationLabel}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Buka kompas arah kiblat" onPress={openQiblaCompass} style={({ pressed }) => [styles.gear, { backgroundColor: colors.surface, borderColor: colors.border }, pressed && styles.pressed]}><MaterialIcons name="explore" size={21} color={colors.success} /></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Buka pengaturan alarm salat" onPress={() => { setSettingsOpen(true); void refreshPrayerAlarmStatus(); }} style={({ pressed }) => [styles.gear, { backgroundColor: colors.surface, borderColor: colors.border }, pressed && styles.pressed]}><MaterialIcons name="settings" size={21} color={colors.primary} /></Pressable></View>
     <AiraCard style={[styles.nextCard, { backgroundColor: colors.primary, borderColor: colors.primary }]}><Text style={styles.nextCaption}>Waktu salat berikutnya</Text><Text style={styles.nextTitle}>{next ? `${next.label} · ${next.time}` : "Pilih lokasi untuk memuat jadwal"}</Text><Text style={styles.nextDetail}>Jadwal dihitung dari koordinat lokasi saat Anda memperbaruinya.</Text></AiraCard>
     <View style={[styles.alarmRow, { backgroundColor: colors.surface, borderColor: colors.border }]}><View style={styles.alarmLeft}><View style={[styles.alarmIcon, { backgroundColor: `${colors.warning}16` }]}><MaterialIcons name="alarm" size={21} color={colors.warning} /></View><View style={styles.headerCopy}><Text style={[styles.alarmTitle, { color: colors.foreground }]}>Alarm waktu salat</Text><Text style={[styles.alarmDetail, { color: colors.muted }]}>Berdering untuk jadwal tersisa hari ini</Text></View></View><Switch value={state.profile.prayerReminderEnabled} onValueChange={(value) => { void toggleAlarm(value); }} trackColor={{ false: colors.border, true: `${colors.primary}80` }} thumbColor={state.profile.prayerReminderEnabled ? colors.primary : "#FFFFFF"} /></View>
     <OutlineButton label="Buka kompas arah kiblat" icon="explore" onPress={openQiblaCompass} />
-    <OutlineButton label={isLoading ? "Memperbarui lokasi…" : "Gunakan lokasi presisi"} icon="my-location" onPress={() => { void refresh(); }} />
+    <OutlineButton label={locationSearchLabel} icon="my-location" onPress={() => { if (!isLoading) void refresh(); }} />
     <OutlineButton label="Pilih lokasi manual" icon="map" onPress={() => { setManualQuery(""); setManualOpen(true); }} />
     {locationSource ? <View style={[styles.locationMeta, { backgroundColor: colors.surface, borderColor: colors.border }]}><Text style={[styles.locationMetaTitle, { color: colors.foreground }]}>{locationSource === "gps" ? "GPS presisi" : locationSource === "last_known" ? "Lokasi terakhir perangkat" : "Lokasi manual"}{accuracyMeters ? ` · akurasi ±${Math.round(accuracyMeters)} m` : ""}</Text><Text style={[styles.locationMetaDetail, { color: colors.muted }]}>{lastSyncAt ? `Sinkron terakhir ${new Date(lastSyncAt).toLocaleString("id-ID")}` : "Belum pernah disinkronkan"}</Text></View> : null}
     {isLoading ? <LoadingState /> : items.length === 0 ? <EmptyState icon={locationError ? "location-off" : "mosque"} title={locationError ? "Lokasi belum siap" : "Jadwal belum tersedia"} detail={locationError ?? "Tekan “Gunakan lokasi presisi” untuk menghitung Subuh, Dzuhur, Ashar, Maghrib, dan Isya sesuai lokasi Anda."} /> : <View style={styles.list}>{items.map((item) => <AiraCard key={item.key} style={styles.prayerRow}><View style={[styles.prayerDot, { backgroundColor: next?.key === item.key ? colors.primary : `${colors.primary}16` }]}><MaterialIcons name={next?.key === item.key ? "schedule" : "brightness-2"} size={18} color={next?.key === item.key ? "#FFFFFF" : colors.primary} /></View><Text style={[styles.prayerLabel, { color: colors.foreground }]}>{item.label}</Text><Text style={[styles.prayerTime, { color: next?.key === item.key ? colors.primary : colors.foreground }]}>{item.time}</Text></AiraCard>)}</View>}

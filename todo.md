@@ -3239,3 +3239,13 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 
 - [x] Menyimpan kredensial SERVER DATABASE lama dan SERVER DATABASE 2 sebagai dua konfigurasi terpisah.
 - [x] Memastikan implementasi hanya menambahkan SERVER DATABASE 2 tanpa menghapus atau mengubah perilaku SERVER DATABASE lama.
+
+## Stabilitas Kompas, Salat, Room Global, dan Aira
+
+- [x] Menyempurnakan tampilan kompas kiblat dengan informasi arah, kalibrasi, dan nuansa Islami yang lebih lengkap.
+- [x] Mengubah batas waktu pencarian lokasi untuk jadwal salat menjadi 60 detik serta memperbaiki umpan balik lokasi presisi.
+- [x] Mencegah crash saat gestur swipe untuk membalas pesan di Room Global.
+- [x] Mencegah crash saat mengirim pesan teks, video, atau pesan suara di Room Global.
+- [x] Menjaga box penulisan pesan tetap berada di atas keyboard pada Room Global dan chat Aira.
+- [x] Mendiagnosis serta memperbaiki layanan Aira yang terkadang tidak merespons pesan.
+- [ ] Uji native Android untuk sensor kompas, GPS 60 detik, swipe balas, pengiriman media, keyboard, dan respons Aira pada APK terbaru.

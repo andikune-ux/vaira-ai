@@ -8,8 +8,9 @@ describe("Aira service availability messaging", () => {
   it("distinguishes upstream limits from connectivity and session failures", () => {
     expect(source).toContain("UPSTREAM_LIMIT");
     expect(source).toContain("AI_UNAVAILABLE");
+    expect(source).toContain("AIRA_MODEL_TIMEOUT_MS");
+    expect(source).toContain("withServiceTimeout(invokeLLM");
     expect(source).toContain("batas penggunaan layanan tercapai");
-    expect(source).toContain("internet tidak stabil, sesi login kedaluwarsa");
+    expect(source).toContain("Layanan AI utama belum merespons dalam batas waktu aman");
   });
 });
-

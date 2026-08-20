@@ -27,5 +27,8 @@ describe("kompas arah kiblat", () => {
     expect(compassScreen).toContain('accessibilityLabel="Oke, kembali ke waktu salat"');
     expect(compassScreen).toContain("router.back()");
     expect(compassScreen).toContain("watchHeadingAsync");
+    expect(compassScreen).toContain("Ka'bah · Makkah al-Mukarramah");
+    expect(compassScreen).toContain("qiblaHalo");
+    expect(compassScreen).toContain("sensorGuidance");
   });
 });
