@@ -8,15 +8,16 @@ const reminders = fs.readFileSync(path.join(root, "lib/reminders.ts"), "utf8");
 
 describe("audio adzan lokal", () => {
   it("memiliki aset audio yang dapat dibundel", () => {
-    expect(fs.existsSync(path.join(root, "assets/audio/adhan-beautiful.ogg"))).toBe(true);
-    expect(fs.existsSync(path.join(root, "assets/audio/adhan-beautiful.mp3"))).toBe(false);
+    expect(fs.existsSync(path.join(root, "assets/audio/adhan_beautiful.ogg"))).toBe(true);
+    expect(fs.existsSync(path.join(root, "assets/audio/adhan_beautiful.mp3"))).toBe(false);
     expect(fs.existsSync(path.join(root, "assets/audio/adhan-notification.wav"))).toBe(false);
-    expect(config).toContain("adhan-beautiful.ogg");
+    expect(config).toContain("adhan_beautiful.ogg");
+    expect("adhan_beautiful").toMatch(/^[a-z][a-z0-9_]*$/);
   });
 
   it("menggunakan suara adzan pada channel dan jadwal alarm salat", () => {
     expect(reminders).toContain('const PRAYER_ALARM_CHANNEL = "airax-prayer-alarms-v3"');
-    expect(reminders).toContain('sound: "adhan-beautiful.ogg"');
+    expect(reminders).toContain('sound: "adhan_beautiful.ogg"');
     expect(reminders).toContain("schedulePrayerReminders");
     expect(reminders).toContain("schedulePrayerAlarmTest");
   });

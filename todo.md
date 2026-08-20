@@ -3154,3 +3154,11 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 ## Pemeriksaan Akhir
 
 - [x] Memeriksa ulang status proses, endpoint kesehatan, kredensial standby, dan hasil validasi terakhir.
+
+## Perbaikan Build Android
+
+- [x] Mengumpulkan log dan memeriksa konfigurasi Expo/Android untuk kegagalan tahap prebuild.
+- [x] Memperbaiki hanya penyebab build yang dapat dikonfirmasi.
+- [x] Menjalankan validasi konfigurasi Android dan regresi sebelum Publish dicoba ulang.
+- [x] Menyimpan checkpoint kesiapan build yang telah diperbaiki.
+- [x] Mengganti nama aset suara notifikasi Android agar memakai nama resource yang valid tanpa tanda hubung.

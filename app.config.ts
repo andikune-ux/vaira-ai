@@ -114,7 +114,7 @@ const config: ExpoConfig = {
       "expo-notifications",
       {
         defaultChannel: "airax-reminders",
-        sounds: ["./assets/audio/adhan-beautiful.ogg"],
+        sounds: ["./assets/audio/adhan_beautiful.ogg"],
       },
     ],
     [

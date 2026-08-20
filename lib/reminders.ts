@@ -43,7 +43,7 @@ async function ensurePermission({ configurePrayerChannel = false, prayerAlarmVib
         name: "Alarm Salat V A I R A  A I",
         description: "Alarm waktu salat yang berbunyi pada perangkat.",
         importance: AndroidImportance.MAX,
-        sound: "adhan-beautiful.ogg",
+        sound: "adhan_beautiful.ogg",
         bypassDnd: true,
         lockscreenVisibility: AndroidNotificationVisibility.PUBLIC,
         audioAttributes: { usage: AndroidAudioUsage.ALARM, contentType: AndroidAudioContentType.SONIFICATION, flags: { enforceAudibility: true, requestHardwareAudioVideoSynchronization: false } },
@@ -87,7 +87,7 @@ export async function configurePrayerAlarmActions() {
 export async function schedulePrayerAlarmSnooze(prayerLabel = "salat", prayerAlarmVibrationEnabled = true) {
   if (!(await ensurePermission({ configurePrayerChannel: true, prayerAlarmVibrationEnabled }))) return false;
   await Notifications.scheduleNotificationAsync({
-    content: { title: `Pengingat ${prayerLabel}`, body: "Alarm salat ditunda selama 5 menit.", data: { kind: PRAYER_KIND, snoozed: true, url: "/prayer-times", priority: "alarm" }, sound: "adhan-beautiful.ogg", priority: "high", categoryIdentifier: PRAYER_ALARM_NOTIFICATION_CATEGORY },
+    content: { title: `Pengingat ${prayerLabel}`, body: "Alarm salat ditunda selama 5 menit.", data: { kind: PRAYER_KIND, snoozed: true, url: "/prayer-times", priority: "alarm" }, sound: "adhan_beautiful.ogg", priority: "high", categoryIdentifier: PRAYER_ALARM_NOTIFICATION_CATEGORY },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 300, repeats: false, channelId: PRAYER_ALARM_CHANNEL },
   });
   return true;
@@ -146,7 +146,7 @@ export async function schedulePrayerReminders(items: PrayerTime[], prayerAlarmVi
   await Promise.all(scheduled.filter((item) => item.content.data?.kind === PRAYER_KIND).map((item) => Notifications.cancelScheduledNotificationAsync(item.identifier)));
   const now = Date.now();
   await Promise.all(items.filter((item) => item.date.getTime() > now).map((item) => Notifications.scheduleNotificationAsync({
-    content: { title: `Waktu ${item.label}`, body: `Saatnya menunaikan salat ${item.label}.`, data: { kind: PRAYER_KIND, prayer: item.key, url: "/prayer-times", priority: "alarm" }, sound: "adhan-beautiful.ogg", priority: "high", categoryIdentifier: PRAYER_ALARM_NOTIFICATION_CATEGORY },
+    content: { title: `Waktu ${item.label}`, body: `Saatnya menunaikan salat ${item.label}.`, data: { kind: PRAYER_KIND, prayer: item.key, url: "/prayer-times", priority: "alarm" }, sound: "adhan_beautiful.ogg", priority: "high", categoryIdentifier: PRAYER_ALARM_NOTIFICATION_CATEGORY },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: item.date, channelId: PRAYER_ALARM_CHANNEL },
   })));
   return true;
@@ -162,7 +162,7 @@ export async function schedulePrayerAlarmTest(seconds: number, prayerAlarmVibrat
   if (!(await ensurePermission({ configurePrayerChannel: true, prayerAlarmVibrationEnabled }))) return false;
   const delay = normalizedTestSeconds(seconds);
   await Notifications.scheduleNotificationAsync({
-    content: { title: "Tes alarm adzan V A I R A  A I", body: `Alarm salat akan berbunyi setelah ${delay} detik menggunakan nada default perangkat.`, data: { kind: PRAYER_KIND, test: true, url: "/prayer-times", priority: "alarm" }, sound: "adhan-beautiful.ogg", priority: "high", categoryIdentifier: PRAYER_ALARM_NOTIFICATION_CATEGORY },
+    content: { title: "Tes alarm adzan V A I R A  A I", body: `Alarm salat akan berbunyi setelah ${delay} detik menggunakan nada default perangkat.`, data: { kind: PRAYER_KIND, test: true, url: "/prayer-times", priority: "alarm" }, sound: "adhan_beautiful.ogg", priority: "high", categoryIdentifier: PRAYER_ALARM_NOTIFICATION_CATEGORY },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: delay, repeats: false, channelId: PRAYER_ALARM_CHANNEL },
   });
   return true;
