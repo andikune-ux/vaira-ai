@@ -71,6 +71,52 @@ export async function storagePut(
   return { key, url: `/manus-storage/${key}` };
 }
 
+/**
+ * Menyimpan object pada key yang diberikan tanpa menambahkan suffix acak.
+ * Gunakan hanya ketika sebuah proses pemulihan sudah memverifikasi bahwa key
+ * yang dipertahankan memang milik metadata yang sama. Unggahan aplikasi biasa
+ * tetap wajib memakai storagePut agar nama object tidak berbenturan.
+ */
+export async function storagePutExact(
+  relKey: string,
+  data: Buffer | Uint8Array | string,
+  contentType = "application/octet-stream",
+): Promise<{ key: string; url: string }> {
+  const { forgeUrl, forgeKey } = getForgeConfig();
+  const key = normalizeKey(relKey);
+  if (!key) throw new Error("Storage key pemulihan tidak boleh kosong.");
+
+  const presignUrl = new URL("v1/storage/presign/put", forgeUrl + "/");
+  presignUrl.searchParams.set("path", key);
+  const presignResp = await fetch(presignUrl, {
+    headers: { Authorization: `Bearer ${forgeKey}` },
+  });
+
+  if (!presignResp.ok) {
+    const msg = await presignResp.text().catch(() => presignResp.statusText);
+    throw new Error(`Storage presign pemulihan gagal (${presignResp.status}): ${msg}`);
+  }
+
+  const { url: s3Url } = (await presignResp.json()) as { url: string };
+  if (!s3Url) throw new Error("Forge mengembalikan URL unggah pemulihan kosong.");
+
+  const blob =
+    typeof data === "string"
+      ? new Blob([data], { type: contentType })
+      : new Blob([data as any], { type: contentType });
+  const uploadResp = await fetch(s3Url, {
+    method: "PUT",
+    headers: { "Content-Type": contentType },
+    body: blob,
+  });
+
+  if (!uploadResp.ok) {
+    throw new Error(`Unggah storage pemulihan gagal (${uploadResp.status}).`);
+  }
+
+  return { key, url: `/manus-storage/${key}` };
+}
+
 export async function storageCreateUploadUrl(relKey: string): Promise<{ key: string; uploadUrl: string; url: string }> {
   const { forgeUrl, forgeKey } = getForgeConfig();
   const key = appendHashSuffix(normalizeKey(relKey));

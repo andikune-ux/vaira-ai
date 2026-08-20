@@ -3225,6 +3225,16 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Memulihkan metadata AiraXCloud dengan status terbatas tanpa mengaktifkan arsip yang object storage-nya belum diverifikasi.
 - [x] Menyimpan checkpoint pemulihan SERVER DATABASE 2 yang telah tervalidasi.
 
+## Validasi Storage AiraXCloud SERVER DATABASE Lama
+
+- [x] Mengambil dan memeriksa export storage AiraXCloud tanpa mengaktifkan atau menyalin arsip.
+- [x] Mencocokkan object storage yang tersedia terhadap tiga metadata AiraXCloud berstatus restricted di SERVER DATABASE 2.
+- [x] Meminta persetujuan akhir sebelum mengaktifkan arsip cloud yang objeknya telah diverifikasi.
+- [x] Memulihkan tiga objek AiraXCloud terverifikasi ke storage server standby dan mengaktifkan metadatanya.
+- [x] Memulihkan enam foto unggulan ke storage standby serta memperbarui URL foto akun yang kedaluwarsa.
+- [x] Memvalidasi object storage, metadata database, dan regresi aplikasi setelah pemulihan storage.
+- [x] Memperbaiki referensi foto hasil pemulihan agar memakai URL bertanda tangan dari storage standby, bukan endpoint publik legacy.
+
 ## Pemisahan SERVER DATABASE Lama dan SERVER DATABASE 2
 
 - [x] Menyimpan kredensial SERVER DATABASE lama dan SERVER DATABASE 2 sebagai dua konfigurasi terpisah.
