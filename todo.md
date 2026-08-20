@@ -3126,7 +3126,7 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Fix issues incrementally with focused changes and regression coverage.
 - [x] Validate the main browser, Perchance AI, Rencana Cepat, and navigation flows through automated regression coverage.
 - [x] Review native-only limitations and document anything requiring device/build validation.
-- [ ] Save a final checkpoint after validation.
+- [x] Save a final checkpoint after validation.
 
 ## Server Separation and Baseline Comparison
 
@@ -3143,5 +3143,14 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Document a controlled recovery and comparison procedure for the standby copy.
 - [x] Prevent a normal Metro exit from terminating the standby API server during local development.
 - [x] Run TypeScript, lint, API health, browser regression, and full regression validation on the standby copy.
-- [ ] Configure separate standby credentials before enabling administrator or internal API verification outside test mode.
+- [x] Configure separate standby credentials before enabling administrator or internal API verification outside test mode.
 - [ ] Import a user-authorized export of primary-server data only if a full data-recovery replica is required.
+
+## Konfigurasi Kredensial Standby
+
+- [x] Mengumpulkan username administrator, password administrator, dan AIRA_INTERNAL_API_KEY khusus server standby melalui isian aman.
+- [x] Memvalidasi konfigurasi kredensial standby tanpa menampilkan nilai rahasia.
+
+## Pemeriksaan Akhir
+
+- [x] Memeriksa ulang status proses, endpoint kesehatan, kredensial standby, dan hasil validasi terakhir.
