@@ -1,0 +1,1 @@
+ALTER TABLE `manualAccounts` MODIFY COLUMN `status` enum('active','disabled','blocked','closing','blacklisted') NOT NULL DEFAULT 'active';

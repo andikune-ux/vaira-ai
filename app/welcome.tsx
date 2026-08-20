@@ -1,0 +1,15 @@
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { router } from "expo-router";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+
+import { OutlineButton, PrimaryButton } from "@/components/aira-ui";
+import { ScreenContainer } from "@/components/screen-container";
+import { useColors } from "@/hooks/use-colors";
+import { useFinance } from "@/lib/finance/finance-context";
+
+export default function WelcomeScreen() {
+  const colors = useColors(); const { updateProfile } = useFinance();
+  const continueGuest = async () => { await updateProfile({ mode: "guest", syncEnabled: false }); router.replace("/(tabs)"); };
+  return <ScreenContainer className="px-6" edges={["top", "bottom", "left", "right"]}><View style={styles.page}><Pressable onPress={() => router.back()} style={({ pressed }) => [styles.close, { backgroundColor: colors.surface, borderColor: colors.border }, pressed && styles.pressed]}><MaterialIcons name="close" size={21} color={colors.foreground} /></Pressable><View style={[styles.mark, { backgroundColor: colors.primary }]}><MaterialIcons name="auto-awesome" size={46} color="#FFFFFF" /></View><Text style={[styles.title, { color: colors.foreground }]}>V A I R A  A I</Text><Text style={[styles.subtitle, { color: colors.muted }]}>Pendamping cerdas untuk percakapan, produktivitas, dan catatan keuangan yang tetap Anda kontrol.</Text><View style={[styles.privacy, { backgroundColor: `${colors.success}12` }]}><MaterialIcons name="shield" size={22} color={colors.success} /><Text style={[styles.privacyText, { color: colors.foreground }]}>Transaksi tidak memengaruhi saldo sampai Anda mengonfirmasi setiap detailnya.</Text></View><View style={styles.actions}><PrimaryButton label="Lanjut sebagai tamu" icon="person-outline" onPress={continueGuest} /><OutlineButton label="Masuk dengan email" icon="mail-outline" onPress={() => router.push("/login")} /></View><Text style={[styles.footnote, { color: colors.muted }]}>Mode tamu menyimpan data pada perangkat. Masuk dengan akun diperlukan untuk sinkronisasi cloud lintas perangkat.</Text></View></ScreenContainer>;
+}
+const styles = StyleSheet.create({ page: { alignItems: "center", flex: 1, justifyContent: "center", paddingBottom: 24 }, close: { alignItems: "center", borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", position: "absolute", right: 0, top: 0, width: 44 }, mark: { alignItems: "center", borderRadius: 30, height: 92, justifyContent: "center", width: 92 }, title: { fontSize: 32, fontWeight: "800", letterSpacing: -0.9, marginTop: 22 }, subtitle: { fontSize: 14, lineHeight: 21, marginTop: 9, maxWidth: 310, textAlign: "center" }, privacy: { alignItems: "flex-start", borderRadius: 18, flexDirection: "row", gap: 10, marginTop: 32, padding: 15 }, privacyText: { flex: 1, fontSize: 12, fontWeight: "600", lineHeight: 18 }, actions: { alignSelf: "stretch", gap: 10, marginTop: 27 }, footnote: { fontSize: 11, lineHeight: 17, marginTop: 16, textAlign: "center" }, pressed: { opacity: 0.7 } });

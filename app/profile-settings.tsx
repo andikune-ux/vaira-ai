@@ -1,0 +1,71 @@
+import * as FileSystem from "expo-file-system/legacy";
+import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
+import { useState } from "react";
+import { Alert, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+
+import { AiraCard, PrimaryButton } from "@/components/aira-ui";
+import { ScreenContainer } from "@/components/screen-container";
+import { useColors } from "@/hooks/use-colors";
+import { useFinance } from "@/lib/finance/finance-context";
+import { trpc } from "@/lib/trpc";
+
+export default function ProfileSettingsScreen() {
+  const colors = useColors();
+  const { state, updateProfile } = useFinance();
+  const [bio, setBio] = useState(state.profile.bio ?? "");
+  const [photos, setPhotos] = useState<string[]>(state.profile.featuredPhotoUris ?? []);
+  const [saving, setSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadingPhotoIndex, setUploadingPhotoIndex] = useState<number | null>(null);
+  const syncProfile = trpc.manualAccount.updateProfile.useMutation();
+  const uploadPhotos = trpc.manualAccount.uploadFeaturedPhotos.useMutation();
+  const blockedAccounts = trpc.globalRoom.blocks.useQuery(undefined, { enabled: state.profile.mode === "account", retry: false });
+  const unblockAccount = trpc.globalRoom.unblock.useMutation({ onSuccess: () => { void blockedAccounts.refetch(); } });
+
+  const pickFeaturedPhotos = async () => {
+    if (state.profile.mode !== "account") {
+      Alert.alert("Masuk diperlukan", "Masuk ke akun untuk menyimpan foto unggulan pada profil.");
+      return;
+    }
+    const remaining = Math.max(0, 3 - photos.length);
+    if (remaining === 0) { Alert.alert("Batas foto tercapai", "Profil hanya dapat memiliki maksimal tiga foto unggulan."); return; }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsMultipleSelection: true, quality: 0.8 });
+    if (result.canceled) return;
+    const selected = result.assets.map((asset) => asset.uri).filter(Boolean).slice(0, remaining);
+    setPhotos((previous) => [...previous, ...selected]);
+  };
+
+  const toDataUrl = async (uri: string) => {
+    const mime = uri.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
+    if (Platform.OS !== "web") return `data:${mime};base64,${await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 })}`;
+    const response = await fetch(uri); const buffer = await response.arrayBuffer(); let binary = ""; new Uint8Array(buffer).forEach((value) => { binary += String.fromCharCode(value); }); return `data:${mime};base64,${btoa(binary)}`;
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const nextBio = bio.trim().slice(0, 280);
+      const nextPhotos = photos.slice(0, 3);
+      await updateProfile({ bio: nextBio, featuredPhotoUris: nextPhotos });
+      if (state.profile.mode === "account") {
+        const remotePhotos = nextPhotos.filter((uri) => /^https?:\/\//i.test(uri));
+        const localPhotos = nextPhotos.filter((uri) => !/^https?:\/\//i.test(uri));
+        const uploadedUrls: string[] = []; for (const [index, localPhoto] of localPhotos.entries()) { setUploadingPhotoIndex(index + 1); const result = await uploadPhotos.mutateAsync({ file: await toDataUrl(localPhoto) }); uploadedUrls.push(result.url); setUploadProgress(Math.round(((index + 1) / Math.max(1, localPhotos.length)) * 100)); }
+        const persistedPhotos = [...remotePhotos, ...uploadedUrls];
+        await syncProfile.mutateAsync({ bio: nextBio, featuredPhotoUris: persistedPhotos });
+        await updateProfile({ bio: nextBio, featuredPhotoUris: persistedPhotos });
+        setPhotos(persistedPhotos);
+      }
+      Alert.alert("Profil disimpan", state.profile.mode === "account" ? "Bio tersimpan dan metadata foto cloud disinkronkan." : "Bio dan foto unggulan tersimpan pada profil lokal.");
+    } finally {
+      setSaving(false);
+      setUploadProgress(0);
+      setUploadingPhotoIndex(null);
+    }
+  };
+
+  return <ScreenContainer className="px-5" edges={["top", "bottom", "left", "right"]}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"><View style={styles.header}><Pressable onPress={() => router.back()} style={({ pressed }) => [styles.back, { backgroundColor: colors.surface, borderColor: colors.border }, pressed && styles.pressed]}><Text style={[styles.backText, { color: colors.foreground }]}>‹</Text></Pressable><View><Text style={[styles.title, { color: colors.foreground }]}>Pengaturan Profil</Text><Text style={[styles.subtitle, { color: colors.muted }]}>Bio, status, dan foto unggulan profil Anda.</Text></View></View><AiraCard style={styles.card}><Text style={[styles.label, { color: colors.foreground }]}>Bio atau status</Text><TextInput value={bio} onChangeText={setBio} maxLength={280} multiline placeholder="Contoh: Mencatat keuangan dengan lebih teratur." placeholderTextColor={colors.muted} style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground }]} /><Text style={[styles.counter, { color: colors.muted }]}>{bio.length}/280</Text></AiraCard><AiraCard style={styles.card}><View style={styles.sectionHead}><View style={styles.flex}><Text style={[styles.label, { color: colors.foreground }]}>Foto unggulan</Text><Text style={[styles.help, { color: colors.muted }]}>Maksimal tiga foto unggulan. Upload diproses bertahap agar tetap stabil.</Text></View><Pressable onPress={() => { void pickFeaturedPhotos(); }} style={[styles.smallButton, { backgroundColor: `${colors.primary}14` }]}><Text style={[styles.smallButtonText, { color: colors.primary }]}>Pilih</Text></Pressable></View><View style={styles.photoRow}>{photos.map((uri, index) => <Pressable key={`${uri}-${index}`} onPress={() => Alert.alert("Pratinjau foto", "Foto unggulan tersimpan pada profil ini.")} style={styles.photoWrap}><Image source={{ uri }} style={styles.photo} /><Pressable accessibilityLabel={`Hapus foto unggulan ${index + 1}`} onPress={() => setPhotos((previous) => previous.filter((_, photoIndex) => photoIndex !== index))} style={styles.remove}><Text style={styles.removeText}>×</Text></Pressable></Pressable>)}<Pressable onPress={() => { void pickFeaturedPhotos(); }} style={[styles.addPhoto, { backgroundColor: colors.background, borderColor: colors.border }]}><Text style={[styles.addPlus, { color: colors.primary }]}>+</Text><Text style={[styles.addText, { color: colors.muted }]}>Tambah foto</Text></Pressable></View></AiraCard>{state.profile.mode === "account" ? <AiraCard style={styles.card}><Text style={[styles.label, { color: colors.foreground }]}>Daftar blokir Room Global</Text>{blockedAccounts.isLoading ? <Text style={[styles.help, { color: colors.muted }]}>Memuat daftar blokir…</Text> : blockedAccounts.data?.length ? blockedAccounts.data.map((block) => <View key={block.id} style={[styles.blockRow, { borderColor: colors.border }]}><View style={styles.flex}><Text style={[styles.help, { color: colors.foreground }]}>ID akun: {block.blockedAccountId}</Text><Text style={[styles.help, { color: colors.muted }]}>{block.expiresAt ? `Berakhir ${new Date(block.expiresAt).toLocaleString()}` : "Blokir permanen"}</Text></View><Pressable disabled={unblockAccount.isPending} onPress={() => { void unblockAccount.mutateAsync({ accountId: block.blockedAccountId }); }} style={[styles.smallButton, { backgroundColor: `${colors.primary}14` }]}><Text style={[styles.smallButtonText, { color: colors.primary }]}>Unblokir</Text></Pressable></View>) : <Text style={[styles.help, { color: colors.muted }]}>Belum ada akun yang diblokir.</Text>}</AiraCard> : null}{saving && uploadProgress > 0 ? <Text style={[styles.uploadProgress, { color: colors.primary }]}>{uploadingPhotoIndex ? `Mengunggah foto ${uploadingPhotoIndex} dari ${Math.max(1, photos.length)}` : "Menyimpan foto unggulan"} · {uploadProgress}%</Text> : null}<PrimaryButton label={saving ? "Menyimpan…" : "Simpan Pengaturan Profil"} icon="save" disabled={saving} onPress={() => { void save(); }} /></ScrollView></ScreenContainer>;
+}
+
+const styles = StyleSheet.create({ content: { gap: 14, paddingBottom: 30 }, header: { alignItems: "center", flexDirection: "row", gap: 12, paddingTop: 6 }, back: { alignItems: "center", borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 }, backText: { fontSize: 31, lineHeight: 34 }, title: { fontSize: 22, fontWeight: "900" }, subtitle: { fontSize: 11, marginTop: 3 }, card: { gap: 8 }, label: { fontSize: 14, fontWeight: "900" }, input: { borderRadius: 13, borderWidth: 1, fontSize: 14, minHeight: 105, padding: 12, textAlignVertical: "top" }, counter: { fontSize: 10, textAlign: "right" }, sectionHead: { alignItems: "center", flexDirection: "row", gap: 10 }, flex: { flex: 1 }, help: { fontSize: 10, lineHeight: 15, marginTop: 2 }, smallButton: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }, smallButtonText: { fontSize: 11, fontWeight: "900" }, uploadProgress: { fontSize: 12, fontWeight: "800", textAlign: "center" }, photoRow: { flexDirection: "row", flexWrap: "wrap", gap: 9, marginTop: 5 }, blockRow: { alignItems: "center", borderRadius: 11, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", gap: 10, padding: 10 }, photoWrap: { height: 96, position: "relative", width: 96 }, photo: { borderRadius: 13, height: 96, width: 96 }, remove: { alignItems: "center", backgroundColor: "#162238", borderRadius: 10, height: 22, justifyContent: "center", position: "absolute", right: -4, top: -5, width: 22 }, removeText: { color: "#FFFFFF", fontSize: 18, lineHeight: 20 }, addPhoto: { alignItems: "center", borderRadius: 13, borderWidth: 1, borderStyle: "dashed", height: 96, justifyContent: "center", width: 96 }, addPlus: { fontSize: 28, fontWeight: "300" }, addText: { fontSize: 10, fontWeight: "700", marginTop: 2 }, pressed: { opacity: 0.7 } });

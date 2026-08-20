@@ -1,0 +1,1 @@
+ALTER TABLE `manualAccounts` ADD `isVerified` boolean DEFAULT false NOT NULL;

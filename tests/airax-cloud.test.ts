@@ -1,0 +1,75 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+const read = (path: string) => readFileSync(`${process.cwd()}/${path}`, "utf-8");
+
+describe("AiraXCloud dan AiraXBackup", () => {
+  it("menyimpan metadata arsip cloud per akun dan bukan kata sandi atau token", () => {
+    const schema = read("drizzle/schema.ts");
+    const router = read("server/routers.ts");
+    expect(schema).toContain("airaxCloudBackups");
+    expect(schema).toContain("accountId");
+    expect(schema).toContain("storageKey");
+    expect(router).toContain("airaxCloud: router");
+    expect(router).toContain("await requireManualAccount(ctx.req)");
+    expect(router.slice(router.indexOf("airaxCloud: router"), router.indexOf("ai: router"))).not.toContain("passwordHash");
+  });
+
+  it("memungkinkan administrator membatasi atau menghapus arsip tanpa membuka isi cadangan", () => {
+    const router = read("server/routers.ts");
+    const administrator = read("app/administrator.tsx");
+    const cloudPage = read("app/administrator-cloud.tsx");
+    expect(router).toContain("adminUpdate");
+    expect(router).toContain("AIRAX_CLOUD_STATUS");
+    expect(administrator).toContain("/administrator-cloud");
+    expect(cloudPage).toContain("AiraXCloud");
+    expect(cloudPage).toContain("Hapus");
+    expect(cloudPage).toContain("Batasi");
+  });
+
+  it("menghapus arsip dan riwayat secara permanen serta memangkas cadangan tertua setelah satu bulan", () => {
+    const db = read("server/db.ts");
+    const router = read("server/routers.ts");
+    const cloudPage = read("app/administrator-cloud.tsx");
+    expect(db).toContain("deleteAiraXCloudBackupPermanently");
+    expect(db).toContain("pruneOldestAiraXCloudBackup");
+    expect(db).toContain("rows.length < 2");
+    expect(db).toContain("rows[rows.length - 1]");
+    expect(router).toContain("input.status === \"deleted\"");
+    expect(router).toContain("await db.pruneOldestAiraXCloudBackup(account.id)");
+    expect(cloudPage).toContain("Hapus arsip dan riwayat?");
+    expect(cloudPage).toContain("langsung hilang dari daftar");
+  });
+
+  it("memulihkan AiraXCloud setelah login dan mempertahankan snapshot global hanya untuk guest", () => {
+    const login = read("app/login.tsx");
+    const globalSync = read("components/global-test-sync.tsx");
+    expect(login).toContain("cloudRestore.refetch()");
+    expect(login).toContain("replaceAllData({ ...cloudState, profile: { ...cloudState.profile, ...accountProfile, mode: \"account\" as const } } as FinanceState)");
+    expect(login).toContain("const localState = await refreshStorageScope");
+    expect(login).toContain("featuredPhotoUris: result.account.featuredPhotoUris");
+    expect(globalSync).toContain('state.profile.mode === "guest"');
+  });
+
+  it("menyediakan folder AiraXBackup, pencarian otomatis, dan pemulihan berkas untuk guest", () => {
+    const backup = read("lib/local-backup.ts");
+    const screen = read("app/local-backup.tsx");
+    expect(backup).toContain('BACKUP_DIRECTORY = "AiraXBackup"');
+    expect(backup).toContain("StorageAccessFramework.requestDirectoryPermissionsAsync");
+    expect(backup).toContain("restoreLatestLocalBackup");
+    expect(screen).toContain("Mode Guest juga dapat memulihkan berkas");
+    expect(screen).toContain("Pilih berkas cadangan sendiri");
+  });
+
+  it("menampilkan tahap progres dan hasil proses untuk cadangan maupun pemulihan", () => {
+    const progress = read("components/backup-progress.tsx");
+    const cloud = read("app/airax-cloud.tsx");
+    const local = read("app/local-backup.tsx");
+    expect(progress).toContain("BackupProgressPanel");
+    expect(progress).toContain('status: "working" | "success" | "error"');
+    expect(cloud).toContain("Mengirim ke AiraXCloud");
+    expect(cloud).toContain("Pemulihan AiraXCloud selesai");
+    expect(local).toContain("Menulis berkas cadangan");
+    expect(local).toContain("Pemulihan AiraXBackup selesai");
+  });
+});

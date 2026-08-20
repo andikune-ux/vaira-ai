@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1976f3" />
+    <title>Rincian Donasi V A I R A  A I</title>
+    <style>
+      :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; background: linear-gradient(160deg, #eff7ff 0%, #f8fbff 52%, #edf6ff 100%); color: #14233b; }
+      main { width: min(100%, 680px); margin: 0 auto; padding: 34px 18px 48px; }
+      .hero { text-align: center; padding: 6px 10px 24px; }
+      .mark { width: 52px; height: 52px; margin: 0 auto 12px; display: grid; place-items: center; border-radius: 16px; background: #1976f3; color: #fff; box-shadow: 0 12px 24px #1976f340; font-weight: 900; font-size: 23px; }
+      h1 { margin: 0; font-size: 26px; letter-spacing: -0.6px; }
+      .hero p { margin: 8px auto 0; max-width: 460px; color: #62738a; font-size: 14px; line-height: 1.55; }
+      .notice { display: flex; gap: 10px; align-items: flex-start; border: 1px solid #c9e1ff; border-radius: 16px; padding: 13px 15px; background: #fff; color: #53647a; font-size: 13px; line-height: 1.5; margin-bottom: 18px; }
+      .notice strong { color: #1976f3; }
+      .accounts { display: grid; gap: 10px; }
+      .app-link { margin-top: 20px; padding: 16px; display: flex; align-items: center; gap: 15px; background: #fff; border: 1px solid #dce8f5; border-radius: 17px; box-shadow: 0 8px 22px #162e4b0d; }
+      .app-link img { width: 98px; height: 98px; border-radius: 10px; flex: 0 0 auto; }
+      .app-link h2 { margin: 0; color: #172a45; font-size: 16px; }
+      .app-link p { margin: 5px 0 10px; color: #66778e; font-size: 12px; line-height: 1.5; }
+      .open-app { display: inline-block; text-decoration: none; background: #1976f3; color: #fff; padding: 9px 12px; border-radius: 10px; font-size: 12px; font-weight: 800; }
+      article { display: flex; align-items: center; gap: 12px; padding: 14px; background: #fff; border: 1px solid #dce8f5; border-radius: 17px; box-shadow: 0 8px 22px #162e4b0d; }
+      article.primary { border-color: #74b4ff; box-shadow: 0 10px 25px #1976f31c; }
+      .bank-icon { width: 42px; height: 42px; display: grid; flex: 0 0 auto; place-items: center; background: #eaf4ff; color: #1976f3; border-radius: 13px; font-weight: 900; }
+      article:not(.primary) .bank-icon { background: #eefbf6; color: #0f9d70; }
+      .info { min-width: 0; flex: 1; }
+      .bank { color: #172a45; font-size: 14px; font-weight: 800; }
+      .holder { color: #6b7b90; margin-top: 2px; font-size: 12px; font-weight: 700; }
+      .number { margin-top: 4px; color: #14233b; font-size: 16px; font-weight: 900; letter-spacing: .4px; word-break: break-all; }
+      button { cursor: pointer; border: 0; border-radius: 12px; min-width: 42px; min-height: 40px; padding: 8px 10px; background: #eaf4ff; color: #1976f3; font-weight: 800; font-size: 12px; }
+      button:active { transform: scale(.97); }
+      footer { color: #79889b; text-align: center; font-size: 12px; line-height: 1.55; margin: 24px 8px 0; }
+      #toast { visibility: hidden; position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); padding: 11px 15px; border-radius: 12px; background: #14233b; color: #fff; font-size: 13px; box-shadow: 0 8px 24px #14233b45; }
+      #toast.show { visibility: visible; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header class="hero"><div class="mark">AX</div><h1>Rincian Donasi V A I R A  A I</h1><p>Terima kasih atas dukungan Anda untuk pengembangan V A I R A  A I. Pilih rekening lalu gunakan tombol salin.</p></header>
+      <div class="notice"><span>ℹ</span><span><strong>Informasi rekening:</strong> halaman ini hanya menampilkan rincian donasi. V A I R A  A I tidak memproses maupun memverifikasi pembayaran.</span></div>
+      <section class="accounts" aria-label="Daftar rekening donasi">
+        <article class="primary"><div class="bank-icon">S</div><div class="info"><div class="bank">BANK SINARMAS · Prioritas Utama</div><div class="holder">a.n. Andik</div><div class="number">0019605237</div></div><button data-number="0019605237">Salin</button></article>
+        <article><div class="bank-icon">B</div><div class="info"><div class="bank">BANK BSI</div><div class="holder">a.n. Andik</div><div class="number">7202217162</div></div><button data-number="7202217162">Salin</button></article>
+        <article><div class="bank-icon">B</div><div class="info"><div class="bank">BANK BRI</div><div class="holder">a.n. Andik</div><div class="number">059401009583509</div></div><button data-number="059401009583509">Salin</button></article>
+        <article><div class="bank-icon">B</div><div class="info"><div class="bank">BANK BNI</div><div class="holder">a.n. Andik</div><div class="number">1851720228</div></div><button data-number="1851720228">Salin</button></article>
+        <article><div class="bank-icon">S</div><div class="info"><div class="bank">SUPERBANK</div><div class="holder">a.n. Andik</div><div class="number">000041209743</div></div><button data-number="000041209743">Salin</button></article>
+        <article><div class="bank-icon">O</div><div class="info"><div class="bank">OVO</div><div class="holder">a.n. Andik</div><div class="number">081323233143</div></div><button data-number="081323233143">Salin</button></article>
+      </section>
+      <section class="app-link" aria-label="Buka aplikasi V A I R A  A I"><img src="vaira-ai-app-qr.png" alt="QR pembuka aplikasi V A I R A  A I" /><div><h2>Buka aplikasi V A I R A  A I</h2><p>Pindai QR ini dari perangkat lain untuk membuka aplikasi V A I R A  A I yang telah terpasang.</p><a class="open-app" href="manusairaxai://">Buka V A I R A  A I</a></div></section>
+      <footer>Pastikan nama pemilik rekening adalah <strong>Andik</strong> sebelum melakukan transaksi.</footer>
+    </main>
+    <div id="toast" role="status">Nomor rekening disalin</div>
+    <script>
+      const toast = document.getElementById('toast');
+      document.querySelectorAll('button[data-number]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const number = button.dataset.number;
+          try { await navigator.clipboard.writeText(number); } catch { const input = document.createElement('input'); input.value = number; document.body.appendChild(input); input.select(); document.execCommand('copy'); input.remove(); }
+          toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 1800);
+        });
+      });
+    </script>
+  </body>
+</html>

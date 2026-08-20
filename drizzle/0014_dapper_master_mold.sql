@@ -1,0 +1,1 @@
+ALTER TABLE `globalRoomBlocks` ADD `expiresAt` timestamp;

@@ -1,0 +1,1 @@
+ALTER TABLE `globalRoomConsents` ADD `termsVersion` varchar(24) DEFAULT '2026-08-v1' NOT NULL;

@@ -1,0 +1,202 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1763372440610,
+      "tag": "0000_elite_eternals",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1786513083313,
+      "tag": "0001_deep_warstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1786688106873,
+      "tag": "0002_loose_earthquake",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1786701902904,
+      "tag": "0003_third_puma",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1786706911895,
+      "tag": "0004_powerful_lizard",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1786710885198,
+      "tag": "0005_lovely_inhumans",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1786717536935,
+      "tag": "0006_aromatic_sugar_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1786866771525,
+      "tag": "0007_lowly_gorilla_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1786867257787,
+      "tag": "0008_red_hellion",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1786867509066,
+      "tag": "0009_robust_ser_duncan",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1786869549178,
+      "tag": "0010_large_bullseye",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1786877539621,
+      "tag": "0011_messy_fixer",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1786877880182,
+      "tag": "0012_familiar_cardiac",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1786880672600,
+      "tag": "0013_mighty_blizzard",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "5",
+      "when": 1786881315968,
+      "tag": "0014_dapper_master_mold",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "5",
+      "when": 1786892537685,
+      "tag": "0015_sturdy_changeling",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "5",
+      "when": 1786921033706,
+      "tag": "0016_sticky_shooting_star",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1786921368624,
+      "tag": "0017_massive_omega_red",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1786937679163,
+      "tag": "0018_bizarre_ma_gnuci",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1786938693652,
+      "tag": "0019_military_photon",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1786940670888,
+      "tag": "0020_dapper_tyrannus",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "5",
+      "when": 1786942331756,
+      "tag": "0021_vengeful_the_fallen",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "5",
+      "when": 1786968961815,
+      "tag": "0022_loving_vermin",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1786971577481,
+      "tag": "0023_parallel_nick_fury",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1786972291282,
+      "tag": "0024_striped_eternals",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1786998861307,
+      "tag": "0025_low_newton_destine",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1786999257527,
+      "tag": "0026_rainy_shen",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "5",
+      "when": 1787021389699,
+      "tag": "0027_shiny_jamie_braddock",
+      "breakpoints": true
+    }
+  ]
+}

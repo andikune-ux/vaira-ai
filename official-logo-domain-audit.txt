@@ -1,0 +1,10 @@
+bca.co.id                    200
+bankmandiri.co.id            200
+bni.co.id                    302
+bri.co.id                    302
+cimbniaga.co.id              404
+danamon.co.id                000
+permatabank.com              403
+ocbc.id                      200
+maybank.co.id                000
+panin.co.id                  000

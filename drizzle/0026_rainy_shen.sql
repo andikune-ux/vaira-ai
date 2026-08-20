@@ -1,0 +1,1 @@
+ALTER TABLE `manualAccounts` ADD `createdByAdministrator` boolean DEFAULT false NOT NULL;
