@@ -3162,3 +3162,11 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Menjalankan validasi konfigurasi Android dan regresi sebelum Publish dicoba ulang.
 - [x] Menyimpan checkpoint kesiapan build yang telah diperbaiki.
 - [x] Mengganti nama aset suara notifikasi Android agar memakai nama resource yang valid tanpa tanda hubung.
+
+## Perbaikan Koneksi Login dan SERVER DATABASE
+
+- [x] Menelusuri respons HTML yang diterima aplikasi native pada alur login dan verifikasi administrator.
+- [x] Memperbaiki resolusi URL API agar aplikasi native menerima respons JSON dari server.
+- [x] Memvalidasi login manual dan pembukaan SERVER DATABASE administrator tanpa error parsing JSON.
+- [x] Mencegah APK standalone memakai URL preview sandbox yang sudah tidak sesuai sebagai API server.
+- [x] Menyimpan checkpoint koneksi login dan SERVER DATABASE yang telah tervalidasi.

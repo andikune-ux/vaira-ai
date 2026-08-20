@@ -5,6 +5,7 @@ export function getUserFacingError(error: unknown, fallback = "Terjadi kendala. 
   const raw = [value?.data?.message, value?.shape?.message, value?.message].find((item): item is string => typeof item === "string")?.trim() ?? "";
   const text = raw.replace(/\s+/g, " ").trim();
   if (!text || /^(undefined|null|error|internal server error|bad request|unauthorized|forbidden|not found)$/i.test(text)) return fallback;
+  if (/json parse error|unexpected character:\s*</i.test(text)) return "Server mengirim respons yang tidak valid. Periksa koneksi aplikasi lalu coba lagi.";
   if (/invalid.*(username|id)|username.*invalid|format.*username/i.test(text)) return "Username tidak valid. Gunakan 3–40 karakter berupa huruf kecil, angka, titik, garis bawah, atau tanda hubung.";
   if (/invalid.*(public.?id|id publik)|public.?id.*invalid|id.*(9|12).*digit/i.test(text)) return "ID publik tidak valid. Gunakan angka dengan panjang 9–12 digit.";
   if (/email.*invalid|invalid.*email|email.*valid/i.test(text)) return "Format email belum benar. Periksa kembali alamat email Anda.";

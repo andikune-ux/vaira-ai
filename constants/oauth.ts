@@ -10,6 +10,21 @@ const PRODUCTION_API_BASE_URL = "https://airaxai-6vcs6pth.manus.space";
 const timestamp = bundleId.split(".").pop()?.replace(/^t/, "") ?? "";
 const schemeFromBundleId = `manus${timestamp}`;
 
+function isManagedPreviewApiBaseUrl(value: string) {
+  try {
+    const hostname = new URL(value).hostname;
+    return hostname.endsWith(".manus.computer") && /^\d+-/.test(hostname);
+  } catch {
+    return false;
+  }
+}
+
+function getNativeExpoHost() {
+  const config = Constants.expoConfig as (typeof Constants.expoConfig & { hostUri?: string }) | null;
+  const expoGo = Constants.expoGoConfig as (typeof Constants.expoGoConfig & { debuggerHost?: string; hostUri?: string }) | null;
+  return config?.hostUri ?? expoGo?.hostUri ?? expoGo?.debuggerHost ?? null;
+}
+
 const env = {
   portal: process.env.EXPO_PUBLIC_OAUTH_PORTAL_URL ?? "",
   server: process.env.EXPO_PUBLIC_OAUTH_SERVER_URL ?? "",
@@ -39,8 +54,11 @@ export function getApiBaseUrl(): string {
     return window.location.origin;
   }
 
-  // If API_BASE_URL is set, use it
-  if (API_BASE_URL) {
+  const nativeHost = ReactNative.Platform.OS !== "web" ? getNativeExpoHost() : null;
+
+  // Paket standalone tidak membawa host Expo. Jangan gunakan URL preview sandbox yang
+  // mungkin ikut ter-embed saat build karena host tersebut tidak tersedia di perangkat.
+  if (API_BASE_URL && !(ReactNative.Platform.OS !== "web" && !nativeHost && isManagedPreviewApiBaseUrl(API_BASE_URL))) {
     return API_BASE_URL.replace(/\/$/, "");
   }
 
@@ -57,11 +75,8 @@ export function getApiBaseUrl(): string {
   // Expo Go maupun development build di perangkat tidak dapat melakukan fetch ke URL relatif.
   // Ambil host Metro yang aktif lalu ganti port preview 8081 menjadi API 3000.
   if (ReactNative.Platform.OS !== "web") {
-    const config = Constants.expoConfig as (typeof Constants.expoConfig & { hostUri?: string }) | null;
-    const expoGo = Constants.expoGoConfig as (typeof Constants.expoGoConfig & { debuggerHost?: string; hostUri?: string }) | null;
-    const host = config?.hostUri ?? expoGo?.hostUri ?? expoGo?.debuggerHost;
-    if (host) {
-      const normalized = host.includes("://") ? host : `https://${host}`;
+    if (nativeHost) {
+      const normalized = nativeHost.includes("://") ? nativeHost : `https://${nativeHost}`;
       try {
         const url = new URL(normalized);
         const hostname = url.hostname.replace(/^8081-/, "3000-");

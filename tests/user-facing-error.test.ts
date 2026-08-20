@@ -17,4 +17,8 @@ describe("user-facing errors", () => {
   it("memberi fallback koneksi yang dapat dipahami", () => {
     expect(getUserFacingError(new Error("fetch failed"))).toContain("Server atau koneksi");
   });
+
+  it("menyembunyikan error parse ketika API mengirim HTML", () => {
+    expect(getUserFacingError(new Error("JSON Parse error: Unexpected character: <"))).toContain("respons yang tidak valid");
+  });
 });
