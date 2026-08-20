@@ -3110,3 +3110,38 @@ Nama tampilan resmi aplikasi adalah "V A I R A  A I". Identifier teknis lama sep
 - [x] Tambahkan regresi Perchance → browser, Home, dan Tab.
 - [x] Jalankan validasi lengkap tanpa checkpoint terlebih dahulu.
 - [x] Tandai seluruh item selesai sebelum membuat checkpoint.
+
+
+## Independent Copy Session Note
+
+This is a new independent copy of the source project. Existing source-project checklist items remain as historical context only and will not be continued automatically. New items will be added only after the user explicitly requests the next change, investigation, or validation.
+
+Current copied-project focus from the source summary: Aira AI Browser, Perchance AI integration, Quick Plans shortcut, WebView navigation handling, Secure Tab fallback, multi-tab/private browsing, bookmarks, history, downloads, and Room Global audio/layout refinements.
+
+
+## New Request: Complete Gradually and Carefully
+
+- [x] Audit the copied project structure, current feature implementation, tests, and runtime logs.
+- [x] Identify and prioritize functional issues in the Aira AI Browser and related integrations.
+- [x] Fix issues incrementally with focused changes and regression coverage.
+- [x] Validate the main browser, Perchance AI, Rencana Cepat, and navigation flows through automated regression coverage.
+- [x] Review native-only limitations and document anything requiring device/build validation.
+- [ ] Save a final checkpoint after validation.
+
+## Server Separation and Baseline Comparison
+
+- [x] Superseded: keep the new server as the isolated primary environment for this independent copy.
+- [x] Superseded: treat the former server as read-only baseline for controlled feature comparisons.
+- [ ] Compare browser, Perchance AI, Rencana Cepat, and API health behavior using matching test scenarios.
+- [x] Document configuration differences without copying production data or secrets automatically.
+
+## Primary Server and Standby Backup
+
+- [x] Keep the former server as the active primary service and do not alter it during standby preparation.
+- [x] Prepare this independent copy as a code-and-schema standby recovery environment without automatic production-data synchronization.
+- [x] Audit source code, configuration, database schema, user-managed secrets, and backup artifacts needed for recovery.
+- [x] Document a controlled recovery and comparison procedure for the standby copy.
+- [x] Prevent a normal Metro exit from terminating the standby API server during local development.
+- [x] Run TypeScript, lint, API health, browser regression, and full regression validation on the standby copy.
+- [ ] Configure separate standby credentials before enabling administrator or internal API verification outside test mode.
+- [ ] Import a user-authorized export of primary-server data only if a full data-recovery replica is required.

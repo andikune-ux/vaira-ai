@@ -162,7 +162,7 @@ const config: ExpoConfig = {
     ],
   ],
   experiments: {
-    typedRoutes: true,
+    typedRoutes: false,
     reactCompiler: true,
   },
 };
