@@ -1,0 +1,59 @@
+{
+  "importedTables": [
+    {
+      "tableName": "manualAccounts",
+      "rowCount": 2
+    },
+    {
+      "tableName": "globalRoomSettings",
+      "rowCount": 1
+    },
+    {
+      "tableName": "globalRoomConsents",
+      "rowCount": 2
+    },
+    {
+      "tableName": "globalRoomUserSettings",
+      "rowCount": 1
+    },
+    {
+      "tableName": "globalRoomUserStatus",
+      "rowCount": 1
+    },
+    {
+      "tableName": "globalRoomPresence",
+      "rowCount": 3
+    },
+    {
+      "tableName": "globalRoomMessages",
+      "rowCount": 21
+    },
+    {
+      "tableName": "globalRoomModeration",
+      "rowCount": 2
+    },
+    {
+      "tableName": "globalRoomProfileComments",
+      "rowCount": 1
+    },
+    {
+      "tableName": "globalRoomProfileLoves",
+      "rowCount": 1
+    },
+    {
+      "tableName": "globalRoomReports",
+      "rowCount": 1
+    },
+    {
+      "tableName": "administratorTokenSettings",
+      "rowCount": 1
+    },
+    {
+      "tableName": "administratorAuditLogs",
+      "rowCount": 75
+    }
+  ],
+  "legacyServerTouched": false,
+  "sessionsImported": false,
+  "cloudObjectsImported": false
+}

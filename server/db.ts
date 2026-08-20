@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, isNotNull, isNull, lt, or } from "drizzle-orm";
+import { and, count, desc, eq, gt, isNotNull, isNull, lt, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { administratorAuditLogs, airaAccessTokens, airaxCloudBackups, financeSnapshots, globalRoomBlocks, globalRoomConsents, globalRoomMessages, globalRoomModeration, globalRoomPresence, globalRoomReports, globalRoomSettings, globalRoomUserSettings, globalRoomMessageReactions, globalRoomProfileComments, globalRoomProfileLoves, globalRoomUserStatus, globalTestSnapshots, administratorTokenSettings, InsertAdministratorAuditLog, InsertAiraXCloudBackup, InsertManualAccount, InsertUser, manualAccounts, manualAccountSessions, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -33,6 +33,25 @@ export async function getDb() {
     }
   }
   return _db;
+}
+
+export async function getServerDatabase2RecoveryStatus() {
+  const db = await getDb();
+  if (!db) throw new Error("SERVER DATABASE 2 belum tersedia.");
+  const [manualAccountsRows, auditLogsRows, roomMessagesRows, cloudMetadataRows, restrictedCloudMetadataRows] = await Promise.all([
+    db.select({ total: count() }).from(manualAccounts),
+    db.select({ total: count() }).from(administratorAuditLogs),
+    db.select({ total: count() }).from(globalRoomMessages),
+    db.select({ total: count() }).from(airaxCloudBackups),
+    db.select({ total: count() }).from(airaxCloudBackups).where(eq(airaxCloudBackups.status, "restricted")),
+  ]);
+  return {
+    manualAccountsCount: Number(manualAccountsRows[0]?.total ?? 0),
+    auditLogsCount: Number(auditLogsRows[0]?.total ?? 0),
+    roomMessagesCount: Number(roomMessagesRows[0]?.total ?? 0),
+    cloudMetadataCount: Number(cloudMetadataRows[0]?.total ?? 0),
+    restrictedCloudMetadataCount: Number(restrictedCloudMetadataRows[0]?.total ?? 0),
+  };
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {

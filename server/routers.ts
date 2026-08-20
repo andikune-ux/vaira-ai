@@ -86,6 +86,10 @@ function verifyAdministratorCredentials(username: string, password: string) {
   return constantTimeMatch(username, process.env.ADMIN_USERNAME) && constantTimeMatch(password, process.env.ADMIN_PASSWORD);
 }
 
+function verifyServerDatabase2Credentials(username: string, password: string) {
+  return constantTimeMatch(username, process.env.SERVER_DATABASE_2_USERNAME) && constantTimeMatch(password, process.env.SERVER_DATABASE_2_PASSWORD);
+}
+
 const ACCOUNT_IDENTIFIER = z.string().trim().min(3).max(320);
 const MANUAL_PASSWORD = z.string().min(8, "Kata sandi minimal 8 karakter.").max(180);
 const ACCOUNT_STATUS = z.enum(["active", "disabled", "blocked", "closing", "blacklisted"]);
@@ -629,6 +633,17 @@ export const appRouter = router({
     verify: publicProcedure
       .input(z.object({ username: z.string().trim().min(1).max(80), password: z.string().min(1).max(180) }))
       .mutation(({ input }) => ({ verified: verifyAdministratorCredentials(input.username, input.password) })),
+    database2: router({
+      verify: publicProcedure
+        .input(z.object({ username: z.string().trim().min(1).max(80), password: z.string().min(1).max(180) }))
+        .mutation(({ input }) => ({ verified: verifyServerDatabase2Credentials(input.username, input.password) })),
+      status: publicProcedure
+        .input(z.object({ username: z.string().trim().min(1).max(80), password: z.string().min(1).max(180) }))
+        .query(async ({ input }) => {
+          if (!verifyServerDatabase2Credentials(input.username, input.password)) throw new TRPCError({ code: "FORBIDDEN", message: "Verifikasi SERVER DATABASE 2 diperlukan." });
+          return db.getServerDatabase2RecoveryStatus();
+        }),
+    }),
     accessTokens: router({
       list: publicProcedure.input(z.object({ username: z.string().trim().min(1).max(80), password: z.string().min(1).max(180) })).query(async ({ input }) => {
         if (!verifyAdministratorCredentials(input.username, input.password)) throw new TRPCError({ code: "FORBIDDEN", message: "Verifikasi administrator diperlukan." });

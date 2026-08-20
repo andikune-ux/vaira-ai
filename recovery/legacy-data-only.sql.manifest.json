@@ -1,0 +1,26 @@
+{
+  "source": "sql",
+  "importedTables": [
+    "administratorAuditLogs",
+    "administratorTokenSettings",
+    "globalRoomConsents",
+    "globalRoomMessages",
+    "globalRoomModeration",
+    "globalRoomPresence",
+    "globalRoomProfileComments",
+    "globalRoomProfileLoves",
+    "globalRoomReports",
+    "globalRoomSettings",
+    "globalRoomUserSettings",
+    "globalRoomUserStatus",
+    "manualAccounts"
+  ],
+  "skippedTables": [
+    "__drizzle_migrations",
+    "airaAccessTokens",
+    "airaxCloudBackups",
+    "manualAccountSessions"
+  ],
+  "statementCount": 13,
+  "generatedAt": "2026-08-20T11:03:45.418Z"
+}

@@ -3144,7 +3144,7 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Prevent a normal Metro exit from terminating the standby API server during local development.
 - [x] Run TypeScript, lint, API health, browser regression, and full regression validation on the standby copy.
 - [x] Configure separate standby credentials before enabling administrator or internal API verification outside test mode.
-- [ ] Import a user-authorized export of primary-server data only if a full data-recovery replica is required.
+- [x] Import a user-authorized export of primary-server data only if a full data-recovery replica is required.
 
 ## Konfigurasi Kredensial Standby
 
@@ -3170,3 +3170,62 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Memvalidasi login manual dan pembukaan SERVER DATABASE administrator tanpa error parsing JSON.
 - [x] Mencegah APK standalone memakai URL preview sandbox yang sudah tidak sesuai sebagai API server.
 - [x] Menyimpan checkpoint koneksi login dan SERVER DATABASE yang telah tervalidasi.
+
+## Audit Pemulihan Cadangan dan Sinkronisasi Dua Server
+
+- [x] Memeriksa ketersediaan arsip cadangan pengguna, status database primary, dan database standby tanpa memindahkan data.
+- [x] Memetakan perbedaan skema, kredensial, endpoint, serta risiko konflik antara server utama dan server backup.
+- [x] Menyusun desain pemulihan dan auto-migrasi yang aman, dengan satu arah sumber kebenaran, audit, dan rollback.
+- [x] Meminta dan menerima persetujuan eksplisit sebelum impor data ke SERVER DATABASE 2 diaktifkan.
+
+## Pilihan C — Replika Database Infrastruktur
+
+- [x] Superseded: replikasi otomatis diganti oleh backup manual sesuai arahan pengguna.
+- [x] Superseded: prasyarat replikasi infrastruktur tidak diterapkan agar server lama tetap primary tanpa sinkronisasi otomatis.
+- [x] Superseded: koneksi replikasi tidak diaktifkan.
+
+## Backup Manual Primary ke SERVER DATABASE 2
+
+- [x] Menetapkan server lama sebagai primary dan menonaktifkan rencana replikasi otomatis.
+- [x] Menyimpan kredensial administrator yang diberikan melalui konfigurasi rahasia, bukan source code atau chat.
+- [x] Menambahkan tombol SERVER DATABASE 2 pada menu Administrator dan layar kontrol backup manual.
+- [ ] Menambahkan alur backup manual dari primary ke standby dengan pratinjau, konfirmasi, audit, dan tanpa penimpaan data otomatis.
+- [ ] Menambahkan pemulihan terkontrol melalui AiraXCloud atau berkas AiraXBackup yang tervalidasi.
+- [x] Memvalidasi akses kredensial saat login atau perpindahan akun tanpa menampilkan nilai rahasia.
+
+## Pemulihan dari Ekspor Database SERVER DATABASE Lama
+
+- [x] Menyiapkan SERVER DATABASE 2 untuk menerima ekspor database lengkap yang disetujui dari server lama.
+- [x] Memeriksa kompatibilitas skema, urutan impor, metadata AiraXCloud, dan inventaris berkas storage sebelum data ditulis.
+- [x] Meminta dan menerima ekspor database yang berwenang sebelum menjalankan impor pemulihan.
+
+## Kegagalan Unduhan Ekspor SERVER DATABASE Lama
+
+- [x] Mendiagnosis kegagalan unduhan/ekspor dari panel Database tanpa mengubah data server lama.
+- [x] Menyiapkan jalur ekspor pemulihan alternatif yang tidak bergantung pada unduhan panel yang gagal.
+
+## Validasi Berkas AiraXBackup yang Diunggah
+
+- [x] Memeriksa integritas, versi, struktur, dan cakupan data berkas AiraXBackup tanpa mengimpor.
+- [x] Memetakan data backup yang tervalidasi ke prosedur pemulihan SERVER DATABASE 2 yang tidak mengubah server lama.
+- [x] Menerima persetujuan untuk pemulihan dari sumber backup yang dipilih; data server dipulihkan dari ekspor SQL lengkap, bukan dari JSON satu pengguna.
+
+## Validasi Ekspor SQL SERVER DATABASE Lama
+
+- [x] Mengambil dan memeriksa ekspor SQL yang diberikan tanpa mengeksekusi perintah database.
+- [x] Memetakan tabel, jumlah record, dan dependensi storage terhadap skema SERVER DATABASE 2.
+- [x] Menyusun impor pemulihan yang tidak merusak dan meminta persetujuan akhir sebelum data ditulis.
+
+## Impor SQL Disetujui ke SERVER DATABASE 2
+
+- [x] Menerima persetujuan eksplisit untuk mengimpor data SQL ke SERVER DATABASE 2.
+- [x] Menyiapkan skrip impor data saja yang mengecualikan perubahan skema, sesi lama, dan aktivasi storage cloud.
+- [x] Menerapkan impor data terkontrol ke database standby.
+- [x] Memverifikasi cakupan record dan batasan pemulihan storage setelah impor.
+- [x] Memulihkan metadata AiraXCloud dengan status terbatas tanpa mengaktifkan arsip yang object storage-nya belum diverifikasi.
+- [x] Menyimpan checkpoint pemulihan SERVER DATABASE 2 yang telah tervalidasi.
+
+## Pemisahan SERVER DATABASE Lama dan SERVER DATABASE 2
+
+- [x] Menyimpan kredensial SERVER DATABASE lama dan SERVER DATABASE 2 sebagai dua konfigurasi terpisah.
+- [x] Memastikan implementasi hanya menambahkan SERVER DATABASE 2 tanpa menghapus atau mengubah perilaku SERVER DATABASE lama.

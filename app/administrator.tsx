@@ -58,7 +58,7 @@ function AccountAction({ label, icon, tone = "normal", onPress }: { label: strin
 }
 
 function AdminMenuButton({ icon, label, detail, onPress }: { icon: React.ComponentProps<typeof MaterialIcons>["name"]; label: string; detail: string; onPress: () => void }) {
-  return <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.adminMenuButton, pressed && styles.pressed]}><View style={styles.adminMenuIcon}><MaterialIcons name={icon} size={21} color="#58ff9a" /></View><Text style={styles.adminMenuLabel}>{label}</Text><Text style={styles.adminMenuDetail}>{detail}</Text></Pressable>;
+  return <View><Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.adminMenuButton, pressed && styles.pressed]}><View style={styles.adminMenuIcon}><MaterialIcons name={icon} size={21} color="#58ff9a" /></View><Text style={styles.adminMenuLabel}>{label}</Text><Text style={styles.adminMenuDetail}>{detail}</Text></Pressable>{label === "AiraXCloud" ? <Pressable accessibilityRole="button" onPress={() => router.push("/administrator-database2" as never)} style={({ pressed }) => [styles.adminMenuButton, pressed && styles.pressed]}><View style={styles.adminMenuIcon}><MaterialIcons name="storage" size={21} color="#58ff9a" /></View><Text style={styles.adminMenuLabel}>SERVER DATABASE 2</Text><Text style={styles.adminMenuDetail}>Backup manual & status pemulihan</Text></Pressable> : null}</View>;
 }
 
 export default function AdministratorScreen() {
