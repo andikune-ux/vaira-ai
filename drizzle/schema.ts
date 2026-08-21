@@ -1,4 +1,4 @@
-import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
+import { boolean, int, mediumtext, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -311,6 +311,23 @@ export const manualAccountSessions = mysqlTable("manualAccountSessions", {
 });
 
 export type ManualAccountSession = typeof manualAccountSessions.$inferSelect;
+
+/** Riwayat percakapan Aira tersimpan per akun manual dan mode, agar tersedia kembali setelah login. */
+export const airaConversationHistories = mysqlTable("airaConversationHistories", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull(),
+  conversationId: varchar("conversationId", { length: 96 }).notNull(),
+  mode: mysqlEnum("mode", ["aira", "hot_pro", "scientist"]).notNull(),
+  title: varchar("title", { length: 160 }).notNull(),
+  messagesJson: mediumtext("messagesJson").notNull(),
+  isPrivate: boolean("isPrivate").default(false).notNull(),
+  archivedAt: timestamp("archivedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  accountConversationUnique: uniqueIndex("aira_history_account_conversation_unique").on(table.accountId, table.conversationId),
+}));
+export type AiraConversationHistory = typeof airaConversationHistories.$inferSelect;
 
 /** Token akses layanan AI; hanya hash yang disimpan, token mentah dikembalikan sekali saat dibuat administrator. */
 export const airaAccessTokens = mysqlTable("airaAccessTokens", {

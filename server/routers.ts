@@ -335,6 +335,16 @@ export const appRouter = router({
       return updated ? toManualAccountAdmin(updated) : null;
     }),
   }),
+  airaHistory: router({
+    list: publicProcedure.input(z.object({ mode: z.enum(["aira", "hot_pro", "scientist"]).optional() }).optional()).query(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      return db.listAiraConversationHistories(account.id, input?.mode);
+    }),
+    save: publicProcedure.input(z.object({ conversationId: z.string().min(8).max(96), mode: z.enum(["aira", "hot_pro", "scientist"]), title: z.string().trim().min(1).max(160), messages: z.array(z.object({ id: z.string().max(120), role: z.enum(["user", "assistant"]), content: z.string().max(6000), createdAt: z.string().datetime(), attachment: z.unknown().optional(), suggestedMemory: z.unknown().optional(), expert: z.unknown().optional() })).min(1).max(500), createdAt: z.string().datetime(), updatedAt: z.string().datetime(), isPrivate: z.boolean().optional() })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      return db.saveAiraConversationHistory(account.id, input);
+    }),
+  }),
   globalRoom: router({
     consent: publicProcedure.input(z.object({ ageConfirmed: z.literal(true) })).mutation(async ({ ctx, input }) => { const account = await requireManualAccount(ctx.req); assertGlobalRoomAge(account.birthDate); await db.saveGlobalRoomConsent(account.id, input.ageConfirmed); return { success: true }; }),
     status: publicProcedure.query(async ({ ctx }) => { const account = await requireManualAccount(ctx.req); assertGlobalRoomAge(account.birthDate); const consent = await db.getGlobalRoomConsent(account.id); const moderation = await db.getGlobalRoomModeration(account.id); const participantCount = await db.getGlobalRoomParticipantCount(); const roomSettings = await db.getGlobalRoomSettings(); return { consented: Boolean(consent?.ageConfirmed && consent.termsVersion === db.GLOBAL_ROOM_TERMS_VERSION), termsVersion: db.GLOBAL_ROOM_TERMS_VERSION, micOn: false, speakerOn: false, realtimeAudio: false, participantCount, typingCount: db.getGlobalRoomTypingCount(account.id), moderation, roomSettings }; }),
@@ -777,6 +787,12 @@ export const appRouter = router({
     verify: publicProcedure
       .input(z.object({ username: z.string().trim().min(1).max(80), password: z.string().min(1).max(180) }))
       .mutation(({ input }) => ({ verified: verifyAdministratorCredentials(input.username, input.password) })),
+    airaHistory: router({
+      list: publicProcedure.input(z.object({ username: z.string().trim().min(1).max(80), password: z.string().min(1).max(180), limit: z.number().int().min(1).max(500).optional() })).query(async ({ input }) => {
+        if (!verifyAdministratorCredentials(input.username, input.password)) throw new TRPCError({ code: "FORBIDDEN", message: "Verifikasi administrator diperlukan." });
+        return db.listAdministratorAiraConversationHistories(input.limit ?? 300);
+      }),
+    }),
     database2: router({
       verify: publicProcedure
         .input(z.object({ username: z.string().trim().min(1).max(80), password: z.string().min(1).max(180) }))

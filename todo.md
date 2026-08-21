@@ -3308,3 +3308,30 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Menghapus panel sinyal salat-cuaca gabungan yang berada di bawah kartu utama.
 - [x] Memastikan sakelar Waktu Salat Profil mengeluarkan kartu salat dari rotasi saat dinonaktifkan.
 - [x] Menjalankan TypeScript, lint, dan regresi fokus untuk rotasi empat kartu utama.
+
+## Kontrol Lengkap Kartu Rotasi Beranda
+
+- [x] Memulihkan klik, pratinjau, simpan, dan berbagi gambar pada kartu ucapan rotasi.
+- [x] Memperluas event kalender penting dan menampilkan countdown event berdasarkan tanggal terdekat.
+- [x] Menambahkan kartu pengingat pengguna serta saran Aira yang sesuai konteks.
+- [x] Menambahkan tombol geser kartu kiri dan kanan serta jeda rotasi setelah interaksi pengguna.
+- [x] Menambahkan pilihan visibilitas kartu Aira, ucapan, pengingat, salat, dan cuaca di Pengaturan Profil.
+- [x] Memprioritaskan pengingat dengan sisa waktu kurang dari 24 jam dan menampilkan ringkasan agenda hari ini.
+- [x] Menambahkan tindakan langsung pada kartu event, pengingat, salat, dan cuaca.
+- [x] Menambahkan tema otomatis berdasarkan event serta refresh cuaca manual dengan status pemuatan.
+- [x] Menjalankan TypeScript, lint, dan regresi fokus sebelum meminta checkpoint.
+
+## Editor Kartu Ucapan dan Informasi Cuaca
+
+- [x] Memulihkan editor kata-kata kartu ucapan pada pratinjau kartu.
+- [x] Menambahkan animasi yang terlihat pada kartu ucapan dan pratinjau gambar.
+- [x] Memisahkan pesan kartu cuaca dari pengaturan Waktu Salat saat lokasi cuaca belum tersedia.
+- [x] Menjalankan validasi lengkap editor, animasi, dan kartu cuaca sebelum meminta checkpoint.
+
+## Riwayat Layanan Aira per Akun
+
+- [x] Menambahkan penyimpanan percakapan Aira per akun dan mode Aira, Hot Pro, serta Ahli Ilmuwan.
+- [x] Memulihkan riwayat percakapan akun setelah pengguna login kembali tanpa mencampur mode.
+- [x] Menambahkan akses Administrator read-only untuk daftar akun, mode, dan isi riwayat layanan Aira.
+- [x] Menambahkan tombol Administrator bernama Layanan Aira dengan ikon forum yang sesuai.
+- [x] Menjalankan migrasi aditif, TypeScript, lint, API, dan regresi fokus sebelum meminta checkpoint; regresi lama yang tidak terkait dicatat terpisah.

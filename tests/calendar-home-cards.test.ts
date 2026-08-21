@@ -65,7 +65,7 @@ describe("Kalender dan kartu dinamis Beranda", () => {
     expect(profile).toContain("Waktu Salat di Beranda");
     expect(profile).toContain("prayerTimesVisible");
     expect(home).toContain('action.id !== "prayer"');
-    expect(signalCard).toContain("prayerVisible");
+    expect(signalCard).toContain("showPrayer");
   });
 
   it("menyediakan hitung mundur event dan tawaran kartu", async () => {

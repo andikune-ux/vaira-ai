@@ -1,6 +1,6 @@
 import { and, count, desc, eq, gt, isNotNull, isNull, lt, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { administratorAuditLogs, airaAccessTokens, airaxCloudBackups, financeSnapshots, globalRoomBlocks, globalRoomConsents, globalRoomMessages, globalRoomModeration, globalRoomPresence, globalRoomReports, globalRoomSettings, globalRoomUserSettings, globalRoomMessageReactions, globalRoomProfileComments, globalRoomProfileLoves, globalRoomUserStatus, globalTestSnapshots, administratorTokenSettings, InsertAdministratorAuditLog, InsertAiraXCloudBackup, InsertManualAccount, InsertUser, manualAccounts, manualAccountSessions, users } from "../drizzle/schema";
+import { administratorAuditLogs, airaAccessTokens, airaConversationHistories, airaxCloudBackups, financeSnapshots, globalRoomBlocks, globalRoomConsents, globalRoomMessages, globalRoomModeration, globalRoomPresence, globalRoomReports, globalRoomSettings, globalRoomUserSettings, globalRoomMessageReactions, globalRoomProfileComments, globalRoomProfileLoves, globalRoomUserStatus, globalTestSnapshots, administratorTokenSettings, InsertAdministratorAuditLog, InsertAiraXCloudBackup, InsertManualAccount, InsertUser, manualAccounts, manualAccountSessions, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { storageGetSignedUrl } from "./storage";
 
@@ -244,6 +244,30 @@ export async function createManualAccountSession(accountId: number, tokenHash: s
   const db = await getDb();
   if (!db) throw new Error("Database sesi belum tersedia.");
   await db.insert(manualAccountSessions).values({ accountId, tokenHash, expiresAt });
+}
+
+export type AiraHistoryPayload = { conversationId: string; mode: "aira" | "hot_pro" | "scientist"; title: string; messages: unknown[]; createdAt: string; updatedAt: string; isPrivate?: boolean };
+const parseAiraMessages = (value: string) => { try { const parsed = JSON.parse(value); return Array.isArray(parsed) ? parsed : []; } catch { return []; } };
+export async function saveAiraConversationHistory(accountId: number, payload: AiraHistoryPayload) {
+  const database = await getDb();
+  if (!database) throw new Error("Database riwayat Aira belum tersedia.");
+  const messagesJson = JSON.stringify(payload.messages);
+  if (messagesJson.length > 8_000_000) throw new Error("Riwayat percakapan terlalu besar untuk satu sesi. Mulai percakapan baru agar sinkronisasi tetap aman.");
+  const values = { accountId, conversationId: payload.conversationId, mode: payload.mode, title: payload.title.slice(0, 160), messagesJson, isPrivate: Boolean(payload.isPrivate), createdAt: new Date(payload.createdAt), updatedAt: new Date(payload.updatedAt) };
+  await database.insert(airaConversationHistories).values(values).onDuplicateKeyUpdate({ set: { mode: values.mode, title: values.title, messagesJson: values.messagesJson, isPrivate: values.isPrivate, updatedAt: values.updatedAt } });
+  return { success: true };
+}
+export async function listAiraConversationHistories(accountId: number, mode?: AiraHistoryPayload["mode"]) {
+  const database = await getDb();
+  if (!database) return [];
+  const rows = await database.select().from(airaConversationHistories).where(mode ? and(eq(airaConversationHistories.accountId, accountId), eq(airaConversationHistories.mode, mode), isNull(airaConversationHistories.archivedAt)) : and(eq(airaConversationHistories.accountId, accountId), isNull(airaConversationHistories.archivedAt))).orderBy(desc(airaConversationHistories.updatedAt)).limit(200);
+  return rows.map((row) => ({ conversationId: row.conversationId, mode: row.mode, title: row.title, messages: parseAiraMessages(row.messagesJson), createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(), isPrivate: row.isPrivate }));
+}
+export async function listAdministratorAiraConversationHistories(limit = 300) {
+  const database = await getDb();
+  if (!database) return [];
+  const rows = await database.select({ history: airaConversationHistories, account: manualAccounts }).from(airaConversationHistories).innerJoin(manualAccounts, eq(airaConversationHistories.accountId, manualAccounts.id)).where(isNull(airaConversationHistories.archivedAt)).orderBy(desc(airaConversationHistories.updatedAt)).limit(Math.max(1, Math.min(500, limit)));
+  return rows.map(({ history, account }) => ({ id: history.id, accountId: account.id, publicId: account.publicId, fullName: account.fullName, username: account.username, conversationId: history.conversationId, mode: history.mode, title: history.title, messages: parseAiraMessages(history.messagesJson), isPrivate: history.isPrivate, createdAt: history.createdAt.toISOString(), updatedAt: history.updatedAt.toISOString() }));
 }
 
 export async function createAiraAccessToken(values: { tokenHash: string; criterion: "pro" | "premium" | "admin"; durationDays: number | null; expiresAt: Date | null; createdBy: string }) {

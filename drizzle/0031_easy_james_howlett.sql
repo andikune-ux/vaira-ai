@@ -1,0 +1,1 @@
+ALTER TABLE `airaConversationHistories` MODIFY COLUMN `messagesJson` mediumtext NOT NULL;

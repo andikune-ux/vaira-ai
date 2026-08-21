@@ -211,6 +211,20 @@
       "when": 1787289995062,
       "tag": "0029_cute_katie_power",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "5",
+      "when": 1787308591651,
+      "tag": "0030_ancient_junta",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "5",
+      "when": 1787309033348,
+      "tag": "0031_easy_james_howlett",
+      "breakpoints": true
     }
   ]
 }
