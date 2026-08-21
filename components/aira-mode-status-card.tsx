@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { captureRef } from "react-native-view-shot";
 
 import { useColors } from "@/hooks/use-colors";
+import { ChickenIcon } from "@/components/chicken-icon";
 import { getAiraModePresentation } from "@/lib/aira-mode-presentation";
 import {
   dayLabel,
@@ -580,6 +581,17 @@ export function AiraModeStatusCard() {
             </View>
           </Animated.View>
         </GestureDetector>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Buka layanan Aira"
+          onPress={() => router.push("/chat" as never)}
+          style={styles.smartIconButton}
+        >
+          <View style={styles.smartIconRing}>
+            <ChickenIcon size={38} />
+            <View style={styles.smartIconStatus} />
+          </View>
+        </Pressable>
       </View>
       <Modal
         visible={greetingPreviewVisible}
@@ -693,7 +705,39 @@ export function AiraModeStatusCard() {
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: 12, position: "relative", zIndex: 3 },
+  wrap: { marginBottom: 18, marginTop: 12, position: "relative", zIndex: 3 },
+  smartIconButton: {
+    bottom: -20,
+    left: 30,
+    position: "absolute",
+    zIndex: 8,
+  },
+  smartIconRing: {
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderColor: "#36B7FF",
+    borderRadius: 31,
+    borderWidth: 2,
+    elevation: 5,
+    height: 62,
+    justifyContent: "center",
+    shadowColor: "#0A1F36",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    width: 62,
+  },
+  smartIconStatus: {
+    backgroundColor: "#23C79A",
+    borderColor: "#FFFFFF",
+    borderRadius: 7,
+    borderWidth: 2,
+    bottom: 3,
+    height: 14,
+    position: "absolute",
+    right: 1,
+    width: 14,
+  },
   card: {
     borderRadius: 18,
     borderWidth: 2,

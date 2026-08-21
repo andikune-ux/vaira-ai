@@ -3395,3 +3395,6 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Tambahkan halaman fallback web yang mengarahkan penerima tanpa aplikasi ke unduhan resmi.
 - [x] Proses token/link grup setelah aplikasi terbuka atau selesai dipasang.
 - [x] Uji keamanan rotasi ID/link serta pencegahan akses anggota yang sudah di-kick.
+- [x] Audit build Publish yang berhenti di 1% melalui log/status yang tersedia.
+- [x] Kembalikan ikon pintar bulat di bawah kiri kartu ucapan tanpa mengubah pengaturan kartu baru.
+- [x] Validasi layout ikon, TypeScript, lint, dan regresi build sebelum checkpoint.
