@@ -8,6 +8,7 @@ const auth = readFileSync(resolve(process.cwd(), "server/manual-auth.ts"), "utf8
 const login = readFileSync(resolve(process.cwd(), "app/login.tsx"), "utf8");
 const profile = readFileSync(resolve(process.cwd(), "app/profile-settings.tsx"), "utf8");
 const airaSettings = readFileSync(resolve(process.cwd(), "app/aira-setting.tsx"), "utf8");
+const homePreferences = readFileSync(resolve(process.cwd(), "app/home-preferences.tsx"), "utf8");
 
  describe("profil server dan pemisahan referensi Aira", () => {
   it("menyimpan avatar server secara aditif dan mengembalikannya pada akun publik", () => {
@@ -33,8 +34,10 @@ const airaSettings = readFileSync(resolve(process.cwd(), "app/aira-setting.tsx")
   });
 
   it("menempatkan Waktu Salat dan kartu Beranda pada Referensi Aira", () => {
-    expect(airaSettings).toContain("Referensi Aira · Beranda");
-    expect(airaSettings).toContain("Waktu Salat di Beranda");
-    expect(airaSettings).toContain("Kartu ucapan event");
+    expect(airaSettings).toContain("Pengaturan Referensi Aira");
+    expect(airaSettings).not.toContain("Referensi Aira · Beranda");
+    expect(homePreferences).toContain("Kartu Beranda & Waktu Salat");
+    expect(homePreferences).toContain("Waktu Salat di Beranda");
+    expect(homePreferences).toContain("Kartu ucapan event");
   });
 });

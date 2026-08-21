@@ -62,11 +62,11 @@ describe("Kalender dan kartu dinamis Beranda", () => {
   });
 
   it("menyediakan sakelar Profil untuk menyembunyikan Waktu Salat dari Aksi Cepat dan kartu Aira", async () => {
-    const airaSettings = await readFile("app/aira-setting.tsx", "utf8");
+    const homePreferences = await readFile("app/home-preferences.tsx", "utf8");
     const home = await readFile("app/(tabs)/index.tsx", "utf8");
     const signalCard = await readFile("components/aira-mode-status-card.tsx", "utf8");
-    expect(airaSettings).toContain("Waktu Salat di Beranda");
-    expect(airaSettings).toContain("prayerTimesVisible");
+    expect(homePreferences).toContain("Waktu Salat di Beranda");
+    expect(homePreferences).toContain("prayerTimesVisible");
     expect(home).toContain('action.id !== "prayer"');
     expect(signalCard).toContain("showPrayer");
   });

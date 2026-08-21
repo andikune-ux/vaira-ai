@@ -1,0 +1,28 @@
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { router } from "expo-router";
+import { useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+
+import { AiraCard } from "@/components/aira-ui";
+import { ScreenContainer } from "@/components/screen-container";
+import { useColors } from "@/hooks/use-colors";
+import { useFinance } from "@/lib/finance/finance-context";
+
+type RotatorKey = "showAiraHeroCard" | "showGreetingHeroCard" | "showReminderHeroCard" | "showPrayerHeroCard" | "showWeatherHeroCard";
+
+export default function HomePreferencesScreen() {
+  const colors = useColors();
+  const { state, updateProfile } = useFinance();
+  const preferences = state.profile.uiPreferences;
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const updatePreference = async (key: string, value: boolean) => {
+    setSavingKey(key);
+    try { await updateProfile({ uiPreferences: { ...preferences, [key]: value } }); } finally { setSavingKey(null); }
+  };
+  const visible = (key: RotatorKey) => preferences[key] ?? true;
+  return <ScreenContainer className="px-5" edges={["top", "bottom", "left", "right"]}><ScrollView contentContainerStyle={styles.content}><View style={styles.header}><Pressable accessibilityLabel="Kembali" onPress={() => router.back()} style={({ pressed }) => [styles.back, { backgroundColor: colors.surface, borderColor: colors.border }, pressed && styles.pressed]}><MaterialIcons name="arrow-back" size={21} color={colors.foreground} /></Pressable><View style={styles.headerCopy}><Text style={[styles.title, { color: colors.foreground }]}>Kartu Beranda & Waktu Salat</Text><Text style={[styles.subtitle, { color: colors.muted }]}>Atur tampilan informasi utama di Beranda.</Text></View></View><AiraCard style={styles.card}><View style={styles.identity}><View style={[styles.identityIcon, { backgroundColor: `${colors.primary}12` }]}><MaterialIcons name="dashboard-customize" size={26} color={colors.primary} /></View><View style={styles.headerCopy}><Text style={[styles.cardTitle, { color: colors.foreground }]}>Preferensi Beranda</Text><Text style={[styles.helper, { color: colors.muted }]}>Pengaturan ini khusus untuk kartu rotasi Beranda dan akses Waktu Salat.</Text></View></View><PreferenceRow label="Waktu Salat di Beranda" detail="Tampilkan tombol aksi cepat dan kartu Waktu Salat." value={preferences.prayerTimesVisible ?? true} disabled={savingKey === "prayerTimesVisible"} onChange={(value) => { void updatePreference("prayerTimesVisible", value); }} colors={colors} /><Text style={[styles.sectionLabel, { color: colors.foreground }]}>Kartu rotasi Beranda</Text><Text style={[styles.helper, { color: colors.muted }]}>Pilih informasi yang dapat bergilir pada kartu utama Beranda.</Text><PreferenceRow label="Aira siap membantu" value={visible("showAiraHeroCard")} disabled={savingKey === "showAiraHeroCard"} onChange={(value) => { void updatePreference("showAiraHeroCard", value); }} colors={colors} /><PreferenceRow label="Kartu ucapan event" value={visible("showGreetingHeroCard")} disabled={savingKey === "showGreetingHeroCard"} onChange={(value) => { void updatePreference("showGreetingHeroCard", value); }} colors={colors} /><PreferenceRow label="Pengingat kalender" value={visible("showReminderHeroCard")} disabled={savingKey === "showReminderHeroCard"} onChange={(value) => { void updatePreference("showReminderHeroCard", value); }} colors={colors} /><PreferenceRow label="Waktu Salat" value={visible("showPrayerHeroCard")} disabled={savingKey === "showPrayerHeroCard"} onChange={(value) => { void updatePreference("showPrayerHeroCard", value); }} colors={colors} /><PreferenceRow label="Cuaca hari ini" value={visible("showWeatherHeroCard")} disabled={savingKey === "showWeatherHeroCard"} onChange={(value) => { void updatePreference("showWeatherHeroCard", value); }} colors={colors} /></AiraCard></ScrollView></ScreenContainer>;
+}
+
+function PreferenceRow({ label, detail, value, disabled, onChange, colors }: { label: string; detail?: string; value: boolean; disabled: boolean; onChange: (value: boolean) => void; colors: ReturnType<typeof useColors> }) { return <View style={styles.preferenceRow}><View style={styles.headerCopy}><Text style={[styles.itemTitle, { color: colors.foreground }]}>{label}</Text>{detail ? <Text style={[styles.itemDetail, { color: colors.muted }]}>{detail}</Text> : null}</View><Switch disabled={disabled} value={value} onValueChange={onChange} trackColor={{ false: colors.border, true: `${colors.primary}80` }} thumbColor={value ? colors.primary : "#FFFFFF"} /></View>; }
+
+const styles = StyleSheet.create({ content: { gap: 12, paddingBottom: 30 }, header: { alignItems: "center", flexDirection: "row", gap: 12 }, headerCopy: { flex: 1, minWidth: 0 }, back: { alignItems: "center", borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, height: 42, justifyContent: "center", width: 42 }, title: { fontSize: 20, fontWeight: "900" }, subtitle: { fontSize: 12, marginTop: 2 }, card: { gap: 10 }, identity: { alignItems: "center", flexDirection: "row", gap: 11 }, identityIcon: { alignItems: "center", borderRadius: 17, height: 52, justifyContent: "center", width: 52 }, cardTitle: { fontSize: 16, fontWeight: "900" }, helper: { fontSize: 11, lineHeight: 16 }, sectionLabel: { fontSize: 14, fontWeight: "900", marginTop: 8 }, preferenceRow: { alignItems: "center", borderTopColor: "#D7DEE8", borderTopWidth: StyleSheet.hairlineWidth, flexDirection: "row", gap: 10, justifyContent: "space-between", minHeight: 52 }, itemTitle: { fontSize: 13, fontWeight: "800" }, itemDetail: { fontSize: 11, lineHeight: 16, marginTop: 2 }, pressed: { opacity: 0.7 } });

@@ -3434,3 +3434,14 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Audit ulang agar Foto Profil, Bio, dan Foto Unggulan hanya tampil di menu Profil.
 - [x] Pastikan Referensi Aira menampilkan Waktu Salat dan seluruh pengaturan Kartu Beranda.
 - [x] Validasi tidak ada preferensi yang hilang atau berpindah dari state tersimpan.
+
+- [ ] Hilangkan baris Profil dari Pengaturan Umum karena profil sudah memiliki menu sendiri.
+- [ ] Buat tombol/menu khusus untuk Waktu Salat dan Kartu Beranda di luar Referensi Aira.
+- [ ] Keluarkan kontrol Waktu Salat dan Kartu Beranda dari halaman Referensi Aira tanpa mengubah preferensi tersimpan.
+- [ ] Validasi rute baru, tampilan menu, dan pemulihan preferensi.
+
+- [x] Hapus baris Profil dari Pengaturan Umum.
+- [x] Pastikan tombol baru Kartu Beranda & Waktu Salat tersedia dan membuka halaman khusus.
+- [x] Hapus seluruh kontrol Waktu Salat dan Kartu Beranda dari Referensi Aira.
+- [x] Ubah deskripsi Referensi Aira agar hanya menyebut instruction dan knowledge.
+- [x] Validasi struktur akhir dan rute menu tanpa mengubah nilai preferensi tersimpan.
