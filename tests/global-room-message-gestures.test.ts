@@ -23,8 +23,10 @@ describe("Room Global message gestures", () => {
     expect(source).toContain('accessibilityLabel="Pilih teks pesan"');
     expect(source).toContain('accessibilityLabel="Laporkan pesan"');
     expect(source).toContain("KeyboardAvoidingView");
-    expect(source).toContain("MAX_ROOM_IMAGE_BYTES");
-    expect(source).toContain("MAX_ROOM_VOICE_BYTES");
     expect(source).toContain("isRoomSending");
+    expect(source).toContain("createPhotoUpload");
+    expect(source).toContain("FileSystem.createUploadTask(ticket.uploadUrl");
+    expect(source).not.toContain("Foto terlalu besar");
+    expect(source).not.toContain("Voice note terlalu besar");
   });
 });

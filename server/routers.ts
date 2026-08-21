@@ -28,12 +28,50 @@ const parseModelJson = (content: unknown): Record<string, unknown> => {
 const MEDIA_DATA_URL = /^data:([^;]+);base64,([A-Za-z0-9+/=]+)$/;
 const MAX_AIRA_MEDIA_BYTES = 5_500_000;
 const AIRA_MODEL_TIMEOUT_MS = 12_000;
+const GEMINI_AIRA_MODEL = "gemini-3.6-flash";
+const GEMINI_AIRA_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_AIRA_MODEL}:generateContent`;
+const GEMINI_AIRA_TIMEOUT_MS = 28_000;
 
 function withServiceTimeout<T>(promise: Promise<T>, milliseconds: number, message: string) {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(message)), milliseconds);
     promise.then((value) => { clearTimeout(timer); resolve(value); }, (error) => { clearTimeout(timer); reject(error); });
   });
+}
+
+function getAiraTextContent(content: unknown) {
+  if (typeof content === "string") return content.trim();
+  if (!Array.isArray(content)) return "";
+  return content
+    .filter((part): part is { type?: string; text?: string } => Boolean(part && typeof part === "object" && typeof (part as { text?: unknown }).text === "string"))
+    .map((part) => part.text!.trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
+async function invokeGeminiAira(systemPrompt: string, messages: Array<{ role: string; content: unknown }>) {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) throw new Error("Gemini API key belum dikonfigurasi pada backend.");
+  const contents = messages
+    .map((message) => ({ role: message.role === "assistant" ? "model" : "user", parts: [{ text: getAiraTextContent(message.content) }] }))
+    .filter((message) => message.parts[0].text.length > 0);
+  if (!contents.some((message) => message.role === "user")) throw new Error("Pesan pengguna untuk Gemini tidak tersedia.");
+  const response = await fetch(GEMINI_AIRA_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents,
+      generationConfig: { responseMimeType: "application/json", maxOutputTokens: 4096 },
+    }),
+  });
+  const payload = await response.json().catch(() => null) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; error?: { message?: string } } | null;
+  if (!response.ok) throw new Error(`Gemini ${response.status}: ${payload?.error?.message ?? "respons provider tidak valid."}`);
+  const text = payload?.candidates?.flatMap((candidate) => candidate.content?.parts ?? []).map((part) => part.text ?? "").join("\n").trim();
+  if (!text) throw new Error("Gemini tidak mengembalikan isi respons.");
+  const parsed = parseModelJson(text);
+  if (!String(parsed.reply || "").trim()) throw new Error("Gemini mengembalikan respons tanpa reply.");
+  return parsed;
 }
 
 function getLastUserText(messages: Array<{ role: string; content: unknown }>) {
@@ -301,6 +339,8 @@ export const appRouter = router({
     userStatus: publicProcedure.query(async ({ ctx }) => { const account = await requireManualAccount(ctx.req); return db.getGlobalRoomUserStatus(account.id); }),
     saveUserStatus: publicProcedure.input(z.object({ status: z.string().trim().max(80) })).mutation(async ({ ctx, input }) => { const account = await requireManualAccount(ctx.req); const moderation = await db.getGlobalRoomModeration(account.id); if (!moderation.active) throw new TRPCError({ code: "FORBIDDEN", message: "Masuk ke Room Global terlebih dahulu." }); return db.saveGlobalRoomUserStatus(account.id, input.status); }),
     mentionSummary: publicProcedure.input(z.object({ since: z.string().datetime().nullable().optional() })).query(async ({ ctx, input }) => { const account = await requireManualAccount(ctx.req); const messages = await db.listGlobalRoomMessages(account.id, 100); const since = input.since ? new Date(input.since) : new Date(0); const targets = [account.username, account.fullName].filter(Boolean).map((value) => String(value).trim().toLowerCase()).filter(Boolean); const mentions = messages.filter((item) => new Date(item.createdAt).getTime() > since.getTime() && targets.some((target) => item.content.toLowerCase().includes(`@${target}`)) && item.accountId !== account.id); return { count: mentions.length, latestAt: mentions.length ? new Date(mentions[mentions.length - 1].createdAt).toISOString() : null }; }),
+    createPhotoUpload: publicProcedure.input(z.object({ fileName: z.string().trim().min(1).max(180), mimeType: z.string().trim().regex(/^image\/[a-z0-9.+-]+$/i, "Format foto tidak valid.") })).mutation(async ({ ctx, input }) => { const account = await requireManualAccount(ctx.req); const moderation = await db.getGlobalRoomModeration(account.id); if (!moderation.active) throw new TRPCError({ code: "FORBIDDEN", message: "Masuk ke Room Global terlebih dahulu." }); const extension = input.mimeType.includes("png") ? "png" : input.mimeType.includes("webp") ? "webp" : "jpg"; const ticket = await storageCreateUploadUrl(`global-room/posts/${account.id}-${Date.now()}-${randomBytes(4).toString("hex")}.${extension}`); return { uploadUrl: ticket.uploadUrl, readUrl: await storageGetSignedUrl(ticket.key), mimeType: input.mimeType }; }),
+    createVoiceUpload: publicProcedure.input(z.object({ fileName: z.string().trim().min(1).max(180), mimeType: z.string().trim().regex(/^audio\/[a-z0-9.+-]+$/i, "Format audio tidak valid.") })).mutation(async ({ ctx, input }) => { const account = await requireManualAccount(ctx.req); const moderation = await db.getGlobalRoomModeration(account.id); if (!moderation.active) throw new TRPCError({ code: "FORBIDDEN", message: "Masuk ke Room Global terlebih dahulu." }); const extension = input.mimeType.includes("webm") ? "webm" : input.mimeType.includes("wav") ? "wav" : "m4a"; const ticket = await storageCreateUploadUrl(`global-room/voice/${account.id}-${Date.now()}-${randomBytes(4).toString("hex")}.${extension}`); return { uploadUrl: ticket.uploadUrl, readUrl: await storageGetSignedUrl(ticket.key), mimeType: input.mimeType }; }),
     uploadPhoto: publicProcedure.input(z.object({ file: z.string().max(10_500_000), caption: z.string().trim().max(500).optional() })).mutation(async ({ ctx, input }) => { const account = await requireManualAccount(ctx.req); const moderation = await db.getGlobalRoomModeration(account.id); if (!moderation.active) throw new TRPCError({ code: "FORBIDDEN", message: "Masuk ke Room Global terlebih dahulu." }); const parsed = input.file.match(MEDIA_DATA_URL); if (!parsed || !parsed[1].startsWith("image/")) throw new TRPCError({ code: "BAD_REQUEST", message: "Foto posting tidak valid." }); const raw = Buffer.from(parsed[2], "base64"); if (raw.byteLength > 7_500_000) throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "Foto posting maksimal 7,5 MB." }); const extension = parsed[1].includes("png") ? "png" : "jpg"; const stored = await storagePut(`global-room/posts/${account.id}-${Date.now()}.${extension}`, raw, parsed[1]); return { url: await storageGetSignedUrl(stored.key), caption: input.caption?.trim() ?? "" }; }),
     userSettings: publicProcedure.query(async ({ ctx }) => { const account = await requireManualAccount(ctx.req); return db.getGlobalRoomUserSettings(account.id); }),
     saveUserSettings: publicProcedure.input(z.object({ bubbleScale: z.number().int().min(75).max(120), bubbleGap: z.number().int().min(4).max(18), audioLabelsVisible: z.boolean() })).mutation(async ({ ctx, input }) => { const account = await requireManualAccount(ctx.req); await db.updateGlobalRoomUserSettings(account.id, input); return { success: true }; }),
@@ -517,17 +557,24 @@ export const appRouter = router({
 }`;
 
         try {
-          const catalog = await listLLMModels();
-          const modelCandidates = [...new Set([
-            catalog.data.find((item) => item.id === "gpt-5-mini")?.id,
-            catalog.data.find((item) => item.id.startsWith("gemini-3-flash"))?.id,
-            catalog.data.find((item) => item.id.startsWith("claude-haiku"))?.id,
-            catalog.data[0]?.id,
-          ].filter((model): model is string => Boolean(model)))];
           const messages = await Promise.all(input.messages.map(async (message) => ({ ...message, content: await normalizeAiraContent(message.content) as typeof message.content })));
           let parsed: Record<string, unknown> | null = null;
           let lastModelError: unknown;
-          for (const model of modelCandidates) {
+          try {
+            parsed = await withServiceTimeout(invokeGeminiAira(systemPrompt, messages), GEMINI_AIRA_TIMEOUT_MS, "Gemini Aira melewati batas waktu respons.");
+          } catch (geminiError) {
+            lastModelError = geminiError;
+            console.warn("[Aira Chat] Gemini utama gagal; mencoba Forge", geminiError instanceof Error ? geminiError.message : String(geminiError));
+          }
+          if (!parsed) {
+            const catalog = await listLLMModels();
+            const modelCandidates = [...new Set([
+              catalog.data.find((item) => item.id === "gpt-5-mini")?.id,
+              catalog.data.find((item) => item.id.startsWith("gemini-3-flash"))?.id,
+              catalog.data.find((item) => item.id.startsWith("claude-haiku"))?.id,
+              catalog.data[0]?.id,
+            ].filter((model): model is string => Boolean(model)))];
+            for (const model of modelCandidates) {
             try {
               const response = await withServiceTimeout(invokeLLM({
                 model,
@@ -548,6 +595,7 @@ export const appRouter = router({
               // Jangan hentikan loop di sini. invokeLLM dapat memiliki provider
               // berbeda (self-host, backup, Forge), sehingga kandidat berikutnya
               // tetap harus dicoba walaupun kandidat ini terkena quota.
+            }
             }
           }
           if (!parsed) throw lastModelError instanceof Error ? lastModelError : new Error("Tidak ada model Aira yang mengembalikan respons valid.");

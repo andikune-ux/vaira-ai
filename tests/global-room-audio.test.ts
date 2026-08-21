@@ -53,7 +53,8 @@ describe("Room Global audio interaction", () => {
     expect(source).toContain("if (!uri) throw new Error");
     expect(source).toContain("recordingDuration");
     expect(source).toContain("Voice note audio=");
-    expect(source).toContain("uploadVoice");
+    expect(source).toContain("createVoiceUpload");
+    expect(source).toContain("TRANSCRIBE_INLINE_MAX_BYTES");
     expect(source).toContain("Laporkan pesan?");
   });
 });

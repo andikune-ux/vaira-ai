@@ -3249,3 +3249,13 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Menjaga box penulisan pesan tetap berada di atas keyboard pada Room Global dan chat Aira.
 - [x] Mendiagnosis serta memperbaiki layanan Aira yang terkadang tidak merespons pesan.
 - [ ] Uji native Android untuk sensor kompas, GPS 60 detik, swipe balas, pengiriman media, keyboard, dan respons Aira pada APK terbaru.
+- [x] Menghapus batas ukuran media di Room Global tanpa menghapus pengamanan terhadap pengiriman ganda dan kegagalan file.
+- [x] Menahan pembuatan checkpoint setelah perubahan sampai pengguna memberi persetujuan eksplisit.
+- [x] Memverifikasi dan memprioritaskan provider Aira gratis yang tersedia secara sah tanpa API key pengguna.
+- [x] Menyimpan Gemini API key sebagai secret backend dan memverifikasi health check provider.
+- [x] Menghubungkan dan memvalidasi Gemini API sebagai provider utama Aira.
+- [x] Menghubungkan Forge bawaan sebagai fallback otomatis setelah Gemini mencapai kuota atau gagal.
+- [ ] Memeriksa kembali kapasitas runtime Forge saat layanan bawaan tidak lagi mengembalikan status usage exhausted.
+- [x] Menguji alur end-to-end Aira melalui endpoint backend aktif, termasuk Gemini utama dan respons fallback.
+- [x] Menguji respons ringan Forge saat ini untuk menentukan apakah fallback dapat digunakan langsung.
+- [x] Merapikan tombol berjudul panjang: hapus teks sekunder, gunakan label kecil, dan sejajarkan ikon serta judul secara horizontal.

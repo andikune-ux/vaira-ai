@@ -21,8 +21,7 @@ import { KeyboardAvoidingView } from "@/components/chat-keyboard-avoiding";
 
 const ROOM_COLORS = { background: "#050A15", surface: "#0B1425", foreground: "#F1F6FF", muted: "#8EA5C7", border: "#1C2B44", primary: "#36B7FF", success: "#46E0AF", warning: "#F5B83D", error: "#FF7D91" };
 const NAME_COLORS = ["#8DEBFF", "#FFAEEB", "#A7F3D0", "#FFD38A", "#C5B7FF", "#B9C8FF"];
-const MAX_ROOM_IMAGE_BYTES = 6_000_000;
-const MAX_ROOM_VOICE_BYTES = 6_000_000;
+const TRANSCRIBE_INLINE_MAX_BYTES = 5_500_000;
 
 function messageDayKey(value: string | Date) { const date = new Date(value); return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`; }
 function messageDateLabel(value: string | Date, previous?: string | Date) { const date = new Date(value); const previousDate = previous ? new Date(previous) : null; const daysApart = previousDate ? Math.floor(Math.abs(date.getTime() - previousDate.getTime()) / 86_400_000) : 8; const weekday = new Intl.DateTimeFormat("id-ID", { weekday: "long" }).format(date); const datePart = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", ...(daysApart >= 7 ? { year: "numeric" } : {}) }).format(date); return `${weekday}, ${datePart}`; }
@@ -75,8 +74,9 @@ export default function GlobalRoomChatScreen() {
   const adminDeleteMessage = trpc.globalRoom.adminDeleteMessage.useMutation({ onSuccess: () => { showToast("Pesan dihapus admin.", "success"); void messages.refetch(); } });
   const adminPinMessage = trpc.globalRoom.adminPinMessage.useMutation({ onSuccess: (_data, variables) => { showToast(variables.pinned ? "Pesan disematkan di atas room." : "Sematan pesan dilepas.", "success"); void messages.refetch(); } });
   const transcribe = trpc.voice.transcribe.useMutation();
-  const uploadVoice = trpc.voice.upload.useMutation();
   const uploadPhoto = trpc.globalRoom.uploadPhoto.useMutation();
+  const createPhotoUpload = trpc.globalRoom.createPhotoUpload.useMutation();
+  const createVoiceUpload = trpc.globalRoom.createVoiceUpload.useMutation();
   const toggleReaction = trpc.globalRoom.reactions.useMutation({ onSuccess: () => { void messages.refetch(); } });
   const ownStatus = trpc.globalRoom.userStatus.useQuery(undefined, { enabled: !isAdminMode && state.profile.mode === "account" && Boolean(status.data?.moderation?.active), retry: false });
   const saveUserStatus = trpc.globalRoom.saveUserStatus.useMutation({ onSuccess: () => { void ownStatus.refetch(); setStatusEditorOpen(false); showToast("Status singkat diperbarui.", "success"); }, onError: (error) => showToast(getUserFacingError(error, "Status belum dapat disimpan."), "info") });
@@ -84,7 +84,7 @@ export default function GlobalRoomChatScreen() {
   const reportMessage = trpc.globalRoom.report.useMutation({ onSuccess: () => showToast("Laporan pesan telah dikirim ke administrator.", "success") });
   const leaveRoom = trpc.globalRoom.leave.useMutation({ onSuccess: () => { showToast("Anda sudah keluar dari Room Global.", "success"); router.replace("/global-room" as never); } });
   const adminLeave = trpc.globalRoom.adminLeave.useMutation({ onSuccess: () => { showToast("ADMIN VAIRA keluar dari Room Global.", "success"); router.replace("/administrator" as never); } });
-  const isRoomSending = sendStatus === "sending" || sendMessage.isPending || adminSendMessage.isPending || postingPhoto || uploadPhoto.isPending || uploadVoice.isPending || transcribe.isPending;
+  const isRoomSending = sendStatus === "sending" || sendMessage.isPending || adminSendMessage.isPending || postingPhoto || uploadPhoto.isPending || createPhotoUpload.isPending || createVoiceUpload.isPending || transcribe.isPending;
   const leaveRoomMutateRef = useRef(leaveRoom.mutateAsync); leaveRoomMutateRef.current = leaveRoom.mutateAsync;
   const adminLeaveMutateRef = useRef(adminLeave.mutateAsync); adminLeaveMutateRef.current = adminLeave.mutateAsync;
   const roomParamsRef = useRef(params); roomParamsRef.current = params;
@@ -219,12 +219,13 @@ export default function GlobalRoomChatScreen() {
       if (!asset?.uri) return;
       const info = await FileSystem.getInfoAsync(asset.uri);
       if (!info.exists || !info.size) throw new Error("Berkas foto tidak dapat dibaca.");
-      if (info.size > MAX_ROOM_IMAGE_BYTES) throw new Error("Foto terlalu besar. Pilih foto maksimal 6 MB agar Room Global tetap stabil.");
       setPostingPhoto(true); setSendStatus("sending");
       const mime = asset.mimeType || "image/jpeg";
-      const base64 = await FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.Base64 });
-      const uploaded = await uploadPhoto.mutateAsync({ file: `data:${mime};base64,${base64}`, caption: message.trim() || undefined });
-      await sendMessage.mutateAsync({ content: `[Room photo url=${uploaded.url}] ${uploaded.caption}` });
+      const ticket = await createPhotoUpload.mutateAsync({ fileName: asset.fileName || `foto-room-${Date.now()}.${mime.includes("png") ? "png" : "jpg"}`, mimeType: mime });
+      const uploadTask = FileSystem.createUploadTask(ticket.uploadUrl, asset.uri, { httpMethod: "PUT", uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT, headers: { "Content-Type": ticket.mimeType }, sessionType: FileSystem.FileSystemSessionType.BACKGROUND });
+      const uploaded = await uploadTask.uploadAsync();
+      if (!uploaded || uploaded.status < 200 || uploaded.status >= 300) throw new Error("Storage belum menerima foto. Coba lagi setelah koneksi stabil.");
+      await sendMessage.mutateAsync({ content: `[Room photo url=${ticket.readUrl}] ${message.trim()}` });
       setMessage(""); setSendStatus("sent"); setTimeout(() => setSendStatus("idle"), 1800); showToast("Foto berhasil dibagikan ke Room Global.", "success");
     } catch (error) { setSendStatus("failed"); showToast(getUserFacingError(error, "Foto belum dapat dibagikan. Coba lagi."), "info"); } finally { setPostingPhoto(false); }
   };
@@ -253,14 +254,16 @@ export default function GlobalRoomChatScreen() {
       const mime = "audio/mp4";
       const info = await FileSystem.getInfoAsync(uri);
       if (!info.exists || !info.size) throw new Error("Berkas rekaman tidak dapat dibaca.");
-      if (info.size > MAX_ROOM_VOICE_BYTES) throw new Error("Voice note terlalu besar. Rekam lebih singkat agar pengiriman stabil.");
-      const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
-      const audioDataUrl = `data:${mime};base64,${base64}`;
       setSendStatus("sending");
-      const uploaded = await uploadVoice.mutateAsync({ audioDataUrl, mimeType: mime });
-      const result = await transcribe.mutateAsync({ audioDataUrl, language: "id-ID" });
-      if (!result.text?.trim()) throw new Error("Suara tidak dapat dikenali.");
-      await sendMessage.mutateAsync({ content: `[Voice note audio=${uploaded.audioUrl} · ${duration}s] ${result.text.trim()}` });
+      const ticket = await createVoiceUpload.mutateAsync({ fileName: `voice-note-${Date.now()}.m4a`, mimeType: mime });
+      const uploadTask = FileSystem.createUploadTask(ticket.uploadUrl, uri, { httpMethod: "PUT", uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT, headers: { "Content-Type": ticket.mimeType }, sessionType: FileSystem.FileSystemSessionType.BACKGROUND });
+      const uploaded = await uploadTask.uploadAsync();
+      if (!uploaded || uploaded.status < 200 || uploaded.status >= 300) throw new Error("Storage belum menerima voice note. Coba lagi setelah koneksi stabil.");
+      let transcript = "Pesan suara";
+      if (info.size <= TRANSCRIBE_INLINE_MAX_BYTES) {
+        try { const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 }); const result = await transcribe.mutateAsync({ audioDataUrl: `data:${mime};base64,${base64}`, language: "id-ID" }); transcript = result.text?.trim() || transcript; } catch { showToast("Voice note tetap terkirim tanpa transkripsi otomatis.", "info"); }
+      } else showToast("Voice note besar tetap dikirim; transkripsi otomatis dilewati agar aplikasi stabil.", "info");
+      await sendMessage.mutateAsync({ content: `[Voice note audio=${ticket.readUrl} · ${duration}s] ${transcript}` });
       setSendStatus("sent");
       setTimeout(() => setSendStatus("idle"), 1800);
       showToast("Voice note audio berhasil dikirim.", "success");
