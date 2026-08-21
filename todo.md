@@ -3261,3 +3261,14 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Merapikan tombol berjudul panjang: hapus teks sekunder, gunakan label kecil, dan sejajarkan ikon serta judul secara horizontal.
 - [x] Memulai ulang dan memverifikasi dev server setelah laporan layanan tidak merespons.
 - [x] Mencegah Metro yang berhenti karena tekanan memori menghentikan API dev server melalui pengawasan proses yang terpisah.
+
+## Grup Obrolan Privat
+
+- [x] Merancang skema grup privat, member, pesan, dan tautan undangan dengan satu admin grup.
+- [x] Menambahkan backend pembuatan grup, pengelolaan member, pergantian admin, keluar grup, serta batas 10 grup per pengguna.
+- [x] Menambahkan obrolan grup dan pengaturan grup dengan antarmuka selaras Room Global, termasuk unggah foto dan voice note langsung ke storage.
+- [x] Menambahkan tombol buat grup pada profil pengguna serta daftar grup pada Room Global.
+- [x] Menambahkan tautan undangan yang menggabungkan pengguna ke grup privat secara aman.
+- [x] Menambahkan daftar grup dan kontrol pantau, beku, serta hapus grup untuk Administrator Vaira tanpa hak berkomentar.
+- [x] Menambahkan regresi untuk hak akses grup, alih admin, batas grup, tautan undangan, dan pembekuan grup.
+- [x] Menahan checkpoint grup sampai pengguna memberi persetujuan eksplisit; persetujuan diterima melalui perintah `cp`.

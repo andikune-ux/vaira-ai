@@ -1,4 +1,4 @@
-import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -190,6 +190,59 @@ export const globalRoomReports = mysqlTable("globalRoomReports", {
 });
 export type GlobalRoomReport = typeof globalRoomReports.$inferSelect;
 export type InsertGlobalRoomReport = typeof globalRoomReports.$inferInsert;
+
+/** Grup obrolan privat: hanya member aktif yang dapat melihat pesan dan profil grup. */
+export const privateChatGroups = mysqlTable("privateChatGroups", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 80 }).notNull(),
+  createdByAccountId: int("createdByAccountId").notNull(),
+  adminAccountId: int("adminAccountId").notNull(),
+  status: mysqlEnum("status", ["active", "frozen", "deleted"]).default("active").notNull(),
+  frozenAt: timestamp("frozenAt"),
+  frozenBy: varchar("frozenBy", { length: 80 }),
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: varchar("deletedBy", { length: 80 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PrivateChatGroup = typeof privateChatGroups.$inferSelect;
+
+/** Satu pengguna dapat menjadi anggota aktif maksimal 10 grup privat. */
+export const privateChatGroupMembers = mysqlTable("privateChatGroupMembers", {
+  id: int("id").autoincrement().primaryKey(),
+  groupId: int("groupId").notNull(),
+  accountId: int("accountId").notNull(),
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+}, (table) => [uniqueIndex("privateChatGroupMembers_group_account_unique").on(table.groupId, table.accountId)]);
+export type PrivateChatGroupMember = typeof privateChatGroupMembers.$inferSelect;
+
+/** Pesan grup privat menggunakan struktur balasan yang sama dengan Room Global. */
+export const privateChatGroupMessages = mysqlTable("privateChatGroupMessages", {
+  id: int("id").autoincrement().primaryKey(),
+  groupId: int("groupId").notNull(),
+  accountId: int("accountId").notNull(),
+  publicId: varchar("publicId", { length: 32 }).notNull(),
+  displayName: varchar("displayName", { length: 120 }).notNull(),
+  content: text("content").notNull(),
+  replyToId: int("replyToId"),
+  replyToDisplayName: varchar("replyToDisplayName", { length: 120 }),
+  replyToContent: text("replyToContent"),
+  deletedAt: timestamp("deletedAt"),
+  deletedOriginalContent: text("deletedOriginalContent"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type PrivateChatGroupMessage = typeof privateChatGroupMessages.$inferSelect;
+
+/** Tautan undangan bersifat rahasia, dapat diputar ulang admin, dan hanya berlaku untuk grup aktif. */
+export const privateChatGroupInvites = mysqlTable("privateChatGroupInvites", {
+  id: int("id").autoincrement().primaryKey(),
+  groupId: int("groupId").notNull(),
+  tokenHash: varchar("tokenHash", { length: 128 }).notNull().unique(),
+  createdByAccountId: int("createdByAccountId").notNull(),
+  revokedAt: timestamp("revokedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type PrivateChatGroupInvite = typeof privateChatGroupInvites.$inferSelect;
 
 /** Arsip AiraXCloud: isi cadangan disimpan sebagai berkas privat, tabel hanya menyimpan metadata aman. */
 export const airaxCloudBackups = mysqlTable("airaxCloudBackups", {

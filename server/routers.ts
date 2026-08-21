@@ -12,6 +12,7 @@ import * as db from "./db";
 import { storageCreateUploadUrl, storageGetSignedUrl, storagePut } from "./storage";
 import { transcribeAudio } from "./_core/voiceTranscription";
 import { createPublicAccountId, createRecoveryToken, createSessionToken, getManualAccountFromRequest, hashSecret, hashSessionToken, toManualAccountAdmin, toManualAccountPublic, verifySecret } from "./manual-auth";
+import * as privateGroups from "./private-groups";
 
 const parseModelJson = (content: unknown): Record<string, unknown> => {
   const text = Array.isArray(content)
@@ -171,6 +172,10 @@ async function requireManualAccount(req: Parameters<typeof getManualAccountFromR
   if (!account) throw new TRPCError({ code: "UNAUTHORIZED", message: "Masuk akun V A I R A  A I diperlukan." });
   if (account.status !== "active") throw new TRPCError({ code: "FORBIDDEN", message: "Akun tidak aktif. Login kembali atau pulihkan akun untuk melanjutkan." });
   return account;
+}
+
+function privateGroupError(error: unknown) {
+  return new TRPCError({ code: "BAD_REQUEST", message: error instanceof Error ? error.message : "Grup belum dapat diproses." });
 }
 
 async function requireAiraAccess(req: Parameters<typeof getManualAccountFromRequest>[0], minimum: AiraAccessCriterion) {
@@ -685,6 +690,73 @@ export const appRouter = router({
         return { ...ticket, readUrl, maxBytes: 200 * 1024 * 1024 };
       }),
   }),
+  privateGroups: router({
+    list: publicProcedure.query(async ({ ctx }) => {
+      const account = await requireManualAccount(ctx.req);
+      return privateGroups.listPrivateGroupsForAccount(account.id);
+    }),
+    create: publicProcedure.input(z.object({ name: z.string().trim().min(2).max(80) })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      try { return await privateGroups.createPrivateGroup(account.id, input.name); } catch (error) { throw privateGroupError(error); }
+    }),
+    createMediaUpload: publicProcedure.input(z.object({ groupId: z.number().int().positive(), fileName: z.string().trim().min(1).max(180), mimeType: z.string().trim().regex(/^(image|audio)\/[a-z0-9.+-]+$/i, "Format media grup tidak valid.") })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      if (!await privateGroups.getPrivateGroupMembership(input.groupId, account.id)) throw new TRPCError({ code: "FORBIDDEN", message: "Hanya member yang dapat mengunggah media grup." });
+      const group = await privateGroups.getPrivateGroupDetail(input.groupId, account.id);
+      if (group.status !== "active") throw new TRPCError({ code: "FORBIDDEN", message: "Grup dibekukan atau dihapus dan hanya dapat dibaca." });
+      const extension = input.mimeType.includes("png") ? "png" : input.mimeType.includes("webp") ? "webp" : input.mimeType.includes("webm") ? "webm" : input.mimeType.includes("wav") ? "wav" : input.mimeType.includes("audio") ? "m4a" : "jpg";
+      const ticket = await storageCreateUploadUrl(`private-groups/${input.groupId}/${account.id}-${Date.now()}-${randomBytes(4).toString("hex")}.${extension}`);
+      return { uploadUrl: ticket.uploadUrl, readUrl: await storageGetSignedUrl(ticket.key), mimeType: input.mimeType };
+    }),
+    detail: publicProcedure.input(z.object({ groupId: z.number().int().positive() })).query(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      if (!await privateGroups.getPrivateGroupMembership(input.groupId, account.id)) throw new TRPCError({ code: "FORBIDDEN", message: "Hanya member yang dapat melihat grup privat." });
+      return privateGroups.getPrivateGroupDetail(input.groupId, account.id);
+    }),
+    messages: publicProcedure.input(z.object({ groupId: z.number().int().positive(), limit: z.number().int().min(1).max(100).optional() })).query(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      if (!await privateGroups.getPrivateGroupMembership(input.groupId, account.id)) throw new TRPCError({ code: "FORBIDDEN", message: "Hanya member yang dapat membaca riwayat grup." });
+      return privateGroups.listPrivateGroupMessages(input.groupId, input.limit ?? 100);
+    }),
+    sendMessage: publicProcedure.input(z.object({ groupId: z.number().int().positive(), content: z.string().trim().min(1).max(4_000), replyToId: z.number().int().positive().nullable().optional(), replyToDisplayName: z.string().trim().max(120).nullable().optional(), replyToContent: z.string().trim().max(500).nullable().optional() })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      try { const id = await privateGroups.sendPrivateGroupMessage(input.groupId, account, input); return { success: true, id }; } catch (error) { throw privateGroupError(error); }
+    }),
+    deleteOwnMessage: publicProcedure.input(z.object({ groupId: z.number().int().positive(), messageId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      if (!await privateGroups.getPrivateGroupMembership(input.groupId, account.id)) throw new TRPCError({ code: "FORBIDDEN", message: "Hanya member yang dapat mengubah pesan grup." });
+      return { success: await privateGroups.deleteOwnPrivateGroupMessage(input.groupId, input.messageId, account.id) };
+    }),
+    updateName: publicProcedure.input(z.object({ groupId: z.number().int().positive(), name: z.string().trim().min(2).max(80) })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      try { return await privateGroups.updatePrivateGroupName(input.groupId, account.id, input.name); } catch (error) { throw privateGroupError(error); }
+    }),
+    addMember: publicProcedure.input(z.object({ groupId: z.number().int().positive(), accountId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      try { return await privateGroups.addPrivateGroupMember(input.groupId, account.id, input.accountId); } catch (error) { throw privateGroupError(error); }
+    }),
+    removeMember: publicProcedure.input(z.object({ groupId: z.number().int().positive(), accountId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      try { return await privateGroups.removePrivateGroupMember(input.groupId, account.id, input.accountId); } catch (error) { throw privateGroupError(error); }
+    }),
+    transferAdmin: publicProcedure.input(z.object({ groupId: z.number().int().positive(), accountId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      try { return await privateGroups.transferPrivateGroupAdmin(input.groupId, account.id, input.accountId); } catch (error) { throw privateGroupError(error); }
+    }),
+    leave: publicProcedure.input(z.object({ groupId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      try { return await privateGroups.leavePrivateGroup(input.groupId, account.id); } catch (error) { throw privateGroupError(error); }
+    }),
+    createInvite: publicProcedure.input(z.object({ groupId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      const rawToken = randomBytes(24).toString("base64url");
+      try { const invite = await privateGroups.createPrivateGroupInvite(input.groupId, account.id, hashSessionToken(rawToken)); return { ...invite, token: rawToken }; } catch (error) { throw privateGroupError(error); }
+    }),
+    joinByInvite: publicProcedure.input(z.object({ token: z.string().trim().min(20).max(120) })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      try { return await privateGroups.joinPrivateGroupByInvite(account.id, hashSessionToken(input.token)); } catch (error) { throw privateGroupError(error); }
+    }),
+  }),
   administrator: router({
     verify: publicProcedure
       .input(z.object({ username: z.string().trim().min(1).max(80), password: z.string().min(1).max(180) }))
@@ -699,6 +771,23 @@ export const appRouter = router({
           if (!verifyServerDatabase2Credentials(input.username, input.password)) throw new TRPCError({ code: "FORBIDDEN", message: "Verifikasi SERVER DATABASE 2 diperlukan." });
           return db.getServerDatabase2RecoveryStatus();
         }),
+    }),
+    privateGroups: router({
+      list: publicProcedure.input(z.object({ username: z.string().trim().min(1), password: z.string().min(1) })).query(async ({ input }) => {
+        if (!verifyAdministratorCredentials(input.username, input.password)) throw new TRPCError({ code: "FORBIDDEN", message: "Verifikasi administrator diperlukan." });
+        return privateGroups.listPrivateGroupsForAdministrator();
+      }),
+      detail: publicProcedure.input(z.object({ username: z.string().trim().min(1), password: z.string().min(1), groupId: z.number().int().positive() })).query(async ({ input }) => {
+        if (!verifyAdministratorCredentials(input.username, input.password)) throw new TRPCError({ code: "FORBIDDEN", message: "Verifikasi administrator diperlukan." });
+        const [group, messages] = await Promise.all([privateGroups.getPrivateGroupDetail(input.groupId), privateGroups.listPrivateGroupMessages(input.groupId)]);
+        return { group, messages };
+      }),
+      setStatus: publicProcedure.input(z.object({ username: z.string().trim().min(1), password: z.string().min(1), groupId: z.number().int().positive(), status: z.enum(["active", "frozen", "deleted"]) })).mutation(async ({ input }) => {
+        if (!verifyAdministratorCredentials(input.username, input.password)) throw new TRPCError({ code: "FORBIDDEN", message: "Verifikasi administrator diperlukan." });
+        const group = await privateGroups.setPrivateGroupAdministratorStatus(input.groupId, input.status, input.username);
+        await db.createAdministratorAuditLog({ adminUsername: input.username, action: input.status === "frozen" ? "Membekukan grup" : input.status === "deleted" ? "Menghapus grup" : "Membuka kembali grup", targetType: "private_group", targetId: String(input.groupId), targetLabel: group.name, detail: "Moderasi grup privat tanpa hak berkomentar." });
+        return group;
+      }),
     }),
     accessTokens: router({
       list: publicProcedure.input(z.object({ username: z.string().trim().min(1).max(80), password: z.string().min(1).max(180) })).query(async ({ input }) => {
