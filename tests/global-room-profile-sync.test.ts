@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 
 const dbSource = readFileSync(resolve(process.cwd(), "server/db.ts"), "utf8");
 const profileSource = readFileSync(resolve(process.cwd(), "app/(tabs)/profile.tsx"), "utf8");
+const profileSettingsSource = readFileSync(resolve(process.cwd(), "app/profile-settings.tsx"), "utf8");
 const publicProfileSource = readFileSync(resolve(process.cwd(), "app/global-room-public-profile.tsx"), "utf8");
 
 describe("Global Room profile synchronization", () => {
@@ -14,11 +15,11 @@ describe("Global Room profile synchronization", () => {
     expect(dbSource).toContain("featuredPhotos: refreshedPhotos");
   });
 
-  it("provides an inline Edit and Simpan flow backed by updateProfile", () => {
-    expect(profileSource).toContain("const [editingBio, setEditingBio]");
-    expect(profileSource).toContain("syncProfile.mutateAsync");
-    expect(profileSource).toContain("Bio profil tersimpan dan dapat dilihat peserta lain.");
-    expect(profileSource).toContain('>{syncProfile.isPending ? "Menyimpan…" : "Simpan"}</Text>');
+  it("memusatkan edit dan simpan profil di Pengaturan Profil yang dapat dibuka dari tab", () => {
+    expect(profileSource).toContain('router.push("/profile-settings"');
+    expect(profileSource).toContain("Penyuntingan profil dipusatkan");
+    expect(profileSettingsSource).toContain("syncProfile.mutateAsync");
+    expect(profileSettingsSource).toContain('saving ? "Menyimpan…" : "Simpan Pengaturan Profil"');
   });
 
   it("keeps public profile media reload and photo viewing available", () => {

@@ -71,11 +71,11 @@ describe("wallet picker and target chicken icon", () => {
     expect(source).toContain("OFFICIAL_DOMAINS");
   });
 
-  it("uses the shared chicken icon for the target widget", () => {
+  it("keeps the target icon in finance actions while the home status card stays focused on rotation", () => {
     const statusCard = read("components/aira-mode-status-card.tsx");
     const icon = read("components/chicken-icon.tsx");
-    expect(statusCard).toContain("ChickenIcon");
-    expect(statusCard).not.toContain('name="savings"');
+    expect(statusCard).toContain("GestureDetector");
+    expect(statusCard).not.toContain("manualNavigation");
     expect(icon).toContain("Ikon ayam VAIRA");
     expect(icon).toContain('vaira-chicken-target-transparent.webp');
     expect(icon).not.toContain('vaira-chicken-target-clean.webp');
@@ -88,7 +88,7 @@ describe("target chicken icon coverage", () => {
     const home = read("app/(tabs)/index.tsx");
     expect(home).toContain('import { ChickenIcon } from "@/components/chicken-icon"');
     expect(home).toContain("chicken: true");
-    expect(home).toContain("item.chicken ? <ChickenIcon size={31} />");
+    expect(home).toContain("AiraModeStatusCard");
     expect(home).not.toContain('assetUri: "/manus-storage/vaira-chicken-target_e1b64891.png"');
   });
   it("uses ChickenIcon across target actions and target cards", () => {
@@ -98,6 +98,6 @@ describe("target chicken icon coverage", () => {
     expect(plans).toContain("<ChickenIcon size={34} />");
     expect(plans).toContain("<ChickenIcon size={28} />");
     expect(plans).not.toContain('icon="egg"');
-    expect(status).toContain("<ChickenIcon size={22} />");
+    expect(status).toContain("GestureDetector");
   });
 });

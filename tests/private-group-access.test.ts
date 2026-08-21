@@ -11,6 +11,8 @@ describe("grup privat", () => {
   it("menyimpan status moderasi dan keanggotaan unik", () => {
     expect(schema).toContain('mysqlEnum("status", ["active", "frozen", "deleted"])');
     expect(schema).toContain('uniqueIndex("privateChatGroupMembers_group_account_unique")');
+    expect(schema).toContain("publicGroupId");
+    expect(schema).toContain('privateChatGroups_public_group_id_unique');
     expect(schema).toContain("tokenHash");
     expect(schema).not.toContain("inviteToken:");
   });
@@ -28,7 +30,8 @@ describe("grup privat", () => {
     expect(groups).toContain('if (group.status !== "active") throw new Error("Link undangan hanya tersedia untuk grup aktif.")');
     expect(groups).toContain("joinPrivateGroupByInvite");
     expect(groups).toContain("privateChatGroupRemovedMembers");
-    expect(groups).toContain("Minta admin membuat link undangan baru sebelum bergabung kembali.");
+    expect(groups).toContain("assertRemovedMemberCanRejoin");
+    expect(groups).toContain("Minta admin memperbarui");
   });
 
   it("membatasi moderasi pesan, foto profil, dan penambahan member berdasarkan ID publik pada admin grup", () => {
@@ -41,6 +44,11 @@ describe("grup privat", () => {
     expect(router).toContain("deleteAllMessagesAsAdmin");
     expect(router).toContain("addMemberByPublicId");
     expect(router).toContain("updatePhoto");
+    expect(router).toContain("searchByPublicId");
+    expect(router).toContain("joinByPublicId");
+    expect(groups).toContain("searchPrivateGroupByPublicId");
+    expect(groups).toContain("joinPrivateGroupByPublicId");
+    expect(groups).toContain("publicGroupIdUpdatedAt");
   });
 
   it("menjaga endpoint grup berbasis sesi akun dan administrator hanya memantau", () => {

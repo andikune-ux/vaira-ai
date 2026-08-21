@@ -39,6 +39,17 @@ describe("Waktu Salat dan cuaca Beranda", () => {
     expect(weather).toContain("loadCalendarReminders");
   });
 
+  it("menggunakan swipe horizontal tanpa tombol panah dan hanya memakai satu kartu hero Beranda", () => {
+    expect(weather).toContain("GestureDetector");
+    expect(weather).toContain("Gesture.Pan()");
+    expect(weather).toContain("activeOffsetX");
+    expect(weather).toContain("translationX < 0 ? 1 : -1");
+    expect(weather).not.toContain("manualNavigation");
+    expect(weather).not.toContain("navButton");
+    expect(home).toContain("legacyHeroVisible = false");
+    expect(home).toContain("<AiraModeStatusCard />");
+  });
+
   it("menyediakan editor, animasi, simpan, dan berbagi kartu ucapan", () => {
     expect(weather).toContain("Edit kartu ucapan");
     expect(weather).toContain("setMessageDraft");

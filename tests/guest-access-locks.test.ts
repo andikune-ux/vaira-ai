@@ -7,7 +7,7 @@ const read = (relativePath: string) => fs.readFileSync(path.resolve(__dirname, "
 describe("akses Mode Guest V A I R A  A I", () => {
   it("mengarahkan tombol Masuk lagi Profil ke login manual", () => {
     const profile = read("app/(tabs)/profile.tsx");
-    expect(profile).toContain('profile.mode === "guest" || !isAuthenticated ? () => router.push("/login")');
+    expect(profile).toContain('profile.mode === "guest" ? () => router.push("/login" as never) : switchAccount');
   });
 
   it("menampilkan pratinjau Aira dengan komposer terkunci bagi guest", () => {

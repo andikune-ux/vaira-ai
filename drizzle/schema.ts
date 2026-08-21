@@ -195,6 +195,8 @@ export type InsertGlobalRoomReport = typeof globalRoomReports.$inferInsert;
 export const privateChatGroups = mysqlTable("privateChatGroups", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 80 }).notNull(),
+  publicGroupId: varchar("publicGroupId", { length: 24 }).notNull(),
+  publicGroupIdUpdatedAt: timestamp("publicGroupIdUpdatedAt").defaultNow().notNull(),
   photoStorageKey: varchar("photoStorageKey", { length: 320 }),
   createdByAccountId: int("createdByAccountId").notNull(),
   adminAccountId: int("adminAccountId").notNull(),
@@ -205,7 +207,7 @@ export const privateChatGroups = mysqlTable("privateChatGroups", {
   deletedBy: varchar("deletedBy", { length: 80 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [uniqueIndex("privateChatGroups_public_group_id_unique").on(table.publicGroupId)]);
 export type PrivateChatGroup = typeof privateChatGroups.$inferSelect;
 
 /** Satu pengguna dapat menjadi anggota aktif maksimal 10 grup privat. */

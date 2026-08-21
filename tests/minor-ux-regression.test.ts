@@ -50,12 +50,15 @@ describe("minor UX regressions", () => {
     expect(source).toContain("colors.muted");
   });
 
-  it("keeps guest room access actionable and recent activity chronological", () => {
+  it("keeps guest room access actionable and uses the single active home-card system", () => {
     const roomSource = readProjectFile("app/global-room.tsx");
     const homeSource = readProjectFile("app/(tabs)/index.tsx");
+    const rotatorSource = readProjectFile("components/aira-mode-status-card.tsx");
     expect(roomSource).toContain('router.push("/login"');
     expect(roomSource).toContain("Masuk ke akun");
-    expect(homeSource).toContain("sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())");
+    expect(homeSource).toContain("AiraModeStatusCard");
+    expect(rotatorSource).toContain("activeOffsetX");
+    expect(rotatorSource).not.toContain("manualNavigation");
   });
 
   it("keeps protected room and administrator rules in source", () => {

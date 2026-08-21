@@ -3335,3 +3335,55 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Menambahkan akses Administrator read-only untuk daftar akun, mode, dan isi riwayat layanan Aira.
 - [x] Menambahkan tombol Administrator bernama Layanan Aira dengan ikon forum yang sesuai.
 - [x] Menjalankan migrasi aditif, TypeScript, lint, API, dan regresi fokus sebelum meminta checkpoint; regresi lama yang tidak terkait dicatat terpisah.
+
+## Perbaikan Kartu Rotasi Beranda
+
+- [x] Menghapus tumpang tindih kartu lama dan kartu rotasi agar hanya satu kartu terlihat dalam satu waktu.
+- [x] Mengurangi tinggi kartu utama dan mengembalikan jarak Beranda agar tidak terlalu besar.
+- [x] Menghapus tombol panah kanan-kiri pada kartu.
+- [x] Menambahkan swipe horizontal kanan/kiri untuk berpindah kartu satu per satu.
+- [x] Menjalankan TypeScript, lint, dan regresi fokus sebelum meminta checkpoint.
+
+## Audit Mendalam Aplikasi
+
+- [x] Memetakan arsitektur server, database, penyimpanan, dan jalur sinkronisasi yang berlaku.
+- [x] Mengaudit layanan Aira, Gemini, Forge fallback, dan status kegagalan yang dapat terjadi.
+- [x] Mengaudit fungsi, tombol, navigasi, pengaturan, serta fitur lama yang berisiko tersembunyi atau regresi.
+- [x] Mengaudit konsistensi antarmuka, ukuran teks, pengelompokan pengaturan, aksesibilitas, dan responsivitas.
+- [x] Mengaudit risiko crash, performa, jaringan lambat, serta waktu tunggu pemuatan.
+- [x] Menjalankan pemeriksaan terarah dan menyusun laporan temuan beserta prioritas perbaikan tanpa membuat checkpoint.
+
+## Tindak Lanjut Audit Menyeluruh
+
+- [x] Menonaktifkan penghapusan otomatis metadata AiraXCloud dan mempertahankan data sampai ada tindakan administrator yang terkonfirmasi.
+- [x] Menampilkan status primary/standby secara jelas serta menyiapkan fondasi backup manual tanpa sinkronisasi otomatis dan tanpa mengubah server legacy.
+- [ ] Menghubungkan tombol salin backup manual primary ke standby setelah alamat koneksi MySQL server legacy tersedia; tidak dapat diselesaikan tanpa `PRIMARY_DATABASE_URL` dari server lama.
+- [x] Memulihkan panel riwayat Aira, menyatukan status penyimpanan, dan mengurangi waktu tunggu serta retry provider yang tumpang tindih.
+- [x] Menjadikan Pengaturan sebagai pintu kategori yang terhubung, memulihkan akses Pengaturan Profil, dan memperbaiki aksi akun manual.
+- [x] Menghapus interaksi tombol bersarang, memperjelas fitur audio/video yang belum aktif penuh, dan merapikan label panjang.
+- [x] Memperbaiki pemuatan media bertanda tangan, retry unggahan, serta risiko lag Room Global dan chat Aira.
+- [x] Menyelaraskan regresi kartu Beranda, memeriksa test finance lama, dan menjalankan validasi akhir tanpa checkpoint otomatis.
+
+## Konfigurasi Koneksi Primary untuk Backup Manual
+
+- [x] Menambahkan slot aman `PRIMARY_DATABASE_URL` untuk alamat koneksi database server legacy primary.
+- [x] Membatasi pemeriksaan koneksi primary dan backup pada mode read-only tanpa operasi tulis atau sinkronisasi.
+- [ ] Ditunda atas arahan pengguna: memvalidasi koneksi read-only setelah host, port, dan nama database primary tersedia.
+- [ ] Ditunda atas arahan pengguna: mengaktifkan tombol backup manual satu arah hanya setelah koneksi primary tervalidasi; tidak ada sinkronisasi otomatis.
+- [x] Menambahkan slot aman `SERVER_DATABASE_2_URL` untuk alamat koneksi database backup yang terpisah dari primary.
+- [ ] Ditunda atas arahan pengguna: memvalidasi koneksi backup read-only setelah host, port, dan nama database SERVER DATABASE 2 tersedia.
+
+## Lanjutan Perbaikan Independen
+
+- [ ] Meninjau dan memperbaiki risiko aplikasi yang tidak memerlukan koneksi primary atau backup.
+- [x] Membatasi render awal daftar riwayat Aira agar percakapan akun yang panjang tetap responsif.
+- [x] Menambahkan pemuatan riwayat Aira bertahap dengan tombol Muat riwayat lebih lama tanpa menghapus percakapan.
+
+## Penyempurnaan Grup, Chat, Administrator, dan Update
+
+- [x] Merapikan tombol Administrator sebagai grid empat kolom dan dua baris tanpa teks terpotong.
+- [x] Menambahkan ID grup privat unik, tampilan ID, serta pencarian dan join grup menggunakan ID.
+- [x] Menambahkan pembaruan ID grup dan link undangan bersamaan agar anggota yang di-kick tetap tidak dapat bergabung sampai ID/link diperbarui.
+- [x] Menjadikan komposer Room Global serta grup bertumbuh sesuai teks, mendukung Enter sebagai baris baru, dan mempertahankan tombol kirim terpisah.
+- [x] Menambahkan penawaran update ketika aplikasi dibuka dengan ringkasan perubahan, dialog detail, tombol Update, dan Skip per versi.
+- [x] Menjalankan migrasi aditif, regresi, TypeScript, lint, dan pemeriksaan layanan sebelum meminta checkpoint.

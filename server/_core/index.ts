@@ -35,22 +35,35 @@ async function startServer() {
   const server = createServer(app);
   await attachWebRtcSignaling(server);
 
-  // Enable CORS for all routes - reflect the request origin to support credentials
+  const configuredOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? "https://vairaiapp-n9sw5cvx.manus.space")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const isAllowedBrowserOrigin = (origin: string) => {
+    if (configuredOrigins.includes(origin)) return true;
+    return /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/.test(origin)
+      || /^https:\/\/(?:8081|3000)-[a-z0-9-]+\.sg1\.manus\.computer$/.test(origin);
+  };
+
+  // Native APK tidak mengirim Origin. Browser hanya menerima CORS dari aplikasi/preview yang disetujui.
   app.use((req, res, next) => {
     const origin = req.headers.origin;
-    if (origin) {
+    if (origin && isAllowedBrowserOrigin(origin)) {
       res.header("Access-Control-Allow-Origin", origin);
+      res.header("Access-Control-Allow-Credentials", "true");
     }
     res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
     res.header(
       "Access-Control-Allow-Headers",
       "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-AiraX-Session",
     );
-    res.header("Access-Control-Allow-Credentials", "true");
-
     // Handle preflight requests
     if (req.method === "OPTIONS") {
-      res.sendStatus(200);
+      if (origin && !isAllowedBrowserOrigin(origin)) {
+        res.sendStatus(403);
+        return;
+      }
+      res.sendStatus(204);
       return;
     }
     next();
@@ -64,6 +77,16 @@ async function startServer() {
 
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true, timestamp: Date.now() });
+  });
+
+  app.get("/api/health/primary-config", (_req, res) => {
+    res.json({
+      ok: true,
+      source: "legacy-primary",
+      mode: "manual",
+      configured: Boolean(process.env.PRIMARY_DATABASE_URL?.trim()),
+      backupConfigured: Boolean(process.env.SERVER_DATABASE_2_URL?.trim()),
+    });
   });
 
   app.get("/api/webrtc/config", async (req, res) => {

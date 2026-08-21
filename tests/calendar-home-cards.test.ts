@@ -15,10 +15,13 @@ describe("Kalender dan kartu dinamis Beranda", () => {
     expect(reminders).toContain("saveCalendarReminders");
   });
 
-  it("memutar kartu Aira dan kartu ucapan serta menyediakan berbagi gambar offline", async () => {
+  it("memutar kartu Aira dan kartu ucapan melalui kartu rotasi tunggal serta menyediakan berbagi gambar offline", async () => {
     const home = await readFile("app/(tabs)/index.tsx", "utf8");
-    expect(home).toContain("heroCardMode");
-    expect(home).toContain("setInterval(toggleHeroCard, greetingCardIntervalSeconds * 1000)");
+    const signalCard = await readFile("components/aira-mode-status-card.tsx", "utf8");
+    expect(home).toContain("legacyHeroVisible = false");
+    expect(signalCard).toContain("setInterval");
+    expect(signalCard).toContain("advanceCard(1, false)");
+    expect(signalCard).toContain("GestureDetector");
     expect(home).toContain("setGreetingPreviewVisible(true)");
     expect(home).toContain("shareGreetingCard");
     expect(home).toContain("captureRef");

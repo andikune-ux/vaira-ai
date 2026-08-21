@@ -16,6 +16,7 @@ import { AppErrorBoundary } from "@/components/app-error-boundary";
 import { SpcaOverlay } from "@/components/spca-overlay";
 import { SpcaGazeProvider } from "@/components/spca-gaze";
 import { GlobalTestSync } from "@/components/global-test-sync";
+import { AppUpdatePrompt } from "@/components/app-update-prompt";
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -167,6 +168,7 @@ export default function RootLayout() {
           </Stack>
           <SpcaOverlay />
           <GlobalTestSync />
+          <AppUpdatePrompt />
           <StatusBar style="auto" />
         </QueryClientProvider>
       </trpc.Provider>

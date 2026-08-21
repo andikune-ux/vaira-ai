@@ -15,12 +15,13 @@ describe("branding dan avatar Profil V A I R A  A I", () => {
     const types = source("lib/finance/types.ts");
     const login = source("app/login.tsx");
     const profile = source("app/(tabs)/profile.tsx");
+    const profileSettings = source("app/profile-settings.tsx");
     expect(types).toContain("username?: string");
     expect(types).toContain("userAvatarUri?: string");
     expect(login).toContain("username: result.account.username");
-    expect(profile).toContain("launchImageLibraryAsync");
-    expect(profile).toContain("Foto unggulan");
-    expect(profile).toContain("featuredPhotoUris");
+    expect(profileSettings).toContain("launchImageLibraryAsync");
+    expect(profileSettings).toContain("Foto unggulan");
+    expect(profileSettings).toContain("featuredPhotoUris");
     expect(profile).toContain("@{profile.username}");
   });
 

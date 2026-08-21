@@ -9,7 +9,7 @@ import { generateAiraDocument, type AiraDocumentKind } from "./aira-generation";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import * as db from "./db";
-import { storageCreateUploadUrl, storageGetSignedUrl, storagePut } from "./storage";
+import { storageCreateUploadUrl, storageGet, storageGetSignedUrl, storagePut } from "./storage";
 import { transcribeAudio } from "./_core/voiceTranscription";
 import { createPublicAccountId, createRecoveryToken, createSessionToken, getManualAccountFromRequest, hashSecret, hashSessionToken, toManualAccountAdmin, toManualAccountPublic, verifySecret } from "./manual-auth";
 import * as privateGroups from "./private-groups";
@@ -28,10 +28,10 @@ const parseModelJson = (content: unknown): Record<string, unknown> => {
 
 const MEDIA_DATA_URL = /^data:([^;]+);base64,([A-Za-z0-9+/=]+)$/;
 const MAX_AIRA_MEDIA_BYTES = 5_500_000;
-const AIRA_MODEL_TIMEOUT_MS = 12_000;
+const AIRA_MODEL_TIMEOUT_MS = 9_000;
 const GEMINI_AIRA_MODEL = "gemini-3.6-flash";
 const GEMINI_AIRA_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_AIRA_MODEL}:generateContent`;
-const GEMINI_AIRA_TIMEOUT_MS = 28_000;
+const GEMINI_AIRA_TIMEOUT_MS = 22_000;
 
 function withServiceTimeout<T>(promise: Promise<T>, milliseconds: number, message: string) {
   return new Promise<T>((resolve, reject) => {
@@ -340,6 +340,10 @@ export const appRouter = router({
       const account = await requireManualAccount(ctx.req);
       return db.listAiraConversationHistories(account.id, input?.mode);
     }),
+    page: publicProcedure.input(z.object({ mode: z.enum(["aira", "hot_pro", "scientist"]).optional(), offset: z.number().int().min(0).default(0), limit: z.number().int().min(1).max(40).default(40) })).query(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      return db.listAiraConversationHistoryPage(account.id, input);
+    }),
     save: publicProcedure.input(z.object({ conversationId: z.string().min(8).max(96), mode: z.enum(["aira", "hot_pro", "scientist"]), title: z.string().trim().min(1).max(160), messages: z.array(z.object({ id: z.string().max(120), role: z.enum(["user", "assistant"]), content: z.string().max(6000), createdAt: z.string().datetime(), attachment: z.unknown().optional(), suggestedMemory: z.unknown().optional(), expert: z.unknown().optional() })).min(1).max(500), createdAt: z.string().datetime(), updatedAt: z.string().datetime(), isPrivate: z.boolean().optional() })).mutation(async ({ ctx, input }) => {
       const account = await requireManualAccount(ctx.req);
       return db.saveAiraConversationHistory(account.id, input);
@@ -354,9 +358,9 @@ export const appRouter = router({
     userStatus: publicProcedure.query(async ({ ctx }) => { const account = await requireManualAccount(ctx.req); return db.getGlobalRoomUserStatus(account.id); }),
     saveUserStatus: publicProcedure.input(z.object({ status: z.string().trim().max(80) })).mutation(async ({ ctx, input }) => { const account = await requireManualAccount(ctx.req); const moderation = await db.getGlobalRoomModeration(account.id); if (!moderation.active) throw new TRPCError({ code: "FORBIDDEN", message: "Masuk ke Room Global terlebih dahulu." }); return db.saveGlobalRoomUserStatus(account.id, input.status); }),
     mentionSummary: publicProcedure.input(z.object({ since: z.string().datetime().nullable().optional() })).query(async ({ ctx, input }) => { const account = await requireManualAccount(ctx.req); const messages = await db.listGlobalRoomMessages(account.id, 100); const since = input.since ? new Date(input.since) : new Date(0); const targets = [account.username, account.fullName].filter(Boolean).map((value) => String(value).trim().toLowerCase()).filter(Boolean); const mentions = messages.filter((item) => new Date(item.createdAt).getTime() > since.getTime() && targets.some((target) => item.content.toLowerCase().includes(`@${target}`)) && item.accountId !== account.id); return { count: mentions.length, latestAt: mentions.length ? new Date(mentions[mentions.length - 1].createdAt).toISOString() : null }; }),
-    createPhotoUpload: publicProcedure.input(z.object({ fileName: z.string().trim().min(1).max(180), mimeType: z.string().trim().regex(/^image\/[a-z0-9.+-]+$/i, "Format foto tidak valid.") })).mutation(async ({ ctx, input }) => { const account = await requireManualAccount(ctx.req); const moderation = await db.getGlobalRoomModeration(account.id); if (!moderation.active) throw new TRPCError({ code: "FORBIDDEN", message: "Masuk ke Room Global terlebih dahulu." }); const extension = input.mimeType.includes("png") ? "png" : input.mimeType.includes("webp") ? "webp" : "jpg"; const ticket = await storageCreateUploadUrl(`global-room/posts/${account.id}-${Date.now()}-${randomBytes(4).toString("hex")}.${extension}`); return { uploadUrl: ticket.uploadUrl, readUrl: await storageGetSignedUrl(ticket.key), mimeType: input.mimeType }; }),
-    createVoiceUpload: publicProcedure.input(z.object({ fileName: z.string().trim().min(1).max(180), mimeType: z.string().trim().regex(/^audio\/[a-z0-9.+-]+$/i, "Format audio tidak valid.") })).mutation(async ({ ctx, input }) => { const account = await requireManualAccount(ctx.req); const moderation = await db.getGlobalRoomModeration(account.id); if (!moderation.active) throw new TRPCError({ code: "FORBIDDEN", message: "Masuk ke Room Global terlebih dahulu." }); const extension = input.mimeType.includes("webm") ? "webm" : input.mimeType.includes("wav") ? "wav" : "m4a"; const ticket = await storageCreateUploadUrl(`global-room/voice/${account.id}-${Date.now()}-${randomBytes(4).toString("hex")}.${extension}`); return { uploadUrl: ticket.uploadUrl, readUrl: await storageGetSignedUrl(ticket.key), mimeType: input.mimeType }; }),
-    uploadPhoto: publicProcedure.input(z.object({ file: z.string().max(10_500_000), caption: z.string().trim().max(500).optional() })).mutation(async ({ ctx, input }) => { const account = await requireManualAccount(ctx.req); const moderation = await db.getGlobalRoomModeration(account.id); if (!moderation.active) throw new TRPCError({ code: "FORBIDDEN", message: "Masuk ke Room Global terlebih dahulu." }); const parsed = input.file.match(MEDIA_DATA_URL); if (!parsed || !parsed[1].startsWith("image/")) throw new TRPCError({ code: "BAD_REQUEST", message: "Foto posting tidak valid." }); const raw = Buffer.from(parsed[2], "base64"); if (raw.byteLength > 7_500_000) throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "Foto posting maksimal 7,5 MB." }); const extension = parsed[1].includes("png") ? "png" : "jpg"; const stored = await storagePut(`global-room/posts/${account.id}-${Date.now()}.${extension}`, raw, parsed[1]); return { url: await storageGetSignedUrl(stored.key), caption: input.caption?.trim() ?? "" }; }),
+    createPhotoUpload: publicProcedure.input(z.object({ fileName: z.string().trim().min(1).max(180), mimeType: z.string().trim().regex(/^image\/[a-z0-9.+-]+$/i, "Format foto tidak valid.") })).mutation(async ({ ctx, input }) => { const account = await requireManualAccount(ctx.req); const moderation = await db.getGlobalRoomModeration(account.id); if (!moderation.active) throw new TRPCError({ code: "FORBIDDEN", message: "Masuk ke Room Global terlebih dahulu." }); const extension = input.mimeType.includes("png") ? "png" : input.mimeType.includes("webp") ? "webp" : "jpg"; const ticket = await storageCreateUploadUrl(`global-room/posts/${account.id}-${Date.now()}-${randomBytes(4).toString("hex")}.${extension}`); return { uploadUrl: ticket.uploadUrl, readUrl: (await storageGet(ticket.key)).url, mimeType: input.mimeType }; }),
+    createVoiceUpload: publicProcedure.input(z.object({ fileName: z.string().trim().min(1).max(180), mimeType: z.string().trim().regex(/^audio\/[a-z0-9.+-]+$/i, "Format audio tidak valid.") })).mutation(async ({ ctx, input }) => { const account = await requireManualAccount(ctx.req); const moderation = await db.getGlobalRoomModeration(account.id); if (!moderation.active) throw new TRPCError({ code: "FORBIDDEN", message: "Masuk ke Room Global terlebih dahulu." }); const extension = input.mimeType.includes("webm") ? "webm" : input.mimeType.includes("wav") ? "wav" : "m4a"; const ticket = await storageCreateUploadUrl(`global-room/voice/${account.id}-${Date.now()}-${randomBytes(4).toString("hex")}.${extension}`); return { uploadUrl: ticket.uploadUrl, readUrl: (await storageGet(ticket.key)).url, mimeType: input.mimeType }; }),
+    uploadPhoto: publicProcedure.input(z.object({ file: z.string().max(10_500_000), caption: z.string().trim().max(500).optional() })).mutation(async ({ ctx, input }) => { const account = await requireManualAccount(ctx.req); const moderation = await db.getGlobalRoomModeration(account.id); if (!moderation.active) throw new TRPCError({ code: "FORBIDDEN", message: "Masuk ke Room Global terlebih dahulu." }); const parsed = input.file.match(MEDIA_DATA_URL); if (!parsed || !parsed[1].startsWith("image/")) throw new TRPCError({ code: "BAD_REQUEST", message: "Foto posting tidak valid." }); const raw = Buffer.from(parsed[2], "base64"); if (raw.byteLength > 7_500_000) throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "Foto posting maksimal 7,5 MB." }); const extension = parsed[1].includes("png") ? "png" : "jpg"; const stored = await storagePut(`global-room/posts/${account.id}-${Date.now()}.${extension}`, raw, parsed[1]); return { url: (await storageGet(stored.key)).url, caption: input.caption?.trim() ?? "" }; }),
     userSettings: publicProcedure.query(async ({ ctx }) => { const account = await requireManualAccount(ctx.req); return db.getGlobalRoomUserSettings(account.id); }),
     saveUserSettings: publicProcedure.input(z.object({ bubbleScale: z.number().int().min(75).max(120), bubbleGap: z.number().int().min(4).max(18), audioLabelsVisible: z.boolean() })).mutation(async ({ ctx, input }) => { const account = await requireManualAccount(ctx.req); await db.updateGlobalRoomUserSettings(account.id, input); return { success: true }; }),
     participants: publicProcedure.query(async ({ ctx }) => { const account = await requireManualAccount(ctx.req); const consent = await db.getGlobalRoomConsent(account.id); const moderation = await db.getGlobalRoomModeration(account.id); if (!consent?.ageConfirmed || !moderation.active) throw new TRPCError({ code: "FORBIDDEN", message: "Masuk ke Room Global terlebih dahulu." }); return db.listGlobalRoomParticipants(); }),
@@ -413,13 +417,11 @@ export const appRouter = router({
       const fileName = `AiraXCloud-${account.username}-${stamp}.json`;
       const stored = await storagePut(`airax-cloud/${account.id}/${fileName}`, Buffer.from(input.payload, "utf8"), "application/json");
       const backupId = await db.createAiraXCloudBackup({ accountId: account.id, username: account.username, fileName, storageKey: stored.key, sizeBytes: Buffer.byteLength(input.payload, "utf8"), status: "active" });
-      await db.pruneOldestAiraXCloudBackup(account.id);
       const backup = await db.getAiraXCloudBackupById(backupId);
       return backup ? { id: backup.id, fileName: backup.fileName, sizeBytes: backup.sizeBytes, status: backup.status, createdAt: backup.createdAt.toISOString() } : null;
     }),
     listMine: publicProcedure.query(async ({ ctx }) => {
       const account = await requireManualAccount(ctx.req);
-      await db.pruneOldestAiraXCloudBackup(account.id);
       return (await db.listAiraXCloudBackupsForAccount(account.id)).map((backup) => ({ id: backup.id, fileName: backup.fileName, sizeBytes: backup.sizeBytes, status: backup.status, createdAt: backup.createdAt.toISOString() }));
     }),
     restoreLatest: publicProcedure.query(async ({ ctx }) => {
@@ -435,9 +437,6 @@ export const appRouter = router({
     }),
     adminList: publicProcedure.input(z.object({ username: z.string().trim().min(1), password: z.string().min(1), query: z.string().trim().max(120).optional() })).query(async ({ input }) => {
       if (!verifyAdministratorCredentials(input.username, input.password)) throw new TRPCError({ code: "FORBIDDEN", message: "Verifikasi administrator diperlukan." });
-      const backups = await db.listAiraXCloudBackupsAdmin(input.query);
-      const accountIds = [...new Set(backups.map((backup) => backup.accountId))];
-      for (const accountId of accountIds) await db.pruneOldestAiraXCloudBackup(accountId);
       return (await db.listAiraXCloudBackupsAdmin(input.query)).map((backup) => ({ id: backup.id, username: backup.username, fileName: backup.fileName, sizeBytes: backup.sizeBytes, status: backup.status, createdAt: backup.createdAt.toISOString() }));
     }),
     adminUpdate: publicProcedure.input(z.object({ username: z.string().trim().min(1), password: z.string().min(1), backupId: z.number().int().positive(), status: AIRAX_CLOUD_STATUS })).mutation(async ({ input }) => {
@@ -585,8 +584,6 @@ export const appRouter = router({
             const catalog = await listLLMModels();
             const modelCandidates = [...new Set([
               catalog.data.find((item) => item.id === "gpt-5-mini")?.id,
-              catalog.data.find((item) => item.id.startsWith("gemini-3-flash"))?.id,
-              catalog.data.find((item) => item.id.startsWith("claude-haiku"))?.id,
               catalog.data[0]?.id,
             ].filter((model): model is string => Boolean(model)))];
             for (const model of modelCandidates) {
@@ -696,7 +693,7 @@ export const appRouter = router({
         await requireManualAccount(ctx.req);
         const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-100) || "lampiran";
         const ticket = await storageCreateUploadUrl(`aira-media/${Date.now()}-${safeName}`);
-        const readUrl = await storageGetSignedUrl(ticket.key);
+        const readUrl = (await storageGet(ticket.key)).url;
         return { ...ticket, readUrl, maxBytes: 200 * 1024 * 1024 };
       }),
   }),
@@ -708,6 +705,14 @@ export const appRouter = router({
     create: publicProcedure.input(z.object({ name: z.string().trim().min(2).max(80) })).mutation(async ({ ctx, input }) => {
       const account = await requireManualAccount(ctx.req);
       try { return await privateGroups.createPrivateGroup(account.id, input.name); } catch (error) { throw privateGroupError(error); }
+    }),
+    searchByPublicId: publicProcedure.input(z.object({ publicGroupId: z.string().trim().min(8).max(24) })).query(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      try { return await privateGroups.searchPrivateGroupByPublicId(account.id, input.publicGroupId); } catch (error) { throw privateGroupError(error); }
+    }),
+    joinByPublicId: publicProcedure.input(z.object({ publicGroupId: z.string().trim().min(8).max(24) })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      try { return await privateGroups.joinPrivateGroupByPublicId(account.id, input.publicGroupId); } catch (error) { throw privateGroupError(error); }
     }),
     createMediaUpload: publicProcedure.input(z.object({ groupId: z.number().int().positive(), fileName: z.string().trim().min(1).max(180), mimeType: z.string().trim().regex(/^(image|audio)\/[a-z0-9.+-]+$/i, "Format media grup tidak valid.") })).mutation(async ({ ctx, input }) => {
       const account = await requireManualAccount(ctx.req);

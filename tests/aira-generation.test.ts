@@ -159,11 +159,11 @@ describe("generasi konten Aira dari server Manus", () => {
     expect(modePalette).toContain('primary: "#15803D"');
     expect(modePreview).toContain("Pratinjau tema Aira");
     expect(modePreview).toContain("Aksen");
-    expect(modeStatus).toContain("aktif");
-    expect(modeStatus).toContain("Target terdekat");
-    expect(modeStatus).toContain("Tagihan terdekat");
-    expect(modeStatus).toContain("modeBadge");
-    expect(modeStatus).toContain("psychology");
+    expect(modeStatus).toContain("GestureDetector");
+    expect(modeStatus).toContain("Gesture.Pan()");
+    expect(modeStatus).toContain("Math.abs(event.translationX) < 48");
+    expect(modeStatus).toContain("pauseUntil.current");
+    expect(modeStatus).not.toContain("manualNavigation");
     expect(airaUi).toContain("minHeight: 86");
     expect(home).toContain('kicker: "AIRA HOT PRO 18+"');
     expect(home).toContain('kicker: "AIRA AHLI ILMUAN"');
@@ -171,7 +171,7 @@ describe("generasi konten Aira dari server Manus", () => {
     expect(home).toContain("hero.icon");
     expect(home).toContain("modeHeroDetails");
     expect(developerStudio).toContain("Keterangan kartu utama Aira");
-    expect(modeStatus).toContain("LayoutAnimation");
+    expect(modeStatus).toContain("Animated.timing");
     expect(tabLayout).toContain("airaTabLabel");
     expect(gallery).toContain("collectionAccents");
     expect(gallery).toContain("aksen visual khusus");

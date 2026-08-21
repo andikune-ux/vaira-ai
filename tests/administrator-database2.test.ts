@@ -21,8 +21,10 @@ describe("SERVER DATABASE 2", () => {
     expect(routerSource).toContain("db.getServerDatabase2RecoveryStatus()");
   });
 
-  it("states that primary sync is manual and recovered cloud metadata remains restricted", () => {
+  it("states that primary sync is manual, reports readiness honestly, and keeps recovered cloud metadata restricted", () => {
     expect(database2Source).toContain("Tidak ada sinkronisasi otomatis");
+    expect(database2Source).toContain("Koneksi langsung database primary belum dikonfigurasi");
+    expect(database2Source).toContain("Koneksi primary");
     expect(database2Source).toContain("Arsip AiraXCloud yang dipulihkan tetap dibatasi");
     expect(database2Source).toContain("Sesi lama serta token akses tidak dipindahkan");
   });

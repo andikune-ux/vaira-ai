@@ -27,18 +27,17 @@ describe("AiraXCloud dan AiraXBackup", () => {
     expect(cloudPage).toContain("Batasi");
   });
 
-  it("menghapus arsip dan riwayat secara permanen serta memangkas cadangan tertua setelah satu bulan", () => {
+  it("tidak menghapus arsip otomatis dan hanya mengizinkan penghapusan setelah tindakan administrator", () => {
     const db = read("server/db.ts");
     const router = read("server/routers.ts");
     const cloudPage = read("app/administrator-cloud.tsx");
     expect(db).toContain("deleteAiraXCloudBackupPermanently");
-    expect(db).toContain("pruneOldestAiraXCloudBackup");
-    expect(db).toContain("rows.length < 2");
-    expect(db).toContain("rows[rows.length - 1]");
+    expect(db).not.toContain("pruneOldestAiraXCloudBackup");
     expect(router).toContain("input.status === \"deleted\"");
-    expect(router).toContain("await db.pruneOldestAiraXCloudBackup(account.id)");
+    expect(router).not.toContain("pruneOldestAiraXCloudBackup");
     expect(cloudPage).toContain("Hapus arsip dan riwayat?");
     expect(cloudPage).toContain("langsung hilang dari daftar");
+    expect(cloudPage).toContain("Arsip tidak dihapus otomatis");
   });
 
   it("memulihkan AiraXCloud setelah login dan mempertahankan snapshot global hanya untuk guest", () => {

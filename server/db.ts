@@ -46,6 +46,8 @@ export async function getServerDatabase2RecoveryStatus() {
     db.select({ total: count() }).from(airaxCloudBackups).where(eq(airaxCloudBackups.status, "restricted")),
   ]);
   return {
+    role: "standby" as const,
+    primaryManualBackupConfigured: Boolean(process.env.PRIMARY_DATABASE_URL),
     manualAccountsCount: Number(manualAccountsRows[0]?.total ?? 0),
     auditLogsCount: Number(auditLogsRows[0]?.total ?? 0),
     roomMessagesCount: Number(roomMessagesRows[0]?.total ?? 0),
@@ -198,19 +200,6 @@ export async function deleteAiraXCloudBackupPermanently(backupId: number) {
   await db.delete(airaxCloudBackups).where(eq(airaxCloudBackups.id, backupId));
 }
 
-/** Menjaga satu cadangan terbaru tetap tersedia dan menghapus satu cadangan tertua yang sudah berumur minimal satu bulan. */
-export async function pruneOldestAiraXCloudBackup(accountId: number, now = new Date()) {
-  const db = await getDb();
-  if (!db) return undefined;
-  const rows = await db.select().from(airaxCloudBackups).where(and(eq(airaxCloudBackups.accountId, accountId), eq(airaxCloudBackups.status, "active"))).orderBy(desc(airaxCloudBackups.createdAt));
-  if (rows.length < 2) return undefined;
-  const cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const oldest = rows[rows.length - 1];
-  if (oldest.createdAt > cutoff) return undefined;
-  await db.delete(airaxCloudBackups).where(eq(airaxCloudBackups.id, oldest.id));
-  return oldest;
-}
-
 export async function findManualAccountByPublicId(publicId: string) {
   const db = await getDb();
   if (!db) return undefined;
@@ -260,8 +249,17 @@ export async function saveAiraConversationHistory(accountId: number, payload: Ai
 export async function listAiraConversationHistories(accountId: number, mode?: AiraHistoryPayload["mode"]) {
   const database = await getDb();
   if (!database) return [];
-  const rows = await database.select().from(airaConversationHistories).where(mode ? and(eq(airaConversationHistories.accountId, accountId), eq(airaConversationHistories.mode, mode), isNull(airaConversationHistories.archivedAt)) : and(eq(airaConversationHistories.accountId, accountId), isNull(airaConversationHistories.archivedAt))).orderBy(desc(airaConversationHistories.updatedAt)).limit(200);
+  const rows = await database.select().from(airaConversationHistories).where(mode ? and(eq(airaConversationHistories.accountId, accountId), eq(airaConversationHistories.mode, mode), isNull(airaConversationHistories.archivedAt)) : and(eq(airaConversationHistories.accountId, accountId), isNull(airaConversationHistories.archivedAt))).orderBy(desc(airaConversationHistories.updatedAt)).limit(40);
   return rows.map((row) => ({ conversationId: row.conversationId, mode: row.mode, title: row.title, messages: parseAiraMessages(row.messagesJson), createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(), isPrivate: row.isPrivate }));
+}
+export async function listAiraConversationHistoryPage(accountId: number, options: { mode?: AiraHistoryPayload["mode"]; offset?: number; limit?: number }) {
+  const database = await getDb();
+  if (!database) return { items: [], hasMore: false };
+  const limit = Math.min(40, Math.max(1, options.limit ?? 40));
+  const offset = Math.max(0, options.offset ?? 0);
+  const rows = await database.select().from(airaConversationHistories).where(options.mode ? and(eq(airaConversationHistories.accountId, accountId), eq(airaConversationHistories.mode, options.mode), isNull(airaConversationHistories.archivedAt)) : and(eq(airaConversationHistories.accountId, accountId), isNull(airaConversationHistories.archivedAt))).orderBy(desc(airaConversationHistories.updatedAt)).limit(limit + 1).offset(offset);
+  const items = rows.slice(0, limit).map((row) => ({ conversationId: row.conversationId, mode: row.mode, title: row.title, messages: parseAiraMessages(row.messagesJson), createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(), isPrivate: row.isPrivate }));
+  return { items, hasMore: rows.length > limit };
 }
 export async function listAdministratorAiraConversationHistories(limit = 300) {
   const database = await getDb();
