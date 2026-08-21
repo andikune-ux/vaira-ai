@@ -3401,3 +3401,12 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Ganti ikon ayam pada overlay kartu dengan ikon orang pintar layanan Aira AI.
 - [x] Kecilkan ukuran visual ikon tetapi pertahankan area sentuh yang mudah ditekan.
 - [x] Validasi ikon baru tidak mengubah rotasi, swipe, atau pengaturan kartu.
+- [x] Hapus lingkaran latar ikon orang pintar Aira AI pada kartu.
+- [x] Atur ikon visual menjadi 40px dengan area sentuh terpisah yang tetap nyaman.
+- [x] Validasi perubahan tanpa membuat checkpoint otomatis sampai pengguna menyetujui.
+- [ ] Kembalikan lingkaran ikon layanan Aira AI dengan ukuran 40px.
+- [ ] Atur ikon orang pintar di dalam lingkaran menjadi 32px.
+- [ ] Validasi tampilan dan fungsi tanpa checkpoint otomatis.
+- [x] Atur lingkaran ikon layanan Aira AI menjadi 29px.
+- [x] Atur ikon orang pintar di dalamnya menjadi 28px.
+- [x] Validasi ukuran final tanpa checkpoint otomatis.

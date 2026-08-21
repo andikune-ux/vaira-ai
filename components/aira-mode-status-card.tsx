@@ -588,7 +588,6 @@ export function AiraModeStatusCard() {
         >
           <View style={styles.smartIconRing}>
             <MaterialIcons name="psychology" size={28} color="#36B7FF" />
-            <View style={styles.smartIconStatus} />
           </View>
         </Pressable>
       </View>
@@ -719,27 +718,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderColor: "#36B7FF",
-    borderRadius: 26,
-    borderWidth: 2,
-    elevation: 5,
-    height: 52,
+    borderRadius: 14.5,
+    borderWidth: 1.5,
+    elevation: 4,
+    height: 29,
     justifyContent: "center",
     shadowColor: "#0A1F36",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 5,
-    width: 52,
-  },
-  smartIconStatus: {
-    backgroundColor: "#23C79A",
-    borderColor: "#FFFFFF",
-    borderRadius: 7,
-    borderWidth: 2,
-    bottom: 1,
-    height: 12,
-    position: "absolute",
-    right: 0,
-    width: 12,
+    width: 29,
   },
   card: {
     borderRadius: 18,
