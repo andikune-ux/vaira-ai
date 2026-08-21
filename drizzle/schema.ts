@@ -195,6 +195,7 @@ export type InsertGlobalRoomReport = typeof globalRoomReports.$inferInsert;
 export const privateChatGroups = mysqlTable("privateChatGroups", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 80 }).notNull(),
+  photoStorageKey: varchar("photoStorageKey", { length: 320 }),
   createdByAccountId: int("createdByAccountId").notNull(),
   adminAccountId: int("adminAccountId").notNull(),
   status: mysqlEnum("status", ["active", "frozen", "deleted"]).default("active").notNull(),
@@ -215,6 +216,16 @@ export const privateChatGroupMembers = mysqlTable("privateChatGroupMembers", {
   joinedAt: timestamp("joinedAt").defaultNow().notNull(),
 }, (table) => [uniqueIndex("privateChatGroupMembers_group_account_unique").on(table.groupId, table.accountId)]);
 export type PrivateChatGroupMember = typeof privateChatGroupMembers.$inferSelect;
+
+/** Member yang dikeluarkan tidak dapat menggunakan link lama sampai admin memutar link undangan. */
+export const privateChatGroupRemovedMembers = mysqlTable("privateChatGroupRemovedMembers", {
+  id: int("id").autoincrement().primaryKey(),
+  groupId: int("groupId").notNull(),
+  accountId: int("accountId").notNull(),
+  blockedAt: timestamp("blockedAt").defaultNow().notNull(),
+  removedByAccountId: int("removedByAccountId").notNull(),
+}, (table) => [uniqueIndex("privateChatGroupRemovedMembers_group_account_unique").on(table.groupId, table.accountId)]);
+export type PrivateChatGroupRemovedMember = typeof privateChatGroupRemovedMembers.$inferSelect;
 
 /** Pesan grup privat menggunakan struktur balasan yang sama dengan Room Global. */
 export const privateChatGroupMessages = mysqlTable("privateChatGroupMessages", {

@@ -1,13 +1,15 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, isNull } from "drizzle-orm";
 
 import {
   manualAccounts,
   privateChatGroupInvites,
   privateChatGroupMembers,
   privateChatGroupMessages,
+  privateChatGroupRemovedMembers,
   privateChatGroups,
 } from "../drizzle/schema";
 import { getDb } from "./db";
+import { storageGetSignedUrl } from "./storage";
 
 export const PRIVATE_GROUP_MEMBERSHIP_LIMIT = 10;
 
@@ -71,7 +73,7 @@ export async function listPrivateGroupsForAccount(accountId: number) {
     const group = await groupOrThrow(membership.groupId).catch(() => null);
     if (!group || group.status === "deleted") return null;
     const members = await database.select().from(privateChatGroupMembers).where(eq(privateChatGroupMembers.groupId, group.id));
-    return { id: group.id, name: group.name, status: group.status, adminAccountId: group.adminAccountId, memberCount: members.length, isAdmin: group.adminAccountId === accountId, updatedAt: group.updatedAt.toISOString(), createdAt: group.createdAt.toISOString() };
+    return { id: group.id, name: group.name, photoUrl: group.photoStorageKey ? await storageGetSignedUrl(group.photoStorageKey).catch(() => null) : null, status: group.status, adminAccountId: group.adminAccountId, memberCount: members.length, isAdmin: group.adminAccountId === accountId, updatedAt: group.updatedAt.toISOString(), createdAt: group.createdAt.toISOString() };
   }));
   return result.filter((item): item is NonNullable<typeof item> => Boolean(item));
 }
@@ -88,6 +90,7 @@ export async function getPrivateGroupDetail(groupId: number, viewerAccountId?: n
   return {
     id: group.id,
     name: group.name,
+    photoUrl: group.photoStorageKey ? await storageGetSignedUrl(group.photoStorageKey).catch(() => null) : null,
     status: group.status,
     adminAccountId: group.adminAccountId,
     createdByAccountId: group.createdByAccountId,
@@ -117,6 +120,16 @@ export async function updatePrivateGroupName(groupId: number, actorAccountId: nu
   return getPrivateGroupDetail(groupId, actorAccountId);
 }
 
+export async function updatePrivateGroupPhoto(groupId: number, actorAccountId: number, storageKey: string) {
+  const database = await databaseOrThrow();
+  const group = await groupOrThrow(groupId);
+  if (group.adminAccountId !== actorAccountId) throw new Error("Hanya admin grup yang dapat mengubah foto profil grup.");
+  if (group.status !== "active") throw new Error("Foto profil hanya dapat diubah pada grup aktif.");
+  if (!storageKey.startsWith(`private-groups/${groupId}/`)) throw new Error("Berkas foto profil grup tidak valid.");
+  await database.update(privateChatGroups).set({ photoStorageKey: storageKey }).where(eq(privateChatGroups.id, groupId));
+  return getPrivateGroupDetail(groupId, actorAccountId);
+}
+
 export async function transferPrivateGroupAdmin(groupId: number, actorAccountId: number, targetAccountId: number) {
   const database = await databaseOrThrow();
   const group = await groupOrThrow(groupId);
@@ -138,6 +151,13 @@ export async function addPrivateGroupMember(groupId: number, actorAccountId: num
   return getPrivateGroupDetail(groupId, actorAccountId);
 }
 
+export async function addPrivateGroupMemberByPublicId(groupId: number, actorAccountId: number, publicId: string) {
+  const database = await databaseOrThrow();
+  const account = await database.select({ id: manualAccounts.id }).from(manualAccounts).where(eq(manualAccounts.publicId, publicId.trim())).limit(1);
+  if (!account[0]) throw new Error("ID pengguna tidak ditemukan. Periksa kembali ID publik pengguna.");
+  return addPrivateGroupMember(groupId, actorAccountId, account[0].id);
+}
+
 export async function removePrivateGroupMember(groupId: number, actorAccountId: number, targetAccountId: number) {
   const database = await databaseOrThrow();
   const group = await groupOrThrow(groupId);
@@ -146,6 +166,7 @@ export async function removePrivateGroupMember(groupId: number, actorAccountId: 
   const membership = await getPrivateGroupMembership(groupId, targetAccountId);
   if (!membership) throw new Error("Pengguna bukan member grup.");
   await database.delete(privateChatGroupMembers).where(eq(privateChatGroupMembers.id, membership.id));
+  await database.insert(privateChatGroupRemovedMembers).values({ groupId, accountId: targetAccountId, removedByAccountId: actorAccountId }).onDuplicateKeyUpdate({ set: { blockedAt: new Date(), removedByAccountId: actorAccountId } });
   return getPrivateGroupDetail(groupId, actorAccountId);
 }
 
@@ -154,7 +175,7 @@ export async function leavePrivateGroup(groupId: number, accountId: number) {
   const group = await groupOrThrow(groupId);
   const membership = await getPrivateGroupMembership(groupId, accountId);
   if (!membership) throw new Error("Anda bukan member grup ini.");
-  const members = await database.select().from(privateChatGroupMembers).where(eq(privateChatGroupMembers.groupId, groupId)).orderBy(desc(privateChatGroupMembers.joinedAt));
+  const members = await database.select().from(privateChatGroupMembers).where(eq(privateChatGroupMembers.groupId, groupId)).orderBy(asc(privateChatGroupMembers.joinedAt));
   const remaining = members.filter((member) => member.accountId !== accountId);
   await database.delete(privateChatGroupMembers).where(eq(privateChatGroupMembers.id, membership.id));
   if (group.adminAccountId === accountId) {
@@ -188,6 +209,26 @@ export async function deleteOwnPrivateGroupMessage(groupId: number, messageId: n
   return true;
 }
 
+export async function deletePrivateGroupMessageByAdmin(groupId: number, messageId: number, actorAccountId: number) {
+  const database = await databaseOrThrow();
+  const group = await groupOrThrow(groupId);
+  if (group.adminAccountId !== actorAccountId) throw new Error("Hanya admin grup yang dapat menghapus pesan member.");
+  const message = await database.select().from(privateChatGroupMessages).where(and(eq(privateChatGroupMessages.id, messageId), eq(privateChatGroupMessages.groupId, groupId))).limit(1);
+  if (!message[0] || message[0].deletedAt) return false;
+  await database.update(privateChatGroupMessages).set({ content: "Pesan dihapus admin grup", deletedAt: new Date(), deletedOriginalContent: message[0].content, replyToId: null, replyToDisplayName: null, replyToContent: null }).where(eq(privateChatGroupMessages.id, messageId));
+  return true;
+}
+
+export async function deleteAllPrivateGroupMessagesByAdmin(groupId: number, actorAccountId: number) {
+  const database = await databaseOrThrow();
+  const group = await groupOrThrow(groupId);
+  if (group.adminAccountId !== actorAccountId) throw new Error("Hanya admin grup yang dapat menghapus seluruh percakapan.");
+  const messages = await database.select().from(privateChatGroupMessages).where(and(eq(privateChatGroupMessages.groupId, groupId), isNull(privateChatGroupMessages.deletedAt)));
+  const deletedAt = new Date();
+  for (const message of messages) await database.update(privateChatGroupMessages).set({ content: "Riwayat percakapan dihapus admin grup", deletedAt, deletedOriginalContent: message.content, replyToId: null, replyToDisplayName: null, replyToContent: null }).where(eq(privateChatGroupMessages.id, message.id));
+  return { deletedCount: messages.length };
+}
+
 export async function createPrivateGroupInvite(groupId: number, actorAccountId: number, tokenHash: string) {
   const database = await databaseOrThrow();
   const group = await groupOrThrow(groupId);
@@ -203,7 +244,12 @@ export async function joinPrivateGroupByInvite(accountId: number, tokenHash: str
   const invite = await database.select().from(privateChatGroupInvites).where(and(eq(privateChatGroupInvites.tokenHash, tokenHash), isNull(privateChatGroupInvites.revokedAt))).limit(1);
   if (!invite[0]) throw new Error("Link grup tidak valid atau sudah diganti admin.");
   const permission = await assertCanJoinPrivateGroup(invite[0].groupId, accountId);
-  if (!permission.alreadyMember) await database.insert(privateChatGroupMembers).values({ groupId: invite[0].groupId, accountId });
+  const removed = await database.select().from(privateChatGroupRemovedMembers).where(and(eq(privateChatGroupRemovedMembers.groupId, invite[0].groupId), eq(privateChatGroupRemovedMembers.accountId, accountId))).limit(1);
+  if (removed[0] && invite[0].createdAt.getTime() <= removed[0].blockedAt.getTime()) throw new Error("Anda dikeluarkan dari grup ini. Minta admin membuat link undangan baru sebelum bergabung kembali.");
+  if (!permission.alreadyMember) {
+    await database.insert(privateChatGroupMembers).values({ groupId: invite[0].groupId, accountId });
+    if (removed[0]) await database.delete(privateChatGroupRemovedMembers).where(eq(privateChatGroupRemovedMembers.id, removed[0].id));
+  }
   return getPrivateGroupDetail(invite[0].groupId, accountId);
 }
 

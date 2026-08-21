@@ -99,7 +99,7 @@ function normalizeState(candidate: FinanceState): FinanceState {
         greetingCardEnabled: candidate.profile?.uiPreferences?.greetingCardEnabled ?? true,
         greetingCardIntervalSeconds: Math.max(5, Math.min(60, candidate.profile?.uiPreferences?.greetingCardIntervalSeconds ?? 10)),
         greetingCardEffect: candidate.profile?.uiPreferences?.greetingCardEffect === "card" ? "card" : "text",
-        greetingCardAnimation: ["spin", "fade", "slide", "zoom", "flip", "bounce", "wipe", "pulse", "tilt", "blur"].includes(candidate.profile?.uiPreferences?.greetingCardAnimation ?? "") ? candidate.profile?.uiPreferences?.greetingCardAnimation : "slide",
+        greetingCardAnimation: ["spin", "fade", "slide", "zoom", "flip", "bounce", "wipe", "pulse", "tilt", "blur", "random"].includes(candidate.profile?.uiPreferences?.greetingCardAnimation ?? "") ? candidate.profile?.uiPreferences?.greetingCardAnimation : "slide",
         greetingCardShareFormat: ["square", "portrait", "story"].includes(candidate.profile?.uiPreferences?.greetingCardShareFormat ?? "") ? candidate.profile?.uiPreferences?.greetingCardShareFormat : "story",
         greetingCardTemplate: ["royal", "champagne", "midnight", "pearl"].includes(candidate.profile?.uiPreferences?.greetingCardTemplate ?? "") ? candidate.profile?.uiPreferences?.greetingCardTemplate : "royal",
         spcaIconSize: candidate.profile?.uiPreferences?.spcaIconSize ?? EMPTY_FINANCE_STATE.profile.uiPreferences.spcaIconSize ?? 54,

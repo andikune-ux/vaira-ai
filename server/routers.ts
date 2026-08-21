@@ -706,7 +706,7 @@ export const appRouter = router({
       if (group.status !== "active") throw new TRPCError({ code: "FORBIDDEN", message: "Grup dibekukan atau dihapus dan hanya dapat dibaca." });
       const extension = input.mimeType.includes("png") ? "png" : input.mimeType.includes("webp") ? "webp" : input.mimeType.includes("webm") ? "webm" : input.mimeType.includes("wav") ? "wav" : input.mimeType.includes("audio") ? "m4a" : "jpg";
       const ticket = await storageCreateUploadUrl(`private-groups/${input.groupId}/${account.id}-${Date.now()}-${randomBytes(4).toString("hex")}.${extension}`);
-      return { uploadUrl: ticket.uploadUrl, readUrl: await storageGetSignedUrl(ticket.key), mimeType: input.mimeType };
+      return { uploadUrl: ticket.uploadUrl, readUrl: await storageGetSignedUrl(ticket.key), storageKey: ticket.key, mimeType: input.mimeType };
     }),
     detail: publicProcedure.input(z.object({ groupId: z.number().int().positive() })).query(async ({ ctx, input }) => {
       const account = await requireManualAccount(ctx.req);
@@ -727,13 +727,29 @@ export const appRouter = router({
       if (!await privateGroups.getPrivateGroupMembership(input.groupId, account.id)) throw new TRPCError({ code: "FORBIDDEN", message: "Hanya member yang dapat mengubah pesan grup." });
       return { success: await privateGroups.deleteOwnPrivateGroupMessage(input.groupId, input.messageId, account.id) };
     }),
+    deleteMessageAsAdmin: publicProcedure.input(z.object({ groupId: z.number().int().positive(), messageId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      try { return { success: await privateGroups.deletePrivateGroupMessageByAdmin(input.groupId, input.messageId, account.id) }; } catch (error) { throw privateGroupError(error); }
+    }),
+    deleteAllMessagesAsAdmin: publicProcedure.input(z.object({ groupId: z.number().int().positive(), confirmation: z.literal("HAPUS SEMUA PERCAKAPAN") })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      try { return await privateGroups.deleteAllPrivateGroupMessagesByAdmin(input.groupId, account.id); } catch (error) { throw privateGroupError(error); }
+    }),
     updateName: publicProcedure.input(z.object({ groupId: z.number().int().positive(), name: z.string().trim().min(2).max(80) })).mutation(async ({ ctx, input }) => {
       const account = await requireManualAccount(ctx.req);
       try { return await privateGroups.updatePrivateGroupName(input.groupId, account.id, input.name); } catch (error) { throw privateGroupError(error); }
     }),
+    updatePhoto: publicProcedure.input(z.object({ groupId: z.number().int().positive(), storageKey: z.string().trim().min(1).max(320) })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      try { return await privateGroups.updatePrivateGroupPhoto(input.groupId, account.id, input.storageKey); } catch (error) { throw privateGroupError(error); }
+    }),
     addMember: publicProcedure.input(z.object({ groupId: z.number().int().positive(), accountId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
       const account = await requireManualAccount(ctx.req);
       try { return await privateGroups.addPrivateGroupMember(input.groupId, account.id, input.accountId); } catch (error) { throw privateGroupError(error); }
+    }),
+    addMemberByPublicId: publicProcedure.input(z.object({ groupId: z.number().int().positive(), publicId: z.string().trim().min(3).max(32) })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      try { return await privateGroups.addPrivateGroupMemberByPublicId(input.groupId, account.id, input.publicId); } catch (error) { throw privateGroupError(error); }
     }),
     removeMember: publicProcedure.input(z.object({ groupId: z.number().int().positive(), accountId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
       const account = await requireManualAccount(ctx.req);

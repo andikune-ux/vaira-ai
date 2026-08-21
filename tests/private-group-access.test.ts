@@ -15,11 +15,11 @@ describe("grup privat", () => {
     expect(schema).not.toContain("inviteToken:");
   });
 
-  it("membatasi keanggotaan aktif, menegakkan admin tunggal, dan mengalihkan admin ketika keluar", () => {
+  it("membatasi keanggotaan aktif, menegakkan admin tunggal, dan mengalihkan admin ke member paling awal ketika keluar", () => {
     expect(groups).toContain("PRIVATE_GROUP_MEMBERSHIP_LIMIT = 10");
     expect(groups).toContain("countActivePrivateGroupMemberships");
     expect(groups).toContain("group.adminAccountId !== actorAccountId");
-    expect(groups).toContain("orderBy(desc(privateChatGroupMembers.joinedAt))");
+    expect(groups).toContain("orderBy(asc(privateChatGroupMembers.joinedAt))");
     expect(groups).toContain('status: "deleted", deletedAt: new Date(), deletedBy: "system:last-member-left"');
   });
 
@@ -27,6 +27,20 @@ describe("grup privat", () => {
     expect(groups).toContain('if (group.status === "frozen") throw new Error("Grup sedang dibekukan Administrator Vaira.")');
     expect(groups).toContain('if (group.status !== "active") throw new Error("Link undangan hanya tersedia untuk grup aktif.")');
     expect(groups).toContain("joinPrivateGroupByInvite");
+    expect(groups).toContain("privateChatGroupRemovedMembers");
+    expect(groups).toContain("Minta admin membuat link undangan baru sebelum bergabung kembali.");
+  });
+
+  it("membatasi moderasi pesan, foto profil, dan penambahan member berdasarkan ID publik pada admin grup", () => {
+    expect(schema).toContain("photoStorageKey");
+    expect(schema).toContain("privateChatGroupRemovedMembers_group_account_unique");
+    expect(groups).toContain("deletePrivateGroupMessageByAdmin");
+    expect(groups).toContain("deleteAllPrivateGroupMessagesByAdmin");
+    expect(groups).toContain("updatePrivateGroupPhoto");
+    expect(groups).toContain("addPrivateGroupMemberByPublicId");
+    expect(router).toContain("deleteAllMessagesAsAdmin");
+    expect(router).toContain("addMemberByPublicId");
+    expect(router).toContain("updatePhoto");
   });
 
   it("menjaga endpoint grup berbasis sesi akun dan administrator hanya memantau", () => {

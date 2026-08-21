@@ -15,18 +15,11 @@ export function KeyboardAvoidingView(props: KeyboardAvoidingProps) {
 
   useEffect(() => {
     if (Platform.OS === "web") return;
-
     const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
     const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-    const showSubscription = Keyboard.addListener(showEvent, (event) => {
-      setKeyboardHeight(Math.max(0, Math.round(event.endCoordinates.height)));
-    });
+    const showSubscription = Keyboard.addListener(showEvent, (event) => setKeyboardHeight(Math.max(0, Math.round(event.endCoordinates.height))));
     const hideSubscription = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
-
-    return () => {
-      showSubscription.remove();
-      hideSubscription.remove();
-    };
+    return () => { showSubscription.remove(); hideSubscription.remove(); };
   }, []);
 
   useEffect(() => {
@@ -45,19 +38,21 @@ export function KeyboardAvoidingView(props: KeyboardAvoidingProps) {
     };
   }, []);
 
-  const androidKeyboardInset = Platform.OS === "android" ? keyboardHeight : 0;
   const webInset = Platform.OS === "web" ? webKeyboardOffset : 0;
-  const behavior = Platform.OS === "android" ? undefined : props.behavior ?? "padding";
+  const nativeKeyboardVisible = Platform.OS !== "web" && keyboardHeight > 0;
+  const behavior = Platform.OS === "android" ? "height" : props.behavior ?? "padding";
 
   return (
     <NativeKeyboardAvoidingView
       {...props}
       behavior={behavior}
-      keyboardVerticalOffset={Platform.OS === "android" ? 0 : props.keyboardVerticalOffset}
+      keyboardVerticalOffset={props.keyboardVerticalOffset ?? 0}
       style={[
         props.style,
-        androidKeyboardInset > 0 || webInset > 0
-          ? { paddingBottom: Math.max(androidKeyboardInset, webInset) }
+        webInset > 0
+          ? { paddingBottom: webInset }
+          : nativeKeyboardVisible && Platform.OS === "android"
+            ? { minHeight: 0 }
           : null,
       ]}
     />

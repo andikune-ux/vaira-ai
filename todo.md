@@ -3272,3 +3272,39 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Menambahkan daftar grup dan kontrol pantau, beku, serta hapus grup untuk Administrator Vaira tanpa hak berkomentar.
 - [x] Menambahkan regresi untuk hak akses grup, alih admin, batas grup, tautan undangan, dan pembekuan grup.
 - [x] Menahan checkpoint grup sampai pengguna memberi persetujuan eksplisit; persetujuan diterima melalui perintah `cp`.
+
+## Pembaruan Waktu Salat, Room Global, Grup, dan Beranda
+
+- [x] Menambahkan sakelar Waktu Salat aktif/nonaktif yang default aktif serta menyembunyikan pintasan Waktu Salat dari Beranda saat nonaktif.
+- [x] Menambahkan countdown waktu salat berikutnya pada kartu ucapan event dengan animasi yang mengikuti pengaturan animasi Studio Developer.
+- [x] Menambahkan kartu cuaca hari ini dengan suhu dan tampilan animasi yang tetap berfungsi saat data cuaca belum tersedia.
+- [x] Memperbaiki tautan pesan Room Global dan Grup agar berwarna biru serta dapat disentuh untuk dibuka.
+- [x] Memastikan seluruh composer Room Global dan Grup selalu berada di atas keyboard perangkat.
+- [x] Menambahkan tindakan Administrator untuk menghapus seluruh riwayat Room Global, dengan konfirmasi berlapis.
+- [x] Menambahkan penghapusan pesan per bubble dan penghapusan seluruh riwayat Grup oleh admin grup, dengan konfirmasi berlapis.
+- [x] Menambahkan pencarian/tambah member grup berdasarkan ID pengguna.
+- [x] Mengalihkan admin grup yang keluar kepada member yang paling awal bergabung.
+- [x] Menambahkan foto profil grup yang dapat dipasang atau diganti admin grup.
+- [x] Mencegah member yang dikeluarkan bergabung lewat link lama; sediakan tindakan buat link undangan baru.
+- [x] Menjalankan validasi TypeScript, lint, API, dan regresi penuh sebelum meminta checkpoint.
+
+## Penyempurnaan Kartu Aira Terpadu
+
+- [x] Memindahkan waktu salat berikutnya serta cuaca/suhu dari kartu terpisah ke dalam kartu biru Aira siap membantu di Beranda.
+- [x] Menjaga kartu Aira terpadu tetap ringkas pada layar mobile dan menghapus kartu cuaca terpisah di bawahnya.
+- [x] Menjalankan TypeScript dan regresi fokus setelah penataan kartu Aira terpadu.
+
+## Animasi Random dan Sakelar Waktu Salat Profil
+
+- [x] Menambahkan pilihan Random pada animasi kartu ucapan di opsi Developer.
+- [x] Memilih variasi animasi kartu ucapan secara acak ketika opsi Random dipilih pada Studio Developer.
+- [x] Menambahkan sakelar Waktu Salat pada Pengaturan Profil yang aktif secara default.
+- [x] Menyembunyikan tombol Waktu Salat Aksi Cepat dan sinyal salat kartu Aira saat sakelar Profil dimatikan.
+- [x] Menjalankan TypeScript, lint, dan regresi fokus sebelum meminta checkpoint.
+
+## Rotasi Empat Kartu Utama Beranda
+
+- [x] Mengubah rotasi kartu utama menjadi Aira, kartu ucapan, waktu salat berikutnya, dan cuaca hari ini bersuhu.
+- [x] Menghapus panel sinyal salat-cuaca gabungan yang berada di bawah kartu utama.
+- [x] Memastikan sakelar Waktu Salat Profil mengeluarkan kartu salat dari rotasi saat dinonaktifkan.
+- [x] Menjalankan TypeScript, lint, dan regresi fokus untuk rotasi empat kartu utama.

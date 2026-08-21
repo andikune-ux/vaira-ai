@@ -31,6 +31,7 @@ describe("Kalender dan kartu dinamis Beranda", () => {
 
   it("menyediakan pengaturan developer kartu ucapan", async () => {
     const types = await readFile("lib/finance/types.ts", "utf8");
+    const financeContext = await readFile("lib/finance/finance-context.tsx", "utf8");
     const developer = await readFile("app/developer-studio.tsx", "utf8");
     expect(types).toContain("greetingCardEnabled: true");
     expect(types).toContain("greetingCardIntervalSeconds: 10");
@@ -44,6 +45,10 @@ describe("Kalender dan kartu dinamis Beranda", () => {
     expect(developer).toContain("Seluruh kartu");
     expect(developer.match(/Pilih animasi/g)?.length).toBeGreaterThan(0);
     expect(developer).toContain("blur");
+    expect(developer).toContain("Animasi acak kartu ucapan");
+    expect(developer).toContain('value: "random"');
+    expect(types).toContain('"random"');
+    expect(financeContext).toContain('"random"');
     expect(developer).toContain("Pratinjau langsung");
     expect(developer).toContain("Persegi 1:1");
     expect(developer).toContain("Story 9:16");
@@ -51,6 +56,16 @@ describe("Kalender dan kartu dinamis Beranda", () => {
     expect(developer).toContain("Champagne Luxe");
     expect(developer).toContain("Midnight Velvet");
     expect(developer).toContain("Pearl Ivory");
+  });
+
+  it("menyediakan sakelar Profil untuk menyembunyikan Waktu Salat dari Aksi Cepat dan kartu Aira", async () => {
+    const profile = await readFile("app/profile-settings.tsx", "utf8");
+    const home = await readFile("app/(tabs)/index.tsx", "utf8");
+    const signalCard = await readFile("components/aira-mode-status-card.tsx", "utf8");
+    expect(profile).toContain("Waktu Salat di Beranda");
+    expect(profile).toContain("prayerTimesVisible");
+    expect(home).toContain('action.id !== "prayer"');
+    expect(signalCard).toContain("prayerVisible");
   });
 
   it("menyediakan hitung mundur event dan tawaran kartu", async () => {
