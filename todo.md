@@ -3398,3 +3398,6 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Audit build Publish yang berhenti di 1% melalui log/status yang tersedia.
 - [x] Kembalikan ikon pintar bulat di bawah kiri kartu ucapan tanpa mengubah pengaturan kartu baru.
 - [x] Validasi layout ikon, TypeScript, lint, dan regresi build sebelum checkpoint.
+- [x] Ganti ikon ayam pada overlay kartu dengan ikon orang pintar layanan Aira AI.
+- [x] Kecilkan ukuran visual ikon tetapi pertahankan area sentuh yang mudah ditekan.
+- [x] Validasi ikon baru tidak mengubah rotasi, swipe, atau pengaturan kartu.

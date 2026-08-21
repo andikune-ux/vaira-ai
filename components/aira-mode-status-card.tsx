@@ -18,7 +18,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { captureRef } from "react-native-view-shot";
 
 import { useColors } from "@/hooks/use-colors";
-import { ChickenIcon } from "@/components/chicken-icon";
 import { getAiraModePresentation } from "@/lib/aira-mode-presentation";
 import {
   dayLabel,
@@ -588,7 +587,7 @@ export function AiraModeStatusCard() {
           style={styles.smartIconButton}
         >
           <View style={styles.smartIconRing}>
-            <ChickenIcon size={38} />
+            <MaterialIcons name="psychology" size={28} color="#36B7FF" />
             <View style={styles.smartIconStatus} />
           </View>
         </Pressable>
@@ -707,36 +706,40 @@ export function AiraModeStatusCard() {
 const styles = StyleSheet.create({
   wrap: { marginBottom: 18, marginTop: 12, position: "relative", zIndex: 3 },
   smartIconButton: {
-    bottom: -20,
+    alignItems: "center",
+    bottom: -18,
+    height: 54,
+    justifyContent: "center",
     left: 30,
     position: "absolute",
+    width: 54,
     zIndex: 8,
   },
   smartIconRing: {
     alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderColor: "#36B7FF",
-    borderRadius: 31,
+    borderRadius: 26,
     borderWidth: 2,
     elevation: 5,
-    height: 62,
+    height: 52,
     justifyContent: "center",
     shadowColor: "#0A1F36",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 5,
-    width: 62,
+    width: 52,
   },
   smartIconStatus: {
     backgroundColor: "#23C79A",
     borderColor: "#FFFFFF",
     borderRadius: 7,
     borderWidth: 2,
-    bottom: 3,
-    height: 14,
+    bottom: 1,
+    height: 12,
     position: "absolute",
-    right: 1,
-    width: 14,
+    right: 0,
+    width: 12,
   },
   card: {
     borderRadius: 18,
