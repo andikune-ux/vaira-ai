@@ -26,7 +26,7 @@ export default function LoginScreen() {
       await Auth.setManualSessionToken(result.sessionToken);
       await Auth.setUserInfo({ id: result.account.id, openId: `manual:${result.account.id}`, name: result.account.fullName, email: result.account.email, loginMethod: "airax-manual", lastSignedIn: new Date() });
       const localState = await refreshStorageScope();
-      const accountProfile: Partial<FinanceState["profile"]> = { mode: "account", displayName: result.account.fullName, username: result.account.username, bio: result.account.bio, featuredPhotoUris: result.account.featuredPhotoUris, userAvatarUri: localState.profile.userAvatarUri, syncEnabled: true };
+      const accountProfile: Partial<FinanceState["profile"]> = { mode: "account", displayName: result.account.fullName, username: result.account.username, bio: result.account.bio, featuredPhotoUris: result.account.featuredPhotoUris, userAvatarUri: result.account.avatarUri ?? localState.profile.userAvatarUri, syncEnabled: true };
       await updateProfile(accountProfile);
       const cloudSnapshot = await cloudRestore.refetch();
       if (cloudSnapshot.data?.payload) {

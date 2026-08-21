@@ -24,9 +24,9 @@ describe("sistem respons Aira", () => {
   it("memisahkan pengaturan Aira Default ke Profil", () => {
     const settings = source("app/settings.tsx");
     const setting = source("app/aira-setting.tsx");
-    expect(settings).toContain('label="Aira Setting"');
+    expect(settings).toContain('label="Referensi Aira"');
     expect(settings).toContain('router.push("/aira-setting"');
-    expect(setting).toContain("Pengaturan khusus Aira Default");
+    expect(setting).toContain("Pengaturan Referensi Aira");
     expect(setting).toContain('modeScopes: ["aira"]');
   });
 

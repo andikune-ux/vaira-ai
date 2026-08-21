@@ -3410,3 +3410,27 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Atur lingkaran ikon layanan Aira AI menjadi 29px.
 - [x] Atur ikon orang pintar di dalamnya menjadi 28px.
 - [x] Validasi ukuran final tanpa checkpoint otomatis.
+- [x] Audit mendalam proses/job Publish yang berhenti di 1% dan log layanan terkait.
+- [x] Audit konfigurasi Expo Android, dependensi, dan artefak yang dapat menghambat build.
+- [x] Terapkan pemulihan aman tanpa menghapus perubahan aplikasi atau checkpoint stabil.
+- [x] Validasi build lokal, server, dan regresi setelah pemulihan.
+- [x] Audit layar pengaturan, preferensi kartu Beranda, Waktu Salat, dan alur foto profil.
+- [x] Satukan preferensi ke halaman Semua Pengaturan dengan kategori dan subhalaman yang rapi.
+- [x] Tempatkan Kartu Rotasi Beranda dan Waktu Salat di kategori Profil dan Beranda.
+- [x] Pulihkan alur foto profil: galeri, crop, Oke, simpan, dan kembali.
+- [x] Validasi tombol, navigasi, penyimpanan foto, dan regresi tanpa mengubah pengaturan lain.
+- [x] Audit semua text box/composer dan penyebab regresi keyboard overlap di seluruh layar.
+- [x] Terapkan pola keyboard-safe yang konsisten agar input selalu di atas keyboard.
+- [x] Pindahkan akses Riwayat Aira dari Preferensi ke Administrator pada Server Database.
+- [x] Pertahankan data riwayat Aira dan validasi navigasi Administrator.
+- [x] Jalankan regresi keyboard, navigasi, TypeScript, dan lint tanpa checkpoint otomatis.
+- [x] Audit kontrak server/database untuk foto profil, bio, dan foto unggulan.
+- [x] Tambahkan upload dan penyimpanan foto profil pada server akun.
+- [x] Pulihkan avatar, bio, dan foto unggulan setelah logout lalu login kembali.
+- [x] Pindahkan Waktu Salat dan Kartu Beranda ke Pengaturan Referensi Aira.
+- [x] Hilangkan Waktu Salat dan Kartu Beranda dari halaman Profil, sisakan profil/bio/foto unggulan.
+- [x] Validasi crop, simpan, logout-login, navigasi, dan regresi tanpa checkpoint otomatis.
+
+- [x] Audit ulang agar Foto Profil, Bio, dan Foto Unggulan hanya tampil di menu Profil.
+- [x] Pastikan Referensi Aira menampilkan Waktu Salat dan seluruh pengaturan Kartu Beranda.
+- [x] Validasi tidak ada preferensi yang hilang atau berpindah dari state tersimpan.

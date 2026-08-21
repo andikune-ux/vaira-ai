@@ -34,7 +34,7 @@ describe("Riwayat layanan Aira per akun", () => {
 
   it("menyediakan tombol Layanan Aira berikon forum di console Administrator", () => {
     expect(administratorEntry).toContain('name="forum"');
-    expect(administratorEntry).toContain("Layanan Aira");
+    expect(administratorEntry).toContain("Riwayat Layanan Aira");
     expect(administratorEntry).toContain('pathname: "/administrator-aira"');
   });
 });

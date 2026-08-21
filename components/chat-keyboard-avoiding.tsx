@@ -40,7 +40,8 @@ export function KeyboardAvoidingView(props: KeyboardAvoidingProps) {
 
   const webInset = Platform.OS === "web" ? webKeyboardOffset : 0;
   const nativeKeyboardVisible = Platform.OS !== "web" && keyboardHeight > 0;
-  const behavior = Platform.OS === "android" ? "height" : props.behavior ?? "padding";
+  const behavior = props.behavior ?? (Platform.OS === "ios" ? "padding" : undefined);
+  const nativeKeyboardInset = Platform.OS === "android" ? keyboardHeight : 0;
 
   return (
     <NativeKeyboardAvoidingView
@@ -52,7 +53,7 @@ export function KeyboardAvoidingView(props: KeyboardAvoidingProps) {
         webInset > 0
           ? { paddingBottom: webInset }
           : nativeKeyboardVisible && Platform.OS === "android"
-            ? { minHeight: 0 }
+            ? { paddingBottom: nativeKeyboardInset, minHeight: 0 }
           : null,
       ]}
     />

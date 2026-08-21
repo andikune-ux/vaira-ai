@@ -1,0 +1,1 @@
+ALTER TABLE `manualAccounts` ADD `avatarUri` text;

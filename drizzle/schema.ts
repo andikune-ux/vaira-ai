@@ -278,6 +278,7 @@ export const manualAccounts = mysqlTable("manualAccounts", {
   id: int("id").autoincrement().primaryKey(),
   publicId: varchar("publicId", { length: 32 }).unique(),
   bio: varchar("bio", { length: 280 }),
+  avatarUri: text("avatarUri"),
   featuredPhotoUris: text("featuredPhotoUris"),
   isVerified: boolean("isVerified").default(false).notNull(),
   createdByAdministrator: boolean("createdByAdministrator").default(false).notNull(),

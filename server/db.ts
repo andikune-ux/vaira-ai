@@ -631,10 +631,10 @@ export async function unblockGlobalRoomAccount(blockerAccountId: number, blocked
 }
 
 
-export async function updateManualAccountProfile(accountId: number, values: { bio: string; featuredPhotoUris: string[] }) {
+export async function updateManualAccountProfile(accountId: number, values: { bio: string; avatarUri?: string | null; featuredPhotoUris: string[] }) {
   const db = await getDb();
   if (!db) throw new Error("Database profil belum tersedia.");
-  await db.update(manualAccounts).set({ bio: values.bio.slice(0, 280), featuredPhotoUris: JSON.stringify(values.featuredPhotoUris) }).where(eq(manualAccounts.id, accountId));
+  await db.update(manualAccounts).set({ bio: values.bio.slice(0, 280), avatarUri: values.avatarUri ?? null, featuredPhotoUris: JSON.stringify(values.featuredPhotoUris) }).where(eq(manualAccounts.id, accountId));
 }
 
 

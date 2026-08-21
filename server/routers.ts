@@ -277,6 +277,16 @@ export const appRouter = router({
         return { criterion: access.criterion, expiresAt: access.expiresAt?.toISOString() ?? null };
       }),
     }),
+    uploadProfileAvatar: publicProcedure.input(z.object({ file: z.string().max(7_500_000) })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      const match = input.file.match(MEDIA_DATA_URL);
+      if (!match || !match[1].startsWith("image/")) throw new TRPCError({ code: "BAD_REQUEST", message: "Foto profil tidak valid." });
+      const raw = Buffer.from(match[2], "base64");
+      if (raw.byteLength > MAX_AIRA_MEDIA_BYTES) throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "Ukuran foto profil maksimal 5,5 MB." });
+      const extension = match[1].includes("png") ? "png" : "jpg";
+      const stored = await storagePut(`profiles/${account.id}/avatar-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${extension}`, raw, match[1]);
+      return { url: await storageGetSignedUrl(stored.key) };
+    }),
     uploadFeaturedPhotos: publicProcedure.input(z.object({ file: z.string().max(7_500_000) })).mutation(async ({ ctx, input }) => {
       const account = await requireManualAccount(ctx.req);
       const match = input.file.match(MEDIA_DATA_URL);
@@ -287,7 +297,7 @@ export const appRouter = router({
       const stored = await storagePut(`profiles/${account.id}/featured-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${extension}`, raw, match[1]);
       return { url: await storageGetSignedUrl(stored.key) };
     }),
-    updateProfile: publicProcedure.input(z.object({ bio: z.string().trim().max(280), featuredPhotoUris: z.array(z.string().url()) })).mutation(async ({ ctx, input }) => { const account = await requireManualAccount(ctx.req); await db.updateManualAccountProfile(account.id, input); const updated = await db.getManualAccountById(account.id); return updated ? toManualAccountPublic(updated) : null; }),
+    updateProfile: publicProcedure.input(z.object({ bio: z.string().trim().max(280), avatarUri: z.string().url().nullable().optional(), featuredPhotoUris: z.array(z.string().url()) })).mutation(async ({ ctx, input }) => { const account = await requireManualAccount(ctx.req); await db.updateManualAccountProfile(account.id, input); const updated = await db.getManualAccountById(account.id); return updated ? toManualAccountPublic(updated) : null; }),
     logout: publicProcedure.mutation(async ({ ctx }) => {
       const header = ctx.req.headers["x-airax-session"];
       const token = Array.isArray(header) ? header[0] : header;
