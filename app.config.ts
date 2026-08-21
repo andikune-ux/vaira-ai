@@ -48,6 +48,7 @@ const config: ExpoConfig = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: env.iosBundleId,
+    associatedDomains: ["applinks:vairaiapp-n9sw5cvx.manus.space"],
     "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -72,6 +73,11 @@ const config: ExpoConfig = {
           {
             scheme: env.scheme,
             host: "*",
+          },
+          {
+            scheme: "https",
+            host: "vairaiapp-n9sw5cvx.manus.space",
+            pathPrefix: "/private-group-join",
           },
         ],
         category: ["BROWSABLE", "DEFAULT"],

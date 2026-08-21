@@ -5,6 +5,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Linking from "expo-linking";
+import * as Clipboard from "expo-clipboard";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
 
@@ -14,6 +15,7 @@ import { useAppToast } from "@/components/app-toast";
 import { useFinance } from "@/lib/finance/finance-context";
 import { trpc } from "@/lib/trpc";
 import { getUserFacingError } from "@/lib/user-facing-error";
+import { createPrivateGroupInviteUrl } from "@/lib/private-group-links";
 
 function time(value: string | Date) {
   return new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" }).format(new Date(value));
@@ -70,10 +72,11 @@ export default function PrivateGroupChatScreen() {
   const shareInvite = async () => {
     try {
       const created = await invite.mutateAsync({ groupId });
-      const url = Linking.createURL("private-group-join", { queryParams: { token: created.token } });
-      await Share.share({ message: `Bergabung ke grup privat ${created.name} di V A I R A A I. ID grup terbaru: ${created.publicGroupId}. Link undangan: ${url}` });
+      const url = createPrivateGroupInviteUrl(created.token);
+      await Clipboard.setStringAsync(url);
+      await Share.share({ message: `Bergabung ke grup privat ${created.name} di V A I R A  A I. ID grup terbaru: ${created.publicGroupId}. Link undangan: ${url}`, url });
       await detail.refetch();
-      showToast("Link dan ID grup baru telah dibuat. Link serta ID sebelumnya tidak berlaku lagi.", "success");
+      showToast("Link disalin dan siap dibagikan. Link serta ID sebelumnya tidak berlaku lagi.", "success");
     } catch (error) { showToast(getUserFacingError(error, "Link grup belum dapat dibuat."), "info"); }
   };
   const sendText = () => {

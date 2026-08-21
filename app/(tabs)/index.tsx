@@ -850,7 +850,7 @@ export default function HomeScreen() {
                 : `${t("hello")}, ${state.profile.displayName ?? "Teman"}`}
             </Text>
             <Text style={[styles.title, { color: colors.foreground }]}>
-              {"V A I R A\u00A0\u00A0A I"}
+              {"V A I R A  A I"}
             </Text>
           </View>
           <View style={styles.topActions}>

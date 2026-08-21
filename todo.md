@@ -3387,3 +3387,11 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Menjadikan komposer Room Global serta grup bertumbuh sesuai teks, mendukung Enter sebagai baris baru, dan mempertahankan tombol kirim terpisah.
 - [x] Menambahkan penawaran update ketika aplikasi dibuka dengan ringkasan perubahan, dialog detail, tombol Update, dan Skip per versi.
 - [x] Menjalankan migrasi aditif, regresi, TypeScript, lint, dan pemeriksaan layanan sebelum meminta checkpoint.
+- [x] Pertahankan branding persis `V A I R A  A I` dengan dua spasi di antara `A` dan `A I`; jangan gunakan `V A I R A AI`.
+- [x] Audit dan selaraskan Update Prompt, header, konfigurasi aplikasi, serta metadata publik dengan branding asli.
+- [ ] Implementasikan deep link grup: buka aplikasi bila terpasang dan arahkan ke halaman unduhan resmi bila belum terpasang.
+- [x] Pulihkan rujukan branding lama yang keliru tanpa mengubah appSlug, scheme, atau bundle ID.
+- [x] Audit format link grup privat, route join, dan konfigurasi scheme/domain aplikasi.
+- [x] Tambahkan halaman fallback web yang mengarahkan penerima tanpa aplikasi ke unduhan resmi.
+- [x] Proses token/link grup setelah aplikasi terbuka atau selesai dipasang.
+- [x] Uji keamanan rotasi ID/link serta pencegahan akses anggota yang sudah di-kick.
