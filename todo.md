@@ -3259,3 +3259,5 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Menguji alur end-to-end Aira melalui endpoint backend aktif, termasuk Gemini utama dan respons fallback.
 - [x] Menguji respons ringan Forge saat ini untuk menentukan apakah fallback dapat digunakan langsung.
 - [x] Merapikan tombol berjudul panjang: hapus teks sekunder, gunakan label kecil, dan sejajarkan ikon serta judul secara horizontal.
+- [x] Memulai ulang dan memverifikasi dev server setelah laporan layanan tidak merespons.
+- [x] Mencegah Metro yang berhenti karena tekanan memori menghentikan API dev server melalui pengawasan proses yang terpisah.
