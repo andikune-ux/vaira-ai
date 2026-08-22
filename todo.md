@@ -3453,3 +3453,31 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Bandingkan kuota Gemini per jenis request dan model dengan kontrak Aira.
 - [x] Verifikasi apakah provider alternatif aktif atau semua jalur AI penuh.
 - [x] Bedakan perbaikan aplikasi dari batas kuota eksternal dalam hasil uji 10 chat.
+- [ ] Audit PIN lama, mode Aira, riwayat per mode, dan posisi tombol pemilih mode.
+- [ ] Pindahkan alur PIN dari Profil ke layanan Aira: buat PIN pertama, verifikasi PIN, dan ubah PIN.
+- [ ] Tambahkan tombol informasi outline transparan di kanan bawah layanan Aira untuk pemilih mode.
+- [ ] Tampilkan pilihan Aira Hot Pro 18+ dan Aira Ahli Ilmuwan setelah PIN benar.
+- [ ] Hapus pengaturan PIN lama dari Profil tanpa menghapus riwayat Aira per mode.
+- [ ] Validasi alur PIN dan mode tanpa checkpoint otomatis.
+- [x] Hilangkan kebutuhan PIN saat mengunci atau menghapus riwayat percakapan Aira pada semua mode.
+- [x] Pertahankan PIN hanya untuk membuka mode tersembunyi Aira Hot Pro 18+ dan Aira Ahli Ilmuwan melalui tombol ℹ️.
+- [x] Validasi ulang tindakan riwayat dan akses mode tersembunyi tanpa checkpoint otomatis.
+- [x] Uji alur PIN mode tersembunyi: buat, verifikasi benar/salah, pilih Hot Pro atau Ahli Ilmuwan, dan ubah PIN.
+- [x] Pastikan kunci serta hapus riwayat percakapan tetap tanpa PIN selama uji mode tersembunyi.
+- [x] Audit tawaran update lama dan kompatibilitas aplikasi versi lama dengan endpoint server.
+- [x] Sediakan endpoint server publik berisi versi terbaru, ringkasan perubahan, URL unduhan, dan aturan Skip per versi.
+- [x] Hubungkan tawaran update server ke aplikasi saat dibuka tanpa menggantikan data pengguna.
+- [x] Uji Update, Skip per versi, kegagalan koneksi, dan kompatibilitas respons server.
+- [x] Audit ulang kualitas kode, pengujian, konfigurasi rilis, dan dependensi aplikasi.
+- [x] Audit layanan server, endpoint pembaruan, serta alur fallback Aira.
+- [x] Klasifikasikan temuan terbukti menurut risiko dan dampak pengguna tanpa checkpoint otomatis.
+- [ ] Sediakan jalur unduhan/manual yang jelas bagi APK sangat lama yang belum memiliki pemeriksa tawaran update server.
+- [ ] Tegaskan atau ubah arti tombol kunci riwayat Aira karena tanpa PIN tombol tersebut hanya menjadi penanda privat, bukan perlindungan akses.
+- [ ] Uji langsung fitur native pada perangkat Android/iOS: kamera, mikrofon, lokasi salat, notifikasi, alarm, dan unggahan latar belakang.
+- [ ] Lengkapi kredensial host SERVER DATABASE 2 sebelum menyatakan backup manual lintas server siap digunakan.
+- [x] Jalankan pemeriksaan Expo untuk kesiapan dependensi dan konfigurasi native sebelum rilis.
+- [x] Hilangkan peringatan deprecation CJS Vite pada konfigurasi pengujian.
+- [x] Buka tawaran update melalui browser perangkat atau Chrome, bukan deep link internal aplikasi.
+- [x] Pastikan Hot Pro 18+ dan Ahli Ilmuwan otomatis kembali ke Aira Default saat aplikasi background, pindah aplikasi, atau layar terkunci.
+- [x] Pertahankan riwayat mode lama tetapi selalu mulai chat baru saat reset otomatis memasuki Aira Default.
+- [x] Validasi lifecycle aplikasi, isolasi riwayat antar mode, dan jalur unduhan browser tanpa checkpoint otomatis.

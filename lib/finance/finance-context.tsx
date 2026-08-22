@@ -173,11 +173,8 @@ export function FinanceProvider({ children }: PropsWithChildren) {
   }, [storageScope]);
 
   useEffect(() => {
-    let wasInactive = false;
     const subscription = AppState.addEventListener("change", (nextState) => {
-      if (nextState !== "active") { wasInactive = true; return; }
-      if (!wasInactive) return;
-      wasInactive = false;
+      if (nextState === "active") return;
       void updateState((previous) => previous.profile.aiMode === "aira" ? previous : { ...previous, profile: { ...previous.profile, aiMode: "aira" } });
     });
     return () => subscription.remove();

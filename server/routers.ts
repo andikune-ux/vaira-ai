@@ -232,6 +232,23 @@ async function normalizeAiraContent(content: unknown) {
 export const appRouter = router({
   // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
+  appUpdate: router({
+    latest: publicProcedure.query(() => ({
+      version: "1.0.23",
+      publishedAt: "2026-08-22T00:00:00.000Z",
+      downloadUrl: "https://vairaiapp-n9sw5cvx.manus.space/download",
+      headline: "Pembaruan V A I R A  A I tersedia",
+      summary: "Pembaruan ini menstabilkan layanan Aira, merapikan pengaturan, memperkuat grup privat, serta menambahkan tawaran update dari server.",
+      changes: [
+        "Tawaran pembaruan kini diperiksa dari server saat aplikasi dibuka.",
+        "Aira Hot Pro 18+ dan Aira Ahli Ilmuwan dibuka lewat PIN tersembunyi pada tombol informasi.",
+        "Kunci serta penghapusan riwayat Aira tidak lagi meminta PIN.",
+        "Riwayat Aira tersimpan per akun dan mode agar dapat dipulihkan setelah login.",
+        "Kartu Beranda memakai swipe dan pengaturan Waktu Salat berada pada halaman khusus.",
+        "Grup privat mendukung ID grup, link undangan, dan pengamanan anggota yang dikeluarkan.",
+      ],
+    })),
+  }),
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

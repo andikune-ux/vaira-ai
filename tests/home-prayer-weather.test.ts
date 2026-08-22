@@ -59,13 +59,13 @@ describe("Waktu Salat dan cuaca Beranda", () => {
     expect(weather).toContain("Sharing.shareAsync");
   });
 
-  it("menyediakan sakelar lima kartu rotasi pada Pengaturan Profil", () => {
-    const profileSettings = read("app/profile-settings.tsx");
-    expect(profileSettings).toContain("Kartu rotasi Beranda");
-    expect(profileSettings).toContain("showAiraHeroCard");
-    expect(profileSettings).toContain("showGreetingHeroCard");
-    expect(profileSettings).toContain("showReminderHeroCard");
-    expect(profileSettings).toContain("showPrayerHeroCard");
-    expect(profileSettings).toContain("showWeatherHeroCard");
+  it("menyediakan sakelar lima kartu rotasi pada halaman pengaturan khusus", () => {
+    const homePreferences = read("app/home-preferences.tsx");
+    expect(homePreferences).toContain("Kartu rotasi Beranda");
+    expect(homePreferences).toContain("showAiraHeroCard");
+    expect(homePreferences).toContain("showGreetingHeroCard");
+    expect(homePreferences).toContain("showReminderHeroCard");
+    expect(homePreferences).toContain("showPrayerHeroCard");
+    expect(homePreferences).toContain("showWeatherHeroCard");
   });
 });

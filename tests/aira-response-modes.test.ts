@@ -49,21 +49,27 @@ describe("sistem respons Aira", () => {
     expect(router).toContain("Model candidate failed");
   });
 
-  it("menyediakan sakelar eksplisit untuk mengaktifkan mode khusus", () => {
+  it("membuka mode khusus hanya melalui pemilih PIN pada layanan Aira", () => {
     const studio = source("app/developer-studio.tsx");
-    expect(studio).toContain("setSpecialModeActive");
-    expect(studio).toContain("Mode aktif saat ini");
-    expect(studio).toContain('aiMode: enabled ? mode : "aira"');
+    const selector = source("components/aira-mode-selector.tsx");
+    const chat = source("components/aira-chat-screen.tsx");
+    expect(studio).not.toContain("setSpecialModeActive");
+    expect(selector).toContain("createAiraModePin");
+    expect(selector).toContain("verifyAiraModePin");
+    expect(selector).toContain("Ubah PIN");
+    expect(chat).toContain("AiraModeSelector");
+    expect(chat).toContain("setModeSelectorOpen(true)");
   });
 
-  it("membatasi menu dan kunci PIN riwayat pada dua mode khusus", () => {
+  it("membatasi PIN hanya untuk pemilih mode tersembunyi, bukan tindakan riwayat", () => {
     const settings = source("app/settings.tsx");
-    const privacy = source("app/chat-privacy.tsx");
+    const selector = source("components/aira-mode-selector.tsx");
     const chat = source("components/aira-chat-screen.tsx");
-    expect(settings).toContain('profile.aiMode === "hot_pro" || profile.aiMode === "scientist"');
-    expect(privacy).toContain('state.profile.aiMode === "hot_pro" || state.profile.aiMode === "scientist"');
-    expect(privacy).toContain("PIN tidak diperlukan");
+    expect(settings).not.toContain('router.push("/chat-privacy"');
+    expect(selector).toContain("verifyAiraModePin");
     expect(chat).toContain("usesPrivateAiraMode ? <Pressable onPress={() => togglePrivate(conversation)}");
+    expect(chat).toContain("void saveConversation({ ...conversation, isPrivate: !conversation.isPrivate");
+    expect(chat).not.toContain("verifyChatPrivacyPin");
     expect(chat).toContain("Aira Default aktif");
   });
 });

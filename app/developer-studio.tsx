@@ -1,6 +1,5 @@
 import { getUserFacingError } from "@/lib/user-facing-error";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import * as Haptics from "expo-haptics";
 import Slider from "@react-native-community/slider";
 import { Image as ExpoImage } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
@@ -57,8 +56,7 @@ export default function DeveloperStudioScreen() {
   const [headline, setHeadline] = useState(state.profile.uiPreferences.homeHeadline);
   const [heroDetails, setHeroDetails] = useState<Partial<Record<AiraResponseMode, string>>>(state.profile.uiPreferences.modeHeroDetails ?? {});
   const [heroMode, setHeroMode] = useState<AiraResponseMode>("aira");
-  const [mode, setMode] = useState<AiraResponseMode>(state.profile.aiMode === "scientist" ? "scientist" : "hot_pro");
-  const [persona, setPersona] = useState(state.profile.aiPersona);
+  const [mode] = useState<AiraResponseMode>(state.profile.aiMode === "scientist" ? "scientist" : "hot_pro");
   const [voice, setVoice] = useState(state.profile.voice);
   const [systemLanguage, setSystemLanguage] = useState<SystemLanguage>(state.profile.systemLanguage ?? "id");
   const [showClock, setShowClock] = useState(state.profile.uiPreferences.showRealtimeClock);
@@ -103,26 +101,17 @@ export default function DeveloperStudioScreen() {
   const openExpertPreview = useCallback((expert: ExpertPreview) => { expertTransition.setValue(0.35); setSelectedExpertPreview(expert); Animated.timing(expertTransition, { toValue: 1, duration: 180, useNativeDriver: true }).start(); }, [expertTransition]);
   const selectedExpertIndex = selectedExpertPreview ? EXPERT_AVATAR_PREVIEWS.findIndex((expert) => expert.bidang === selectedExpertPreview.bidang) : -1;
   const expertPreviewPanResponder = useMemo(() => PanResponder.create({ onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 18, onPanResponderRelease: (_, gesture) => { if (Math.abs(gesture.dx) < 60 || selectedExpertIndex < 0) return; const nextIndex = gesture.dx < 0 ? (selectedExpertIndex + 1) % EXPERT_AVATAR_PREVIEWS.length : (selectedExpertIndex - 1 + EXPERT_AVATAR_PREVIEWS.length) % EXPERT_AVATAR_PREVIEWS.length; openExpertPreview(EXPERT_AVATAR_PREVIEWS[nextIndex]); } }), [openExpertPreview, selectedExpertIndex]);
-  const selectedModeIsActive = state.profile.aiMode === mode;
-
   const instructionForMode = state.profile.instructionItems.filter((item) => !item.modeScopes?.length || item.modeScopes.includes(mode));
   const knowledgeForMode = state.knowledgeItems.filter((item) => !item.modeScopes?.length || item.modeScopes.includes(mode));
 
   const savePreferences = async () => {
     await updateProfile({
-      aiPersona: persona.trim(),
       voice,
       systemLanguage,
       preferredLanguage: systemLanguage === "en" ? "en-US" : "id",
       uiPreferences: { ...state.profile.uiPreferences, homeHeadline: headline.trim() || "Ada yang bisa Aira bantu hari ini?", modeHeroDetails: heroDetails, showRealtimeClock: showClock, compactHome: compact, colorVisionMode, spcaEnabled, greetingCardEnabled, greetingCardIntervalSeconds: Math.max(5, Math.min(60, greetingCardIntervalSeconds)), greetingCardEffect, greetingCardAnimation, greetingCardShareFormat, greetingCardTemplate, spcaScalePercent, spcaTransparencyPercent, spcaFloatIntensity, spcaAuraColor, spcaAuraEnabled, spcaAnimationSpeed, spcaBubblePosition, spcaBubbleAnimationEnabled, spcaAutoPatrol, spcaPatrolIntervalSeconds, spcaPatrolDurationSeconds, spcaReminderBubbleEnabled, spcaBubbleDurationSeconds, spcaBubbleRepeatMinutes, spcaPassivePatrolEnabled, spcaPassiveIntervalSeconds, spcaPassiveDurationSeconds, spcaPassiveMessages },
     });
     showToast("Konfigurasi developer berhasil disimpan.");
-  };
-
-  const setSpecialModeActive = async (enabled: boolean) => {
-    await updateProfile({ aiMode: enabled ? mode : "aira" });
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
-    showToast(enabled ? `${MODE_LABELS[mode]} diaktifkan untuk layanan Aira.` : "Aira Default kembali digunakan.");
   };
 
   const saveInstruction = async () => {
@@ -182,15 +171,6 @@ export default function DeveloperStudioScreen() {
           <View style={styles.headerTitleBlock}><Text style={[styles.title, { color: colors.foreground }]}>{t("developerStudio")}</Text><Text style={[styles.subtitle, { color: colors.muted }]}>Kustomisasi Aira dan UI di perangkat ini.</Text></View>
           <Pressable onPress={() => startSelection("knowledge")} style={({ pressed }) => [styles.moreButton, { backgroundColor: colors.surface, borderColor: colors.border }, pressed && styles.pressed]}><MaterialIcons name="more-vert" size={22} color={colors.foreground} /></Pressable>
         </View>
-        <View style={[styles.notice, { backgroundColor: `${colors.warning}12` }]}><MaterialIcons name="privacy-tip" size={20} color={colors.warning} /><Text style={[styles.noticeText, { color: colors.foreground }]}>Aira Hot Pro 18+ dan Aira Ahli Ilmuan hanya tersedia dari Studio Developer. Keduanya tetap menjaga privasi, keselamatan, dan konfirmasi transaksi.</Text></View>
-
-        <AiraCard style={styles.card}>
-          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Mode respons developer</Text>
-          <Text style={[styles.helper, { color: colors.muted }]}>Mode aktif saat ini: <Text style={{ color: colors.primary, fontWeight: "800" }}>{MODE_LABELS[state.profile.aiMode]}</Text>. Pilih mode untuk mengatur instruction dan knowledge, lalu gunakan sakelar untuk mengaktifkannya.</Text>
-          <View style={styles.modeRow}>{([ ["hot_pro", "Aira Hot Pro 18+", "Persona dewasa yang lebih terbuka dalam batas aman"], ["scientist", "Aira Ahli Ilmuan", "Tim ahli netral hanya untuk topik yang relevan"] ] as const).map(([value, label, detail]) => <Pressable key={value} onPress={() => setMode(value)} style={({ pressed }) => [styles.mode, { backgroundColor: mode === value ? `${colors.primary}12` : colors.background, borderColor: mode === value ? colors.primary : colors.border }, pressed && styles.pressed]}><View style={styles.modeTopRow}><View style={styles.modeCopy}><Text style={[styles.modeLabel, { color: mode === value ? colors.primary : colors.foreground }]}>{label}</Text><Text style={[styles.modeDetail, { color: colors.muted }]}>{detail}</Text></View>{state.profile.aiMode === value ? <View style={[styles.modeActiveTag, { backgroundColor: `${colors.success}16` }]}><Text style={[styles.modeActiveText, { color: colors.success }]}>AKTIF</Text></View> : null}</View></Pressable>)}</View>
-          <View style={[styles.modeSwitchRow, { backgroundColor: selectedModeIsActive ? `${colors.success}10` : colors.background, borderColor: selectedModeIsActive ? `${colors.success}50` : colors.border }]}><View style={styles.modeCopy}><Text style={[styles.modeSwitchTitle, { color: colors.foreground }]}>{selectedModeIsActive ? `${MODE_LABELS[mode]} aktif` : `Aktifkan ${MODE_LABELS[mode]}`}</Text><Text style={[styles.modeDetail, { color: colors.muted }]}>{selectedModeIsActive ? "Layanan Aira dan kata sambutan menggunakan mode ini sampai aplikasi ditutup atau layar terkunci." : "Sakelar ini langsung mengganti mode layanan Aira; pengaturan hanya tersimpan setelah tombol Simpan konfigurasi."}</Text></View><Switch accessibilityLabel={`Aktifkan atau nonaktifkan ${MODE_LABELS[mode]}`} value={selectedModeIsActive} onValueChange={(value) => { void setSpecialModeActive(value); }} trackColor={{ false: colors.border, true: `${colors.success}80` }} thumbColor={selectedModeIsActive ? colors.success : "#FFFFFF"} /></View>
-          {mode === "hot_pro" ? <TextInput value={persona} onChangeText={setPersona} placeholder="Contoh: teman dewasa yang lugas dan suportif" placeholderTextColor={colors.muted} multiline textAlignVertical="top" style={[styles.textArea, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]} /> : <Text style={[styles.helper, { color: colors.muted }]}>Aira Ahli Ilmuan memilih ahli berdasarkan topik. Peran ahli tidak meniru atau mewakili individu nyata.</Text>}
-        </AiraCard>
         <AiraCard style={styles.card}><AiraModeThemePreview accents={state.profile.uiPreferences.modeAccentColors} onChange={(targetMode, accent) => { void updateProfile({ uiPreferences: { ...state.profile.uiPreferences, modeAccentColors: { ...state.profile.uiPreferences.modeAccentColors, [targetMode]: accent } } }); showToast(`Aksen ${MODE_LABELS[targetMode]} diperbarui.`); }} /></AiraCard>
         <AiraCard style={styles.card}><Text style={[styles.cardTitle, { color: colors.foreground }]}>Keterangan kartu utama Aira</Text><Text style={[styles.helper, { color: colors.muted }]}>Atur kalimat singkat yang tampil pada kartu utama Beranda untuk setiap mode.</Text><ChoiceRow value={heroMode} onChange={(next) => setHeroMode(next as AiraResponseMode)} choices={[{ value: "aira", label: "Aira" }, { value: "hot_pro", label: "Hot Pro" }, { value: "scientist", label: "Ahli Ilmuan" }]} colors={colors} /><View style={styles.presetRow}>{HERO_DETAIL_PRESETS[heroMode].map((preset) => <Pressable key={preset} onPress={() => setHeroDetails((previous) => ({ ...previous, [heroMode]: preset }))} style={[styles.presetChip, { backgroundColor: `${colors.primary}10`, borderColor: `${colors.primary}42` }]}><Text numberOfLines={2} style={[styles.presetText, { color: colors.primary }]}>{preset}</Text></Pressable>)}</View><TextInput value={heroDetails[heroMode] ?? ""} onChangeText={(value) => setHeroDetails((previous) => ({ ...previous, [heroMode]: value.slice(0, 120) }))} placeholder={`Keterangan ${MODE_LABELS[heroMode]}`} placeholderTextColor={colors.muted} multiline textAlignVertical="top" style={[styles.textArea, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]} /><Text style={[styles.helper, { color: colors.muted }]}>Kosongkan untuk memakai keterangan bawaan. Tekan Simpan konfigurasi untuk menerapkan perubahan.</Text></AiraCard>
 
