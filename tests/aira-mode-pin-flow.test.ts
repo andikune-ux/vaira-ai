@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import * as SecureStore from "expo-secure-store";
 
 const secureValues = new Map<string, string>();
 
@@ -8,7 +9,7 @@ vi.mock("expo-secure-store", () => ({
 }));
 
 vi.mock("react-native", () => ({ Platform: { OS: "ios" } }));
-vi.mock("@/lib/_core/auth", () => ({ getUserInfo: vi.fn(async () => ({ openId: "test-aira-mode-pin" })) }));
+vi.mock("@/lib/_core/auth", () => ({ getUserInfo: vi.fn(async () => ({ openId: "manual:user@example.com/01" })) }));
 
 import { changeAiraModePin, createAiraModePin, getAiraModePinStatus, isValidAiraModePin, verifyAiraModePin } from "@/lib/aira-mode-pin";
 
@@ -37,5 +38,15 @@ describe("alur PIN pemilih mode tersembunyi Aira", () => {
     expect(isValidAiraModePin("1234")).toBe(true);
     expect(isValidAiraModePin("12345678")).toBe(true);
     expect(isValidAiraModePin("123456789")).toBe(false);
+  });
+
+  it("menulis key SecureStore Android yang hanya memakai karakter didukung", async () => {
+    await createAiraModePin("2468");
+    const [key] = vi.mocked(SecureStore.setItemAsync).mock.calls.at(-1) ?? [];
+    expect(key).toMatch(/^vaira\.aira_mode_pin\.[a-z0-9]+$/);
+    expect(key).not.toContain("%");
+    expect(key).not.toContain("@");
+    expect(key).not.toContain(":");
+    expect(key).not.toContain("/");
   });
 });

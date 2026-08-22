@@ -3481,3 +3481,11 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Pastikan Hot Pro 18+ dan Ahli Ilmuwan otomatis kembali ke Aira Default saat aplikasi background, pindah aplikasi, atau layar terkunci.
 - [x] Pertahankan riwayat mode lama tetapi selalu mulai chat baru saat reset otomatis memasuki Aira Default.
 - [x] Validasi lifecycle aplikasi, isolasi riwayat antar mode, dan jalur unduhan browser tanpa checkpoint otomatis.
+- [x] Perbaiki nama kunci SecureStore PIN mode Aira yang tidak valid pada perangkat Android.
+- [x] Tambahkan regresi untuk memastikan key SecureStore hanya memakai karakter yang didukung.
+- [x] Validasi pembuatan, verifikasi, serta perubahan PIN mode tersembunyi tanpa checkpoint otomatis.
+- [x] Pindahkan pemicu mode tersembunyi dari layar percakapan awal ke panel Daftar Riwayat Aira.
+- [x] Terapkan 20 ketukan: diam pada ketukan 1–10 dan tampilkan sisa ketukan pada ketukan 11–20.
+- [x] Pertahankan PIN numerik 4–8 angka pada pembuatan, verifikasi, dan perubahan PIN.
+- [x] Validasi pemicu riwayat, PIN, dan pemilihan mode tanpa checkpoint otomatis.
+- [x] Simpan checkpoint otomatis setelah seluruh perbaikan pemicu PIN Daftar Riwayat tervalidasi.

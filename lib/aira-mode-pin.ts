@@ -5,10 +5,21 @@ import { getUserInfo } from "@/lib/_core/auth";
 
 type StoredAiraModePin = { pin: string };
 
+const secureStoreKeyForScope = (scope: string) => {
+  let hash = 2166136261;
+  for (let index = 0; index < scope.length; index += 1) {
+    hash ^= scope.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  // Android SecureStore menerima huruf/angka serta titik, garis bawah, dan tanda hubung.
+  // Hash mencegah karakter seperti %, @, :, atau / dari ID akun masuk ke nama kunci.
+  return `vaira.aira_mode_pin.${(hash >>> 0).toString(36)}`;
+};
+
 const keyForScope = async () => {
   const user = await getUserInfo();
   const scope = user?.openId || user?.email || "guest";
-  return `airax.aira-mode-pin.${encodeURIComponent(scope)}`;
+  return secureStoreKeyForScope(scope);
 };
 
 const read = async (): Promise<StoredAiraModePin | null> => {

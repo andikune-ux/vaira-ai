@@ -49,7 +49,7 @@ describe("sistem respons Aira", () => {
     expect(router).toContain("Model candidate failed");
   });
 
-  it("membuka mode khusus hanya melalui pemilih PIN pada layanan Aira", () => {
+  it("membuka mode khusus melalui pemilih PIN tersembunyi pada Daftar Riwayat Aira", () => {
     const studio = source("app/developer-studio.tsx");
     const selector = source("components/aira-mode-selector.tsx");
     const chat = source("components/aira-chat-screen.tsx");
@@ -58,7 +58,11 @@ describe("sistem respons Aira", () => {
     expect(selector).toContain("verifyAiraModePin");
     expect(selector).toContain("Ubah PIN");
     expect(chat).toContain("AiraModeSelector");
-    expect(chat).toContain("setModeSelectorOpen(true)");
+    expect(chat).toContain("revealModeSelector");
+    expect(chat).toContain('accessibilityLabel="Pemicu rahasia mode Aira"');
+    expect(chat).toContain("next >= 11");
+    expect(chat).toContain("next >= 20");
+    expect(chat).not.toContain('accessibilityLabel="Buka pemilih mode Aira"');
   });
 
   it("membatasi PIN hanya untuk pemilih mode tersembunyi, bukan tindakan riwayat", () => {
