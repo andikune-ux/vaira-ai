@@ -6,22 +6,26 @@ const read = (file: string) => fs.readFileSync(path.resolve(process.cwd(), file)
 
 describe("pemicu rahasia mode Aira dari Daftar Riwayat", () => {
   it("hanya menampilkan pemilih mode setelah 20 ketukan dan memberi petunjuk mulai ketukan ke-11", () => {
-    const chat = read("components/aira-chat-screen.tsx");
-    expect(chat).toContain("modeTapCount");
-    expect(chat).toContain("next >= 11");
-    expect(chat).toContain("next >= 20");
-    expect(chat).toContain("20 - next");
+    const history = read("components/aira-chat-navigation.tsx");
+    expect(history).toContain("modeTapCount");
+    expect(history).toContain("next >= 11");
+    expect(history).toContain("next >= 20");
+    expect(history).toContain("20 - next");
   });
 
   it("menempatkan pemicu pada bagian kanan bawah panel Riwayat, bukan layar percakapan utama", () => {
     const chat = read("components/aira-chat-screen.tsx");
-    const historyStart = chat.indexOf("{historyOpen ? <View");
-    const trigger = chat.indexOf('accessibilityLabel="Pemicu rahasia mode Aira"');
-    const selector = chat.indexOf("<AiraModeSelector visible");
-    expect(historyStart).toBeGreaterThan(-1);
-    expect(trigger).toBeGreaterThan(historyStart);
+    const history = read("components/aira-chat-navigation.tsx");
+    const drawer = history.indexOf("<View style={[styles.drawer");
+    const trigger = history.indexOf('accessibilityLabel="Pemicu rahasia mode Aira"');
+    const selector = history.indexOf("<AiraModeSelector visible");
+    expect(drawer).toBeGreaterThan(-1);
+    expect(trigger).toBeGreaterThan(drawer);
     expect(trigger).toBeLessThan(selector);
-    expect(chat).toContain('alignSelf: "flex-end"');
+    expect(history).toContain("secretTrigger");
+    expect(history).toContain("bottom: 18");
+    expect(history).toContain("right: 18");
+    expect(chat).not.toContain('accessibilityLabel="Pemicu rahasia mode Aira"');
     expect(chat).not.toContain('accessibilityLabel="Buka pemilih mode Aira"');
   });
 

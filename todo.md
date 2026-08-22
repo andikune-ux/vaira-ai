@@ -3489,3 +3489,5 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Pertahankan PIN numerik 4–8 angka pada pembuatan, verifikasi, dan perubahan PIN.
 - [x] Validasi pemicu riwayat, PIN, dan pemilihan mode tanpa checkpoint otomatis.
 - [x] Simpan checkpoint otomatis setelah seluruh perbaikan pemicu PIN Daftar Riwayat tervalidasi.
+- [x] Temukan dan perbaiki panel Riwayat Aira aktif yang belum menampilkan tombol pemicu di sudut kanan bawah.
+- [x] Validasi kembali tombol terlihat dan pemicu 20 ketukan bekerja pada panel riwayat yang benar tanpa checkpoint otomatis.

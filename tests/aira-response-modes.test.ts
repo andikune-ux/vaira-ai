@@ -53,15 +53,17 @@ describe("sistem respons Aira", () => {
     const studio = source("app/developer-studio.tsx");
     const selector = source("components/aira-mode-selector.tsx");
     const chat = source("components/aira-chat-screen.tsx");
+    const navigation = source("components/aira-chat-navigation.tsx");
     expect(studio).not.toContain("setSpecialModeActive");
     expect(selector).toContain("createAiraModePin");
     expect(selector).toContain("verifyAiraModePin");
     expect(selector).toContain("Ubah PIN");
-    expect(chat).toContain("AiraModeSelector");
-    expect(chat).toContain("revealModeSelector");
-    expect(chat).toContain('accessibilityLabel="Pemicu rahasia mode Aira"');
-    expect(chat).toContain("next >= 11");
-    expect(chat).toContain("next >= 20");
+    expect(navigation).toContain("AiraModeSelector");
+    expect(navigation).toContain("revealModeSelector");
+    expect(navigation).toContain('accessibilityLabel="Pemicu rahasia mode Aira"');
+    expect(navigation).toContain("next >= 11");
+    expect(navigation).toContain("next >= 20");
+    expect(chat).not.toContain("AiraModeSelector");
     expect(chat).not.toContain('accessibilityLabel="Buka pemilih mode Aira"');
   });
 
