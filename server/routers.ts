@@ -13,6 +13,7 @@ import { storageCreateUploadUrl, storageGet, storageGetSignedUrl, storagePut } f
 import { transcribeAudio } from "./_core/voiceTranscription";
 import { createPublicAccountId, createRecoveryToken, createSessionToken, getManualAccountFromRequest, hashSecret, hashSessionToken, toManualAccountAdmin, toManualAccountPublic, verifySecret } from "./manual-auth";
 import * as privateGroups from "./private-groups";
+import { analyzeReceiptWithOcrSpace } from "./receipt-ocr-fallback";
 
 const parseModelJson = (content: unknown): Record<string, unknown> => {
   const text = Array.isArray(content)
@@ -515,20 +516,20 @@ export const appRouter = router({
     analyzeReceipt: publicProcedure
       .input(z.object({ imageDataUrl: z.string().min(100).max(8_000_000) }))
       .mutation(async ({ input, ctx }) => {
-        await requireManualAccount(ctx.req);
         const prompt = `Analyze this receipt or payment proof. Extract only what is actually visible. Return JSON only in this shape:
 {
 	  "kind": "income" | "expense" | "transfer",
 	  "amount": number | null,
 	  "category": "string",
 	  "note": "string",
+	  "recipientName": "string" | null,
 	  "occurredAt": "ISO-8601 string" | null,
 	  "sourceHint": "string" | null,
 	  "destinationHint": "string" | null,
   "confidence": number,
   "needsReview": boolean
 }
-	If this is clearly an account-to-account transfer, return transfer. Extract occurredAt only when both a visible date and time can be confidently interpreted; otherwise return null. Do not invent an amount, date, time, source, or destination. This is a suggestion only and must be confirmed by the user.`;
+	The first priority is to find the transaction amount, including when the date or time is not visible. If a monetary total, transfer amount, or paid amount is clearly visible, return it even when occurredAt is null. Extract recipientName as the visible recipient, merchant, payee, or destination name when available. Extract occurredAt only when both a visible date and time can be confidently interpreted; otherwise return null. If this is clearly an account-to-account transfer, return transfer. Do not invent an amount, recipient, date, time, source, or destination. This is a suggestion only and must be confirmed by the user.`;
         try {
           const catalog = await listLLMModels();
           const model = catalog.data.find((item) => item.id.startsWith("gemini-3-flash"))?.id
@@ -546,17 +547,22 @@ export const appRouter = router({
 	            amount: Number.isFinite(amount) && amount > 0 ? amount : null,
 	            category: String(parsed.category || "Lainnya").slice(0, 80),
 	            note: String(parsed.note || "Bukti transaksi untuk ditinjau").slice(0, 240),
+	            recipientName: typeof parsed.recipientName === "string" && parsed.recipientName.trim() ? parsed.recipientName.trim().slice(0, 120) : null,
 	            occurredAt: typeof parsed.occurredAt === "string" && Number.isFinite(new Date(parsed.occurredAt).getTime()) ? new Date(parsed.occurredAt).toISOString() : null,
 	            sourceHint: typeof parsed.sourceHint === "string" ? parsed.sourceHint.slice(0, 80) : null,
 	            destinationHint: typeof parsed.destinationHint === "string" ? parsed.destinationHint.slice(0, 80) : null,
-            confidence: Math.min(1, Math.max(0, Number(parsed.confidence) || 0)),
-            needsReview: true,
-          };
-        } catch (error) {
-          console.error("[Aira OCR] Model request failed", error instanceof Error ? error.message : error);
-	          return { kind: "expense" as const, amount: null, category: "Lainnya", note: "Bukti transaksi untuk ditinjau", occurredAt: null, sourceHint: null, destinationHint: null, confidence: 0, needsReview: true };
-        }
-      }),
+	            confidence: Math.min(1, Math.max(0, Number(parsed.confidence) || 0)),
+	            needsReview: true,
+	            provider: "aira" as const,
+	          };
+	        } catch (error) {
+	          console.error("[Aira OCR] Provider utama gagal", error instanceof Error ? error.message : error);
+	          return { kind: "expense" as const, amount: null, category: "Lainnya", note: "Bukti transaksi untuk ditinjau", recipientName: null, occurredAt: null, sourceHint: null, destinationHint: null, confidence: 0, needsReview: true, provider: "manual" as const };
+	        }
+	      }),
+	    analyzeReceiptOcr: publicProcedure
+	      .input(z.object({ imageDataUrl: z.string().min(100).max(8_000_000) }))
+	      .mutation(async ({ input }) => analyzeReceiptWithOcrSpace(input.imageDataUrl)),
     generateAsset: publicProcedure
       .input(z.object({ kind: z.enum(["image", "pdf", "word", "powerpoint", "excel", "markdown", "text"]), prompt: z.string().trim().min(4).max(1800), language: z.string().max(16).default("id-ID"), quality: z.enum(["medium", "high"]).optional().default("medium") }))
       .mutation(async ({ input, ctx }) => {

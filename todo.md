@@ -3502,3 +3502,25 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Verifikasi tombol Reset sandi sementara terlihat dan dapat ditekan pada Kelola Akun.
 - [x] Uji alur reset administrator, login sementara, dan ganti sandi pribadi sebelum checkpoint.
 - [x] Simpan checkpoint setelah tombol dan seluruh alur sandi sementara tervalidasi.
+- [x] Audit ekstraksi OCR/AI Pindai Bukti dan form tinjauan transaksi.
+- [x] Prioritaskan nominal transaksi meskipun tanggal atau jam bukti tidak terbaca.
+- [x] Tambahkan nama penerima ke keterangan transaksi bila dapat diidentifikasi.
+- [x] Pisahkan input tanggal DD-MM-YYYY dan jam HH:MM pada tinjauan bukti.
+- [x] Uji ekstraksi, validasi input, dan penyimpanan transaksi tanpa checkpoint otomatis.
+- [x] Audit seluruh konversi tanggal dan waktu pada jalur Pindai Bukti.
+- [x] Paksa normalisasi input menjadi Tanggal DD-MM-YYYY dan Jam HH:MM terpisah.
+- [x] Tambahkan regresi format tanggal-jam dan fallback input manual tanpa checkpoint otomatis.
+- [x] Audit penyedia OCR online non-Aira serta titik fallback analisis Pindai Bukti.
+- [x] Tambahkan fallback OCR online yang otomatis dipakai saat Aira gagal atau tidak tersedia.
+- [x] Uji nominal, penerima, auto-switch, dan mode manual saat kedua layanan gagal.
+- [x] Tunda OCR online non-Aira sampai API key OCR tersedia.
+- [x] Buka Pindai Bukti untuk pengguna umum tanpa token layanan Aira.
+- [x] Pastikan input transaksi manual tetap dapat digunakan oleh pengguna umum.
+- [x] Uji akses umum Pindai Bukti serta validasi transaksi manual tanpa checkpoint otomatis.
+- [x] Simpan OCR_SPACE_API_KEY melalui kolom aman dan verifikasi kredensial penyedia OCR.
+- [x] Implementasikan OCR.Space sebagai fallback otomatis setelah analisis Aira gagal.
+- [x] Uji auto-switch OCR, ekstraksi nominal, dan input manual tanpa checkpoint otomatis.
+- [x] Catat dua kegagalan pemindaian Aira untuk bukti yang sama di perangkat pengguna.
+- [x] Gunakan OCR.Space langsung pada pemindaian ketiga setelah dua kegagalan Aira.
+- [x] Uji urutan Aira pertama-kedua, OCR ketiga, dan fallback manual.
+- [x] Simpan checkpoint otomatis setelah urutan pemindaian tervalidasi.

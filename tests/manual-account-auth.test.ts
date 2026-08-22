@@ -39,13 +39,15 @@ describe("autentikasi manual V A I R A  A I", () => {
     expect(db).toContain("revokeManualAccountSessions");
   });
 
-  it("mengunci layanan Aira dan pindai bukti dari Mode Guest", () => {
+  it("mengunci layanan Aira dari Mode Guest tetapi membuka Pindai Bukti tanpa token", () => {
     const router = read("server/routers.ts");
     const chat = read("components/aira-chat-screen.tsx");
     const scanner = read("app/scan-receipt.tsx");
     expect(router.match(/await requireManualAccount\(ctx\.req\)/g)?.length).toBeGreaterThanOrEqual(4);
     expect(chat).toContain("Aira AI terkunci");
-    expect(scanner).toContain("Pindai bukti terkunci");
+    expect(scanner).not.toContain("Pindai bukti terkunci");
+    const receiptRouter = router.slice(router.indexOf("analyzeReceipt:"), router.indexOf("generateAsset:"));
+    expect(receiptRouter).not.toContain("requireManualAccount(ctx.req)");
   });
 
   it("mengekspor identitas akun tanpa kata sandi maupun token cadangan", () => {

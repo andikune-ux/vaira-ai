@@ -18,7 +18,7 @@ export function AiraChatNavigation() {
   const colors = useAiraModeColors();
   const { showToast } = useAppToast();
   const { state, updateConversation, deleteConversation: moveToTrash, restoreConversation, permanentlyDeleteConversation } = useFinance();
-  const [sidebarOpen, setSidebarOpen] = useState(false); const [folder, setFolder] = useState<Folder>("chat"); const [modeSelectorOpen, setModeSelectorOpen] = useState(false); const [modeTapCount, setModeTapCount] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false); const [folder, setFolder] = useState<Folder>("chat"); const [modeSelectorOpen, setModeSelectorOpen] = useState(false); const [, setModeTapCount] = useState(0);
   const [selected, setSelected] = useState<AiraConversation | null>(null); const [trashSelected, setTrashSelected] = useState<AiraConversation | null>(null);
   const [renameTarget, setRenameTarget] = useState<AiraConversation | null>(null); const [renameText, setRenameText] = useState("");
   const usesPrivateAiraMode = state.profile.aiMode === "hot_pro" || state.profile.aiMode === "scientist";
