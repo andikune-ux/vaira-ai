@@ -3491,3 +3491,14 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Simpan checkpoint otomatis setelah seluruh perbaikan pemicu PIN Daftar Riwayat tervalidasi.
 - [x] Temukan dan perbaiki panel Riwayat Aira aktif yang belum menampilkan tombol pemicu di sudut kanan bawah.
 - [x] Validasi kembali tombol terlihat dan pemicu 20 ketukan bekerja pada panel riwayat yang benar tanpa checkpoint otomatis.
+- [x] Audit alur Kelola Akun, penyimpanan sandi, dan otorisasi administrator.
+- [x] Pulihkan reset sandi sementara untuk pemulihan akun oleh administrator.
+- [x] Perbaiki penyimpanan pembaruan data akun dari Kelola Akun ke server utama.
+- [x] Uji penolakan akses non-admin, reset sandi, pembaruan data, dan login ulang tanpa checkpoint otomatis.
+- [x] Tambahkan status wajib ganti sandi ketika administrator menetapkan sandi sementara.
+- [x] Arahkan pengguna yang masuk dengan sandi sementara ke layar ganti sandi pribadi.
+- [x] Bersihkan status sementara hanya setelah pengguna menyimpan sandi pribadi yang baru.
+- [x] Uji reset administrator, login dengan sandi sementara, dan penggantian sandi tanpa checkpoint otomatis.
+- [x] Verifikasi tombol Reset sandi sementara terlihat dan dapat ditekan pada Kelola Akun.
+- [x] Uji alur reset administrator, login sementara, dan ganti sandi pribadi sebelum checkpoint.
+- [x] Simpan checkpoint setelah tombol dan seluruh alur sandi sementara tervalidasi.

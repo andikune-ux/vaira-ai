@@ -195,6 +195,7 @@ async function requireManualAccount(req: Parameters<typeof getManualAccountFromR
   const account = await getManualAccountFromRequest(req);
   if (!account) throw new TRPCError({ code: "UNAUTHORIZED", message: "Masuk akun V A I R A  A I diperlukan." });
   if (account.status !== "active") throw new TRPCError({ code: "FORBIDDEN", message: "Akun tidak aktif. Login kembali atau pulihkan akun untuk melanjutkan." });
+  if (account.mustChangePassword) throw new TRPCError({ code: "FORBIDDEN", message: "Ganti sandi sementara Anda terlebih dahulu untuk melanjutkan." });
   return account;
 }
 
@@ -300,6 +301,16 @@ export const appRouter = router({
       if (!current) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       return { sessionToken, account: toManualAccountPublic(current) };
     }),
+    changeTemporaryPassword: publicProcedure.input(z.object({ temporaryPassword: MANUAL_PASSWORD, newPassword: MANUAL_PASSWORD })).mutation(async ({ ctx, input }) => {
+      const account = await getManualAccountFromRequest(ctx.req);
+      if (!account || account.status !== "active") throw new TRPCError({ code: "UNAUTHORIZED", message: "Masuk kembali dengan sandi sementara diperlukan." });
+      if (!account.mustChangePassword) throw new TRPCError({ code: "BAD_REQUEST", message: "Akun ini tidak sedang memakai sandi sementara." });
+      if (!(await verifySecret(input.temporaryPassword, account.passwordHash))) throw new TRPCError({ code: "UNAUTHORIZED", message: "Sandi sementara tidak sesuai." });
+      if (input.temporaryPassword === input.newPassword) throw new TRPCError({ code: "BAD_REQUEST", message: "Gunakan sandi pribadi yang berbeda dari sandi sementara." });
+      await db.updateManualAccountLogin(account.id, { passwordHash: await hashSecret(input.newPassword), mustChangePassword: false, failedLoginAttempts: 0, blockedAt: null, loginCooldownUntil: null });
+      await db.revokeManualAccountSessions(account.id);
+      return { success: true };
+    }),
     me: publicProcedure.query(async ({ ctx }) => {
       const account = await getManualAccountFromRequest(ctx.req);
       return account ? toManualAccountPublic(account) : null;
@@ -349,7 +360,7 @@ export const appRouter = router({
       const account = await db.findManualAccountByIdentifier(input.identifier);
       if (!account || account.status === "blacklisted" || account.status === "disabled" || !(await verifySecret(input.recoveryToken, account.recoveryTokenHash))) throw new TRPCError({ code: "UNAUTHORIZED", message: "Identifier atau token cadangan tidak sesuai." });
       const cooldownUntil = new Date(Date.now() + 30 * 60 * 1000);
-      await db.updateManualAccountLogin(account.id, { passwordHash: await hashSecret(input.newPassword), status: "active", failedLoginAttempts: 0, blockedAt: null, loginCooldownUntil: cooldownUntil });
+      await db.updateManualAccountLogin(account.id, { passwordHash: await hashSecret(input.newPassword), mustChangePassword: false, status: "active", failedLoginAttempts: 0, blockedAt: null, loginCooldownUntil: cooldownUntil });
       return { cooldownUntil: cooldownUntil.toISOString() };
     }),
     close: publicProcedure.mutation(async ({ ctx }) => {
@@ -377,7 +388,7 @@ export const appRouter = router({
         closeRequestedAt: input.status === "closing" ? new Date() : input.status === "active" ? null : account.closeRequestedAt,
         blacklistedAt: input.status === "blacklisted" ? new Date() : input.status === "active" ? null : account.blacklistedAt,
       } : {};
-      const values = { ...(input.fullName ? { fullName: input.fullName } : {}), ...(input.publicId ? { publicId: input.publicId } : {}), ...(input.accountUsername ? { username: input.accountUsername } : {}), ...(input.birthDate ? { birthDate: input.birthDate } : {}), ...(input.email ? { email: input.email } : {}), ...(input.phone ? { phone: input.phone } : {}), ...(typeof input.isVerified === "boolean" ? { isVerified: input.isVerified } : {}), ...(typeof input.createdByAdministrator === "boolean" ? { createdByAdministrator: input.createdByAdministrator } : {}), ...statusUpdate, ...(input.newPassword ? { passwordHash: await hashSecret(input.newPassword), loginCooldownUntil: null, failedLoginAttempts: 0 } : {}) };
+      const values = { ...(input.fullName ? { fullName: input.fullName } : {}), ...(input.publicId ? { publicId: input.publicId } : {}), ...(input.accountUsername ? { username: input.accountUsername } : {}), ...(input.birthDate ? { birthDate: input.birthDate } : {}), ...(input.email ? { email: input.email } : {}), ...(input.phone ? { phone: input.phone } : {}), ...(typeof input.isVerified === "boolean" ? { isVerified: input.isVerified } : {}), ...(typeof input.createdByAdministrator === "boolean" ? { createdByAdministrator: input.createdByAdministrator } : {}), ...statusUpdate, ...(input.newPassword ? { passwordHash: await hashSecret(input.newPassword), mustChangePassword: true, loginCooldownUntil: null, failedLoginAttempts: 0 } : {}) };
       await db.updateManualAccountAdmin(account.id, values);
       if (input.status === "disabled" || input.status === "blocked" || input.status === "blacklisted" || input.newPassword) await db.revokeManualAccountSessions(account.id);
       const changes = [input.fullName ? "profil diperbarui" : null, input.publicId ? "ID publik diperbarui" : null, input.accountUsername ? "username diperbarui" : null, input.birthDate ? "tanggal lahir diperbarui" : null, input.email ? "email diperbarui" : null, input.phone ? "WhatsApp diperbarui" : null, typeof input.isVerified === "boolean" ? `verify ${input.isVerified ? "diberikan" : "dicabut"}` : null, typeof input.createdByAdministrator === "boolean" ? `label dibuat administrator ${input.createdByAdministrator ? "diberikan" : "dicabut"}` : null, input.status ? `status menjadi ${input.status}` : null, input.newPassword ? "kata sandi sementara direset" : null].filter(Boolean).join("; ");

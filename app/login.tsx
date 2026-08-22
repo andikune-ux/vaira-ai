@@ -25,6 +25,10 @@ export default function LoginScreen() {
       const result = await login.mutateAsync({ identifier: identifier.trim(), password });
       await Auth.setManualSessionToken(result.sessionToken);
       await Auth.setUserInfo({ id: result.account.id, openId: `manual:${result.account.id}`, name: result.account.fullName, email: result.account.email, loginMethod: "airax-manual", lastSignedIn: new Date() });
+      if (result.account.mustChangePassword) {
+        router.replace("/change-temporary-password" as never);
+        return;
+      }
       const localState = await refreshStorageScope();
       const accountProfile: Partial<FinanceState["profile"]> = { mode: "account", displayName: result.account.fullName, username: result.account.username, bio: result.account.bio, featuredPhotoUris: result.account.featuredPhotoUris, userAvatarUri: result.account.avatarUri ?? localState.profile.userAvatarUri, syncEnabled: true };
       await updateProfile(accountProfile);

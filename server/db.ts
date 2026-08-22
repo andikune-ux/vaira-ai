@@ -355,7 +355,7 @@ export async function deleteManualAccountSession(tokenHash: string) {
   await db.delete(manualAccountSessions).where(eq(manualAccountSessions.tokenHash, tokenHash));
 }
 
-export async function updateManualAccountLogin(accountId: number, values: { failedLoginAttempts?: number; status?: "active" | "disabled" | "blocked" | "closing" | "blacklisted"; blockedAt?: Date | null; loginCooldownUntil?: Date | null; lastLoginAt?: Date | null; passwordHash?: string }) {
+export async function updateManualAccountLogin(accountId: number, values: { failedLoginAttempts?: number; status?: "active" | "disabled" | "blocked" | "closing" | "blacklisted"; blockedAt?: Date | null; loginCooldownUntil?: Date | null; lastLoginAt?: Date | null; passwordHash?: string; mustChangePassword?: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("Database akun belum tersedia.");
   await db.update(manualAccounts).set(values).where(eq(manualAccounts.id, accountId));
@@ -407,7 +407,7 @@ export async function revokeManualAccountSessions(accountId: number) {
   await db.delete(manualAccountSessions).where(eq(manualAccountSessions.accountId, accountId));
 }
 
-export async function updateManualAccountAdmin(accountId: number, values: Partial<Pick<typeof manualAccounts.$inferInsert, "fullName" | "publicId" | "username" | "birthDate" | "email" | "phone" | "status" | "isVerified" | "failedLoginAttempts" | "blockedAt" | "loginCooldownUntil" | "closeRequestedAt" | "blacklistedAt" | "passwordHash" | "createdByAdministrator">>) {
+export async function updateManualAccountAdmin(accountId: number, values: Partial<Pick<typeof manualAccounts.$inferInsert, "fullName" | "publicId" | "username" | "birthDate" | "email" | "phone" | "status" | "isVerified" | "failedLoginAttempts" | "blockedAt" | "loginCooldownUntil" | "closeRequestedAt" | "blacklistedAt" | "passwordHash" | "mustChangePassword" | "createdByAdministrator">>) {
   const db = await getDb();
   if (!db) throw new Error("Database akun belum tersedia.");
   await db.update(manualAccounts).set(values).where(eq(manualAccounts.id, accountId));

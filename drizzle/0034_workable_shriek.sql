@@ -1,0 +1,1 @@
+ALTER TABLE `manualAccounts` ADD `mustChangePassword` boolean DEFAULT false NOT NULL;

@@ -136,6 +136,7 @@ export default function RootLayout() {
             <Stack.Screen name="oauth/callback" />
             <Stack.Screen name="welcome" />
             <Stack.Screen name="login" />
+            <Stack.Screen name="change-temporary-password" />
             <Stack.Screen name="register" />
             <Stack.Screen name="recover" />
             <Stack.Screen name="account-issue" />

@@ -288,6 +288,7 @@ export const manualAccounts = mysqlTable("manualAccounts", {
   email: varchar("email", { length: 320 }).notNull().unique(),
   phone: varchar("phone", { length: 32 }).notNull().unique(),
   passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
+  mustChangePassword: boolean("mustChangePassword").default(false).notNull(),
   recoveryTokenHash: varchar("recoveryTokenHash", { length: 255 }).notNull(),
   status: mysqlEnum("status", ["active", "disabled", "blocked", "closing", "blacklisted"]).default("active").notNull(),
   failedLoginAttempts: int("failedLoginAttempts").default(0).notNull(),
