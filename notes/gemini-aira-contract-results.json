@@ -1,0 +1,28 @@
+{
+  "results": [
+    {
+      "model": "gemini-3.6-flash",
+      "ok": false,
+      "status": 429,
+      "ms": 478,
+      "response": "",
+      "error": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.6-flash\nPlease retry in 17.335713049s."
+    },
+    {
+      "model": "gemini-3.5-flash",
+      "ok": true,
+      "status": 200,
+      "ms": 1182,
+      "response": "H",
+      "error": null
+    },
+    {
+      "model": "gemini-2.5-flash-lite",
+      "ok": false,
+      "status": 404,
+      "ms": 153,
+      "response": "",
+      "error": "This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use models/gemini-3.5-flash-lite for the latest features and improvements."
+    }
+  ]
+}

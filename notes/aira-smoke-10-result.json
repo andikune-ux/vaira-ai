@@ -1,0 +1,68 @@
+{
+  "model": "gpt-5-mini",
+  "total": 10,
+  "berhasil": 0,
+  "gagal": 10,
+  "results": [
+    {
+      "nomor": 1,
+      "ok": false,
+      "ms": 705,
+      "error": "LLM provider forge failed: 412 Precondition Failed – {\"code\":9,\"message\":\"your account has hit a usage exhausted\"}"
+    },
+    {
+      "nomor": 2,
+      "ok": false,
+      "ms": 229,
+      "error": "LLM provider forge failed: 412 Precondition Failed – {\"code\":9,\"message\":\"your account has hit a usage exhausted\"}"
+    },
+    {
+      "nomor": 3,
+      "ok": false,
+      "ms": 234,
+      "error": "LLM provider forge failed: 412 Precondition Failed – {\"code\":9,\"message\":\"your account has hit a usage exhausted\"}"
+    },
+    {
+      "nomor": 4,
+      "ok": false,
+      "ms": 234,
+      "error": "LLM provider forge failed: 412 Precondition Failed – {\"code\":9,\"message\":\"your account has hit a usage exhausted\"}"
+    },
+    {
+      "nomor": 5,
+      "ok": false,
+      "ms": 232,
+      "error": "LLM provider forge failed: 412 Precondition Failed – {\"code\":9,\"message\":\"your account has hit a usage exhausted\"}"
+    },
+    {
+      "nomor": 6,
+      "ok": false,
+      "ms": 233,
+      "error": "LLM provider forge failed: 412 Precondition Failed – {\"code\":9,\"message\":\"your account has hit a usage exhausted\"}"
+    },
+    {
+      "nomor": 7,
+      "ok": false,
+      "ms": 233,
+      "error": "LLM provider forge failed: 412 Precondition Failed – {\"code\":9,\"message\":\"your account has hit a usage exhausted\"}"
+    },
+    {
+      "nomor": 8,
+      "ok": false,
+      "ms": 230,
+      "error": "LLM provider forge failed: 412 Precondition Failed – {\"code\":9,\"message\":\"your account has hit a usage exhausted\"}"
+    },
+    {
+      "nomor": 9,
+      "ok": false,
+      "ms": 234,
+      "error": "LLM provider forge failed: 412 Precondition Failed – {\"code\":9,\"message\":\"your account has hit a usage exhausted\"}"
+    },
+    {
+      "nomor": 10,
+      "ok": false,
+      "ms": 230,
+      "error": "LLM provider forge failed: 412 Precondition Failed – {\"code\":9,\"message\":\"your account has hit a usage exhausted\"}"
+    }
+  ]
+}

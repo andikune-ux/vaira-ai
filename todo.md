@@ -3445,3 +3445,11 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Hapus seluruh kontrol Waktu Salat dan Kartu Beranda dari Referensi Aira.
 - [x] Ubah deskripsi Referensi Aira agar hanya menyebut instruction dan knowledge.
 - [x] Validasi struktur akhir dan rute menu tanpa mengubah nilai preferensi tersimpan.
+
+- [x] Audit jalur layanan Aira, provider utama, fallback, timeout, dan penyimpanan riwayat.
+- [x] Jalankan regresi 10 percakapan Aira dengan hasil tiap percakapan tercatat.
+- [x] Perbaiki penyebab error layanan Aira tanpa checkpoint otomatis.
+- [x] Validasi ulang 10 percakapan dan pastikan fallback tidak salah muncul saat provider sehat.
+- [x] Bandingkan kuota Gemini per jenis request dan model dengan kontrak Aira.
+- [x] Verifikasi apakah provider alternatif aktif atau semua jalur AI penuh.
+- [x] Bedakan perbaikan aplikasi dari batas kuota eksternal dalam hasil uji 10 chat.

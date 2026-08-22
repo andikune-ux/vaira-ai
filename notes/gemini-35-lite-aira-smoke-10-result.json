@@ -1,0 +1,87 @@
+{
+  "total": 10,
+  "berhasil": 10,
+  "gagal": 0,
+  "results": [
+    {
+      "nomor": 1,
+      "ok": true,
+      "status": 200,
+      "ms": 829,
+      "reply": "Ya, aku aktif dan siap membantu!",
+      "error": null
+    },
+    {
+      "nomor": 2,
+      "ok": true,
+      "status": 200,
+      "ms": 655,
+      "reply": "Daftar tugas membantu meningkatkan produktivitas dengan mengorganisir pekerjaan.",
+      "error": null
+    },
+    {
+      "nomor": 3,
+      "ok": true,
+      "status": 200,
+      "ms": 899,
+      "reply": "Semangat pagi! Hari ini adalah kesempatan baru untuk mewujudkan impianmu.",
+      "error": null
+    },
+    {
+      "nomor": 4,
+      "ok": true,
+      "status": 200,
+      "ms": 777,
+      "reply": "Menabung artinya menyisihkan sebagian uang untuk disimpan dan tidak langsung dibelanjakan.",
+      "error": null
+    },
+    {
+      "nomor": 5,
+      "ok": true,
+      "status": 200,
+      "ms": 674,
+      "reply": "Gunakan teknik Pomodoro: bekerja fokus 25 menit, lalu istirahat 5 menit.",
+      "error": null
+    },
+    {
+      "nomor": 6,
+      "ok": true,
+      "status": 200,
+      "ms": 771,
+      "reply": "Prioritas adalah hal yang dianggap paling penting dan harus didahulukan dibanding yang lain.",
+      "error": null
+    },
+    {
+      "nomor": 7,
+      "ok": true,
+      "status": 200,
+      "ms": 893,
+      "reply": "Catatan Pengeluaran: 1. Makan Siang Rp25.000, 2. Transportasi Rp10.000, 3. Kopi Rp15.000. Total: Rp50.000.",
+      "error": null
+    },
+    {
+      "nomor": 8,
+      "ok": true,
+      "status": 200,
+      "ms": 792,
+      "reply": "Gunakan kata sandi yang kuat dan unik serta aktifkan autentikasi dua faktor (2FA).",
+      "error": null
+    },
+    {
+      "nomor": 9,
+      "ok": true,
+      "status": 200,
+      "ms": 781,
+      "reply": "Mencatat transaksi bermanfaat untuk mengontrol pengeluaran, memantau kondisi keuangan, memudahkan pembuatan anggaran, se",
+      "error": null
+    },
+    {
+      "nomor": 10,
+      "ok": true,
+      "status": 200,
+      "ms": 668,
+      "reply": "Sampai jumpa! Semoga harimu menyenangkan.",
+      "error": null
+    }
+  ]
+}

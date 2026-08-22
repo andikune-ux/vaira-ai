@@ -29,9 +29,16 @@ const parseModelJson = (content: unknown): Record<string, unknown> => {
 const MEDIA_DATA_URL = /^data:([^;]+);base64,([A-Za-z0-9+/=]+)$/;
 const MAX_AIRA_MEDIA_BYTES = 5_500_000;
 const AIRA_MODEL_TIMEOUT_MS = 9_000;
-const GEMINI_AIRA_MODEL = "gemini-3.6-flash";
-const GEMINI_AIRA_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_AIRA_MODEL}:generateContent`;
+const GEMINI_AIRA_MODELS = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"] as const;
 const GEMINI_AIRA_TIMEOUT_MS = 22_000;
+const GEMINI_QUOTA_COOLDOWN_MS = 5 * 60_000;
+let geminiUnavailableUntil = 0;
+let geminiPrimaryUnavailableUntil = 0;
+
+function isGeminiQuotaError(error: unknown) {
+  const detail = error instanceof Error ? error.message : String(error);
+  return /quota|rate.?limit|resource.?exhausted|too many requests|429|billing|payment required|usage exhausted/i.test(detail);
+}
 
 function withServiceTimeout<T>(promise: Promise<T>, milliseconds: number, message: string) {
   return new Promise<T>((resolve, reject) => {
@@ -57,22 +64,39 @@ async function invokeGeminiAira(systemPrompt: string, messages: Array<{ role: st
     .map((message) => ({ role: message.role === "assistant" ? "model" : "user", parts: [{ text: getAiraTextContent(message.content) }] }))
     .filter((message) => message.parts[0].text.length > 0);
   if (!contents.some((message) => message.role === "user")) throw new Error("Pesan pengguna untuk Gemini tidak tersedia.");
-  const response = await fetch(GEMINI_AIRA_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      contents,
-      generationConfig: { responseMimeType: "application/json", maxOutputTokens: 4096 },
-    }),
-  });
-  const payload = await response.json().catch(() => null) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; error?: { message?: string } } | null;
-  if (!response.ok) throw new Error(`Gemini ${response.status}: ${payload?.error?.message ?? "respons provider tidak valid."}`);
-  const text = payload?.candidates?.flatMap((candidate) => candidate.content?.parts ?? []).map((part) => part.text ?? "").join("\n").trim();
-  if (!text) throw new Error("Gemini tidak mengembalikan isi respons.");
-  const parsed = parseModelJson(text);
-  if (!String(parsed.reply || "").trim()) throw new Error("Gemini mengembalikan respons tanpa reply.");
-  return parsed;
+  const candidates = Date.now() < geminiPrimaryUnavailableUntil ? GEMINI_AIRA_MODELS.slice(1) : GEMINI_AIRA_MODELS;
+  let lastError: unknown;
+  for (const model of candidates) {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents,
+        generationConfig: { responseMimeType: "application/json", maxOutputTokens: 512 },
+      }),
+    });
+    const payload = await response.json().catch(() => null) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; error?: { message?: string } } | null;
+    if (!response.ok) {
+      lastError = new Error(`Gemini ${model} ${response.status}: ${payload?.error?.message ?? "respons provider tidak valid."}`);
+      if (model === GEMINI_AIRA_MODELS[0] && isGeminiQuotaError(lastError)) geminiPrimaryUnavailableUntil = Date.now() + GEMINI_QUOTA_COOLDOWN_MS;
+      console.warn(`[Aira Chat] Gemini ${model} gagal; mencoba model Gemini berikutnya.`);
+      continue;
+    }
+    const text = payload?.candidates?.flatMap((candidate) => candidate.content?.parts ?? []).map((part) => part.text ?? "").join("\n").trim();
+    if (!text) {
+      lastError = new Error(`Gemini ${model} tidak mengembalikan isi respons.`);
+      continue;
+    }
+    const parsed = parseModelJson(text);
+    if (!String(parsed.reply || "").trim()) {
+      lastError = new Error(`Gemini ${model} mengembalikan respons tanpa reply.`);
+      continue;
+    }
+    if (model === GEMINI_AIRA_MODELS[0]) geminiPrimaryUnavailableUntil = 0;
+    return parsed;
+  }
+  throw lastError instanceof Error ? lastError : new Error("Semua model Gemini Aira tidak tersedia.");
 }
 
 function getLastUserText(messages: Array<{ role: string; content: unknown }>) {
@@ -584,19 +608,37 @@ export const appRouter = router({
           const messages = await Promise.all(input.messages.map(async (message) => ({ ...message, content: await normalizeAiraContent(message.content) as typeof message.content })));
           let parsed: Record<string, unknown> | null = null;
           let lastModelError: unknown;
-          try {
-            parsed = await withServiceTimeout(invokeGeminiAira(systemPrompt, messages), GEMINI_AIRA_TIMEOUT_MS, "Gemini Aira melewati batas waktu respons.");
-          } catch (geminiError) {
-            lastModelError = geminiError;
-            console.warn("[Aira Chat] Gemini utama gagal; mencoba Forge", geminiError instanceof Error ? geminiError.message : String(geminiError));
+          let geminiQuotaExceeded = false;
+          if (Date.now() < geminiUnavailableUntil) {
+            lastModelError = new Error("Gemini sementara dilewati karena batas penggunaan sebelumnya.");
+            console.warn("[Aira Chat] Gemini dilewati selama cooldown kuota; memakai fallback.");
+          } else {
+            try {
+              parsed = await withServiceTimeout(invokeGeminiAira(systemPrompt, messages), GEMINI_AIRA_TIMEOUT_MS, "Gemini Aira melewati batas waktu respons.");
+              geminiUnavailableUntil = 0;
+            } catch (geminiError) {
+              lastModelError = geminiError;
+              if (isGeminiQuotaError(geminiError)) {
+                geminiUnavailableUntil = Date.now() + GEMINI_QUOTA_COOLDOWN_MS;
+                geminiQuotaExceeded = true;
+              }
+              console.warn("[Aira Chat] Gemini utama gagal; mencoba fallback", geminiError instanceof Error ? geminiError.message : String(geminiError));
+            }
           }
-          if (!parsed) {
-            const catalog = await listLLMModels();
-            const modelCandidates = [...new Set([
-              catalog.data.find((item) => item.id === "gpt-5-mini")?.id,
-              catalog.data[0]?.id,
-            ].filter((model): model is string => Boolean(model)))];
-            for (const model of modelCandidates) {
+          if (!parsed && !geminiQuotaExceeded) {
+            let modelCandidates: string[] = ["gpt-5-mini"];
+            try {
+              const catalog = await withServiceTimeout(listLLMModels(), 4_000, "Daftar model fallback Aira tidak merespons.");
+              modelCandidates = [...new Set([
+                catalog.data.find((item) => item.id === "gpt-5-mini")?.id,
+                catalog.data.find((item) => /free|flash|mini/i.test(item.id))?.id,
+                catalog.data[0]?.id,
+              ].filter((model): model is string => Boolean(model)))];
+            } catch (catalogError) {
+              lastModelError = catalogError;
+              console.warn("[Aira Chat] Daftar model fallback gagal; mencoba model default", catalogError instanceof Error ? catalogError.message : String(catalogError));
+            }
+            for (const model of modelCandidates.slice(0, 2)) {
             try {
               const response = await withServiceTimeout(invokeLLM({
                 model,

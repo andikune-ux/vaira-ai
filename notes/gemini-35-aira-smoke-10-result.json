@@ -1,0 +1,87 @@
+{
+  "total": 10,
+  "berhasil": 6,
+  "gagal": 4,
+  "results": [
+    {
+      "nomor": 1,
+      "ok": true,
+      "status": 200,
+      "ms": 2100,
+      "reply": "Halo! Iya, aku aktif dan siap membantumu.",
+      "error": null
+    },
+    {
+      "nomor": 2,
+      "ok": true,
+      "status": 200,
+      "ms": 2889,
+      "reply": "Membantu mengatur prioritas pekerjaan agar lebih produktif dan tidak ada yang terlewat.",
+      "error": null
+    },
+    {
+      "nomor": 3,
+      "ok": true,
+      "status": 200,
+      "ms": 2244,
+      "reply": "Setiap pagi adalah kesempatan baru untuk menjadi versi terbaik dirimu. Semangat!",
+      "error": null
+    },
+    {
+      "nomor": 4,
+      "ok": true,
+      "status": 200,
+      "ms": 2244,
+      "reply": "Menabung secara sederhana adalah menyisihkan sebagian uang yang kita miliki sekarang untuk disimpan dan digunakan di mas",
+      "error": null
+    },
+    {
+      "nomor": 5,
+      "ok": true,
+      "status": 200,
+      "ms": 2353,
+      "reply": "Membuat skala prioritas untuk menentukan tugas mana yang paling penting dan mendesak untuk diselesaikan terlebih dahulu.",
+      "error": null
+    },
+    {
+      "nomor": 6,
+      "ok": true,
+      "status": 200,
+      "ms": 2017,
+      "reply": "Prioritas adalah sesuatu yang didahulukan atau dianggap lebih penting daripada hal lainnya.",
+      "error": null
+    },
+    {
+      "nomor": 7,
+      "ok": false,
+      "status": 429,
+      "ms": 112,
+      "reply": "",
+      "error": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 5, model: gemini-3.5-flash\nPlease retry in 23.801297155s."
+    },
+    {
+      "nomor": 8,
+      "ok": false,
+      "status": 429,
+      "ms": 100,
+      "reply": "",
+      "error": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 5, model: gemini-3.5-flash\nPlease retry in 23.70041388s."
+    },
+    {
+      "nomor": 9,
+      "ok": false,
+      "status": 429,
+      "ms": 106,
+      "reply": "",
+      "error": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 5, model: gemini-3.5-flash\nPlease retry in 23.596276203s."
+    },
+    {
+      "nomor": 10,
+      "ok": false,
+      "status": 429,
+      "ms": 111,
+      "reply": "",
+      "error": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 5, model: gemini-3.5-flash\nPlease retry in 23.483805468s."
+    }
+  ]
+}
