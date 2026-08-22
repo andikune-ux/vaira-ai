@@ -33,6 +33,8 @@ export type Transaction = {
   feeAmount?: number;
   category: string;
   note: string;
+  /** Nama pengirim untuk pemasukan, atau penerima/tujuan untuk pengeluaran dan transfer. */
+  counterpartyName?: string;
   occurredAt: string;
   origin: TransactionOrigin;
   status: TransactionStatus;

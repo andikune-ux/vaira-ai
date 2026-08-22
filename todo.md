@@ -3524,3 +3524,15 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Gunakan OCR.Space langsung pada pemindaian ketiga setelah dua kegagalan Aira.
 - [x] Uji urutan Aira pertama-kedua, OCR ketiga, dan fallback manual.
 - [x] Simpan checkpoint otomatis setelah urutan pemindaian tervalidasi.
+- [x] Audit pilihan jenis transaksi pada Pindai Bukti dan klasifikasi OCR/Aira.
+- [x] Tambahkan pilihan pengguna: Uang masuk, Uang keluar, dan Pindah saldo antar rekening.
+- [x] Perbaiki Aira dan OCR agar mengklasifikasikan jenis transaksi dari bukti serta membiarkan pengguna mengoreksinya.
+- [x] Uji alur masuk, keluar, transfer, dan pemilihan rekening tanpa checkpoint otomatis.
+- [x] Tambahkan kolom nama pengirim/penerima pada Pindai Bukti; isi otomatis hanya bila OCR menemukan nama dan tetap dapat dikoreksi pengguna.
+- [x] Simpan nama pengirim/penerima sebagai data transaksi terstruktur sekaligus keterangan yang dapat dibaca pada konfirmasi.
+- [x] Hubungkan Aira Default dengan ringkasan catatan keuangan yang terbatas dan hanya-baca; Aira Hot Pro serta Ahli Ilmuwan tidak menerima konteks finansial.
+- [x] Tambahkan regresi pengirim/penerima, parser OCR, ringkasan Default, dan isolasi sisi klien/server tanpa checkpoint otomatis.
+- [x] Jadikan percakapan Aira Default yang memuat transaksi sebagai draft yang dapat ditinjau pengguna.
+- [x] Jadikan foto bukti yang dikirim di chat Aira sebagai draft transaksi setelah nominal dan rincian dapat dianalisis.
+- [x] Tampilkan pilihan eksplisit Tambah ke data keuangan atau Tidak sekarang; jangan pernah menyimpan transaksi tanpa persetujuan pengguna.
+- [x] Uji penolakan, pengeditan, dan persetujuan draft transaksi dari chat maupun foto bukti tanpa checkpoint otomatis.

@@ -3,9 +3,10 @@ export type ReceiptOcrFallback = {
   amount: number | null;
   category: string;
   note: string;
+  senderName: string | null;
   recipientName: string | null;
   occurredAt: null;
-  sourceHint: null;
+  sourceHint: string | null;
   destinationHint: string | null;
   confidence: number;
   needsReview: true;
@@ -18,6 +19,14 @@ const amountFromText = (value: string) => {
   return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : null;
 };
 
+const extractLabelledName = (lines: string[], labels: string[]) => {
+  const labelPattern = labels.map((label) => label.replace(/\s+/g, "\\s+")).join("|");
+  const matcher = new RegExp(`^(?:${labelPattern})\\s*[:\\-]?\\s*(.+)$`, "i");
+  const candidate = lines.map((line) => line.match(matcher)?.[1]?.trim() || "").find(Boolean);
+  if (!candidate || /\b(?:rp|idr|nominal|jumlah|total|tanggal|waktu|ref(?:erensi)?)\b/i.test(candidate)) return null;
+  return candidate.replace(/\s+/g, " ").slice(0, 120) || null;
+};
+
 export function parseReceiptOcrText(text: string): ReceiptOcrFallback {
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const labelledAmount = lines
@@ -28,19 +37,20 @@ export function parseReceiptOcrText(text: string): ReceiptOcrFallback {
     .flatMap((line) => Array.from(line.matchAll(/(?:rp|idr)\s*([0-9][0-9.,]*)/gi)).map((match) => amountFromText(match[1])))
     .filter((value): value is number => value !== null);
   const amount = labelledAmount ?? currencyAmounts.sort((first, second) => second - first)[0] ?? null;
-  const recipientLine = lines.find((line) => /\b(penerima|tujuan|kepada|merchant|nama penerima)\b/i.test(line));
-  const recipientName = recipientLine
-    ? recipientLine.replace(/^.*?\b(penerima|tujuan|kepada|merchant|nama penerima)\b\s*[:\-]?\s*/i, "").trim().slice(0, 120) || null
-    : null;
-  const isTransfer = /\b(transfer|rekening|bank|e-wallet|gopay|dana|ovo|shopeepay)\b/i.test(text);
+  const senderName = extractLabelledName(lines, ["nama pengirim", "pengirim", "sender", "dari"]);
+  const recipientName = extractLabelledName(lines, ["nama penerima", "penerima", "tujuan", "kepada", "merchant", "payee"]);
+  const isIncoming = /\b(uang masuk|dana masuk|saldo bertambah|kredit|penerimaan|diterima|received|setoran|deposit|top up)\b/i.test(text);
+  const isTransfer = !isIncoming && /\b(transfer|rekening|bank|e-wallet|gopay|dana|ovo|shopeepay)\b/i.test(text);
+  const kind = isIncoming ? "income" as const : isTransfer ? "transfer" as const : "expense" as const;
   return {
-    kind: isTransfer ? "transfer" : "expense",
+    kind,
     amount,
-    category: isTransfer ? "Transfer dana" : "Lainnya",
+    category: kind === "income" ? "Pemasukan lainnya" : kind === "transfer" ? "Transfer dana" : "Lainnya",
     note: "Bukti dibaca melalui OCR online; periksa kembali sebelum menyimpan.",
+    senderName,
     recipientName,
     occurredAt: null,
-    sourceHint: null,
+    sourceHint: senderName,
     destinationHint: recipientName,
     confidence: amount ? 0.58 : 0.2,
     needsReview: true,

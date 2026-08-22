@@ -9,13 +9,12 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { AiraCard, OutlineButton, PrimaryButton } from "@/components/aira-ui";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
+import { appendReceiptCounterpartyToNote, getReceiptCounterpartyLabel, getReceiptCounterpartyRole, normalizeReceiptCounterpartyName } from "@/lib/finance/receipt-counterparty";
 import { formatReceiptDate, formatReceiptTime, normalizeReceiptDateInput, normalizeReceiptTimeInput, receiptDateTimeFromIso, receiptDateTimeToIso } from "@/lib/finance/receipt-date-time";
 import { airaRetryMessage, nextAiraFailureCount, useOcrFallbackOnAttempt } from "@/lib/finance/receipt-scan-attempts";
 import { useFinance } from "@/lib/finance/finance-context";
 import type { TransactionKind, Wallet } from "@/lib/finance/types";
 import { trpc } from "@/lib/trpc";
-
-const noteWithRecipient = (note: string, recipientName: string | null) => recipientName ? `Penerima: ${recipientName}${note.trim() ? ` · ${note.trim()}` : ""}`.slice(0, 240) : note;
 
 export default function ScanReceiptScreen() {
   const colors = useColors();
@@ -24,6 +23,7 @@ export default function ScanReceiptScreen() {
   const [amount, setAmount] = useState("");
   const [feeAmount, setFeeAmount] = useState("");
   const [note, setNote] = useState("");
+  const [counterpartyName, setCounterpartyName] = useState("");
   const [category, setCategory] = useState("Lainnya");
   const [kind, setKind] = useState<TransactionKind>("expense");
   const [walletId, setWalletId] = useState("");
@@ -38,11 +38,17 @@ export default function ScanReceiptScreen() {
   const sourceWalletId = walletId || state.wallets[0]?.id || "";
   const useOcrFallback = useOcrFallbackOnAttempt(airaFailureCount);
   const isAnalyzing = receiptAi.isPending || receiptOcr.isPending;
+  const chooseKind = (nextKind: TransactionKind) => {
+    setKind(nextKind);
+    setCategory(nextKind === "income" ? "Pemasukan lainnya" : nextKind === "transfer" ? "Transfer dana" : "Lainnya");
+    if (nextKind !== "transfer") setToWalletId("");
+  };
 
   const resetDraft = () => {
     setAmount("");
     setFeeAmount("");
     setNote("Bukti transaksi");
+    setCounterpartyName("");
     setCategory("Lainnya");
     setTransactionDate(formatReceiptDate());
     setTransactionTime(formatReceiptTime());
@@ -88,9 +94,10 @@ export default function ScanReceiptScreen() {
         : await receiptAi.mutateAsync({ imageDataUrl });
       if (!useOcrFallback) setAiraFailureCount((current) => nextAiraFailureCount(current, result.amount));
       if (result.amount) setAmount(String(result.amount));
-      setKind(result.kind);
+      chooseKind(result.kind);
       setCategory(result.kind === "transfer" ? "Transfer dana" : result.category);
-      setNote(noteWithRecipient(result.note, result.recipientName));
+      setNote(result.note);
+      setCounterpartyName(normalizeReceiptCounterpartyName(getReceiptCounterpartyRole(result.kind) === "sender" ? result.senderName : result.recipientName));
       if (result.occurredAt) {
         const detected = receiptDateTimeFromIso(result.occurredAt);
         setTransactionDate(detected.date);
@@ -130,6 +137,7 @@ export default function ScanReceiptScreen() {
       Alert.alert("Tujuan belum valid", "Sumber dan tujuan transfer harus berbeda.");
       return;
     }
+    const normalizedCounterpartyName = normalizeReceiptCounterpartyName(counterpartyName);
     router.push({
       pathname: "/confirm-transaction",
       params: {
@@ -137,7 +145,8 @@ export default function ScanReceiptScreen() {
         amount: String(numeric),
         feeAmount: String(fee),
         category: kind === "transfer" ? "Transfer dana" : category,
-        note: note.trim() || "Bukti transaksi",
+        note: appendReceiptCounterpartyToNote(note || "Bukti transaksi", kind, normalizedCounterpartyName),
+        counterpartyName: normalizedCounterpartyName,
         walletId: sourceWalletId,
         toWalletId: kind === "transfer" ? toWalletId : "",
         origin: "ocr",
@@ -160,6 +169,13 @@ export default function ScanReceiptScreen() {
       <View style={[styles.info, { backgroundColor: `${colors.warning}13` }]}><MaterialIcons name="payments" size={20} color={colors.warning} /><Text style={[styles.infoText, { color: colors.foreground }]}>Nominal adalah prioritas utama. Tanggal dan jam hanya pelengkap bila tercetak jelas; periksa nominal, sumber, tujuan, penerima, dan biaya sebelum menyimpan.</Text></View>
       {uri ? <>
         <PrimaryButton label={isAnalyzing ? "Menganalisis bukti…" : useOcrFallback ? "Pindai dengan OCR cadangan" : airaFailureCount ? `Pindai ulang dengan Aira (${airaFailureCount}/2)` : "Analisis bukti dengan Aira"} icon={useOcrFallback ? "document-scanner" : "auto-awesome"} disabled={isAnalyzing} onPress={() => { void analyze(); }} />
+        <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Jenis transaksi</Text>
+        <View style={styles.kindChoices}>
+          <TransactionKindChoice kind="income" label="Uang masuk" icon="south-west" selected={kind === "income"} onPress={() => chooseKind("income")} colors={colors} />
+          <TransactionKindChoice kind="expense" label="Uang keluar" icon="north-east" selected={kind === "expense"} onPress={() => chooseKind("expense")} colors={colors} />
+          <TransactionKindChoice kind="transfer" label="Pindah saldo" icon="swap-horiz" selected={kind === "transfer"} onPress={() => chooseKind("transfer")} colors={colors} />
+        </View>
+        <Text style={[styles.hint, { color: colors.muted }]}>Hasil OCR adalah saran. Pilih jenis yang benar bila struk terbaca keliru.</Text>
         <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Jenis & kategori hasil baca</Text>
         <Text style={[styles.detected, { color: kind === "income" ? colors.success : kind === "transfer" ? colors.primary : colors.error }]}>{kind === "income" ? "Pemasukan" : kind === "transfer" ? "Transfer" : "Pengeluaran"} · {category}</Text>
         <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Nominal hasil baca</Text>
@@ -178,8 +194,11 @@ export default function ScanReceiptScreen() {
           <TextInput value={transactionTime} onChangeText={(value) => setTransactionTime(normalizeReceiptTimeInput(value))} keyboardType="numbers-and-punctuation" maxLength={5} placeholder="HH:MM" placeholderTextColor={colors.muted} style={[styles.input, styles.timeInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.surface }]} />
         </View>
         <Text style={[styles.hint, { color: colors.muted }]}>{timeDetected ? "Tanggal dan jam terdeteksi dari bukti. Anda dapat memperbaikinya bila perlu." : "Tanggal atau jam tidak terbaca; nominal tetap dapat diproses. Nilai sementara memakai waktu saat ini dan dapat Anda ubah."}</Text>
+        <Text style={[styles.fieldLabel, { color: colors.foreground }]}>{getReceiptCounterpartyLabel(kind)} (opsional)</Text>
+        <TextInput value={counterpartyName} onChangeText={setCounterpartyName} placeholder={kind === "income" ? "Contoh: Andi" : "Contoh: Toko atau penerima transfer"} placeholderTextColor={colors.muted} style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.surface }]} />
+        <Text style={[styles.hint, { color: colors.muted }]}>Diisi otomatis bila terdeteksi dari bukti. Kosongkan atau perbaiki bila hasil OCR tidak sesuai.</Text>
         <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Keterangan</Text>
-        <TextInput value={note} onChangeText={setNote} placeholder="Keterangan bukti atau nama penerima" placeholderTextColor={colors.muted} style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.surface }]} />
+        <TextInput value={note} onChangeText={setNote} placeholder="Keterangan tambahan bukti" placeholderTextColor={colors.muted} style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.surface }]} />
         <PrimaryButton label="Tinjau transaksi" icon="fact-check" onPress={continueDraft} />
       </> : null}
     </ScrollView>
@@ -191,4 +210,9 @@ function WalletChips({ wallets, selectedId, onSelect, colors }: { wallets: Walle
   return <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>{wallets.map((wallet) => <Pressable key={wallet.id} onPress={() => onSelect(wallet.id)} style={({ pressed }) => [styles.chip, { backgroundColor: selectedId === wallet.id ? `${colors.primary}14` : colors.surface, borderColor: selectedId === wallet.id ? colors.primary : colors.border }, pressed && styles.pressed]}><View style={[styles.dot, { backgroundColor: wallet.color }]} /><Text style={[styles.chipText, { color: selectedId === wallet.id ? colors.primary : colors.foreground }]}>{wallet.name}</Text></Pressable>)}</ScrollView>;
 }
 
-const styles = StyleSheet.create({ content: { gap: 11, paddingBottom: 22 }, header: { alignItems: "center", flexDirection: "row", gap: 12, marginBottom: 3 }, back: { alignItems: "center", borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 }, title: { fontSize: 21, fontWeight: "800" }, subtitle: { fontSize: 12, marginTop: 2 }, captureCard: { gap: 13 }, preview: { borderRadius: 16, height: 230, width: "100%" }, previewEmpty: { alignItems: "center", borderRadius: 16, gap: 8, minHeight: 230, justifyContent: "center", padding: 22 }, previewTitle: { fontSize: 16, fontWeight: "800", marginTop: 3 }, previewDetail: { fontSize: 12, lineHeight: 18, textAlign: "center" }, captureActions: { flexDirection: "row", gap: 9 }, info: { alignItems: "flex-start", borderRadius: 15, flexDirection: "row", gap: 9, padding: 13 }, infoText: { flex: 1, fontSize: 12, lineHeight: 18 }, fieldLabel: { fontSize: 14, fontWeight: "800", marginTop: 5 }, detected: { fontSize: 13, fontWeight: "800", marginTop: -5 }, input: { borderRadius: 14, borderWidth: 1, fontSize: 14, minHeight: 47, paddingHorizontal: 13 }, dateTimeRow: { flexDirection: "row", gap: 9 }, dateInput: { flex: 1.35 }, timeInput: { flex: 0.8 }, hint: { fontSize: 11, lineHeight: 16, marginTop: -4 }, chips: { gap: 8, paddingVertical: 1 }, chip: { alignItems: "center", borderRadius: 12, borderWidth: 1, flexDirection: "row", gap: 7, minHeight: 39, paddingHorizontal: 11 }, dot: { borderRadius: 5, height: 9, width: 9 }, chipText: { fontSize: 12, fontWeight: "800" }, pressed: { opacity: 0.7 } });
+function TransactionKindChoice({ kind, label, icon, selected, onPress, colors }: { kind: TransactionKind; label: string; icon: "south-west" | "north-east" | "swap-horiz"; selected: boolean; onPress: () => void; colors: ReturnType<typeof useColors> }) {
+  const accent = kind === "income" ? colors.success : kind === "expense" ? colors.error : colors.primary;
+  return <Pressable onPress={onPress} style={({ pressed }) => [styles.kindChoice, { backgroundColor: selected ? `${accent}15` : colors.surface, borderColor: selected ? accent : colors.border }, pressed && styles.pressed]}><MaterialIcons name={icon} size={18} color={accent} /><Text style={[styles.kindChoiceText, { color: selected ? accent : colors.foreground }]}>{label}</Text></Pressable>;
+}
+
+const styles = StyleSheet.create({ content: { gap: 11, paddingBottom: 22 }, header: { alignItems: "center", flexDirection: "row", gap: 12, marginBottom: 3 }, back: { alignItems: "center", borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 }, title: { fontSize: 21, fontWeight: "800" }, subtitle: { fontSize: 12, marginTop: 2 }, captureCard: { gap: 13 }, preview: { borderRadius: 16, height: 230, width: "100%" }, previewEmpty: { alignItems: "center", borderRadius: 16, gap: 8, minHeight: 230, justifyContent: "center", padding: 22 }, previewTitle: { fontSize: 16, fontWeight: "800", marginTop: 3 }, previewDetail: { fontSize: 12, lineHeight: 18, textAlign: "center" }, captureActions: { flexDirection: "row", gap: 9 }, info: { alignItems: "flex-start", borderRadius: 15, flexDirection: "row", gap: 9, padding: 13 }, infoText: { flex: 1, fontSize: 12, lineHeight: 18 }, fieldLabel: { fontSize: 14, fontWeight: "800", marginTop: 5 }, detected: { fontSize: 13, fontWeight: "800", marginTop: -5 }, kindChoices: { flexDirection: "row", gap: 7 }, kindChoice: { alignItems: "center", borderRadius: 12, borderWidth: 1, flex: 1, gap: 4, minHeight: 66, justifyContent: "center", paddingHorizontal: 5 }, kindChoiceText: { fontSize: 10, fontWeight: "800", textAlign: "center" }, input: { borderRadius: 14, borderWidth: 1, fontSize: 14, minHeight: 47, paddingHorizontal: 13 }, dateTimeRow: { flexDirection: "row", gap: 9 }, dateInput: { flex: 1.35 }, timeInput: { flex: 0.8 }, hint: { fontSize: 11, lineHeight: 16, marginTop: -4 }, chips: { gap: 8, paddingVertical: 1 }, chip: { alignItems: "center", borderRadius: 12, borderWidth: 1, flexDirection: "row", gap: 7, minHeight: 39, paddingHorizontal: 11 }, dot: { borderRadius: 5, height: 9, width: 9 }, chipText: { fontSize: 12, fontWeight: "800" }, pressed: { opacity: 0.7 } });

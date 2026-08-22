@@ -12,7 +12,7 @@ import type { TransactionKind, TransactionOrigin } from "@/lib/finance/types";
 
 export default function ConfirmTransactionScreen() {
   const colors = useColors();
-  const params = useLocalSearchParams<{ kind: TransactionKind; amount: string; feeAmount?: string; category: string; walletId: string; toWalletId?: string; note: string; origin?: TransactionOrigin; proofUri?: string; occurredAt?: string; editId?: string }>();
+  const params = useLocalSearchParams<{ kind: TransactionKind; amount: string; feeAmount?: string; category: string; walletId: string; toWalletId?: string; note: string; counterpartyName?: string; origin?: TransactionOrigin; proofUri?: string; occurredAt?: string; editId?: string }>();
   const { state, addConfirmedTransaction, updateConfirmedTransaction, addCommitment } = useFinance();
   const [saving, setSaving] = useState(false);
   const wallet = state.wallets.find((item) => item.id === params.walletId);
@@ -21,6 +21,8 @@ export default function ConfirmTransactionScreen() {
   const feeAmount = Number(params.feeAmount ?? 0) || 0;
   const occurredAt = params.occurredAt || new Date().toISOString();
   const isTransfer = params.kind === "transfer";
+  const counterpartyName = params.counterpartyName?.trim().slice(0, 120) || undefined;
+  const counterpartyLabel = params.kind === "income" ? "Pengirim" : params.kind === "transfer" ? "Penerima / tujuan" : "Penerima";
   const currentBalance = wallet ? getWalletBalance(wallet, state.transactions) : 0;
   const destinationBalance = destination ? getWalletBalance(destination, state.transactions) : 0;
   const nextBalance = !wallet ? 0 : params.kind === "income" ? currentBalance + amount : currentBalance - amount - (isTransfer ? feeAmount : 0);
@@ -36,6 +38,7 @@ export default function ConfirmTransactionScreen() {
       toWalletId: isTransfer ? destination?.id : undefined,
       category: params.category || "Lainnya",
       note: params.note || "Catatan transaksi",
+      counterpartyName,
       occurredAt,
       origin: params.origin ?? "manual",
       proofUri: params.proofUri,
@@ -89,6 +92,7 @@ export default function ConfirmTransactionScreen() {
           <Divider color={colors.border} /><SummaryRow label={isTransfer ? "Dari" : "Sumber dana"} value={wallet.name} />
           {isTransfer ? <><Divider color={colors.border} /><SummaryRow label="Ke" value={destination?.name ?? "Tujuan dana"} /><Divider color={colors.border} /><SummaryRow label="Biaya admin" value={feeAmount > 0 ? formatCurrency(feeAmount) : "Tidak ada"} valueColor={feeAmount > 0 ? colors.error : undefined} /></> : null}
           <Divider color={colors.border} /><SummaryRow label="Kategori" value={params.category || "Lainnya"} />
+          {counterpartyName ? <><Divider color={colors.border} /><SummaryRow label={counterpartyLabel} value={counterpartyName} /></> : null}
           <Divider color={colors.border} /><SummaryRow label="Waktu" value={formatDateTime(occurredAt)} />
           <Divider color={colors.border} /><SummaryRow label="Keterangan" value={params.note || "—"} />
         </AiraCard>

@@ -6,14 +6,15 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { OutlineButton, PrimaryButton } from "@/components/aira-ui";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
+import { appendReceiptCounterpartyToNote, getReceiptCounterpartyLabel } from "@/lib/finance/receipt-counterparty";
 import { useFinance } from "@/lib/finance/finance-context";
-import type { TransactionKind } from "@/lib/finance/types";
+import type { TransactionKind, TransactionOrigin } from "@/lib/finance/types";
 
 const CATEGORIES = ["Makan", "Transportasi", "Belanja", "Tagihan", "Kesehatan", "Hiburan", "Gaji", "Penjualan", "Lainnya"];
 
 export default function AddTransactionScreen() {
   const colors = useColors();
-  const { editId, kind: kindParam } = useLocalSearchParams<{ editId?: string; kind?: string }>();
+  const { editId, kind: kindParam, amount: amountParam, category: categoryParam, note: noteParam, counterpartyName: counterpartyNameParam, origin: originParam, proofUri: proofUriParam } = useLocalSearchParams<{ editId?: string; kind?: string; amount?: string; category?: string; note?: string; counterpartyName?: string; origin?: TransactionOrigin; proofUri?: string }>();
   const { state } = useFinance();
   const existing = useMemo(() => state.transactions.find((item) => item.id === editId), [editId, state.transactions]);
   const [kind, setKind] = useState<TransactionKind>("expense");
@@ -23,11 +24,17 @@ export default function AddTransactionScreen() {
   const [walletId, setWalletId] = useState("");
   const [toWalletId, setToWalletId] = useState("");
   const [note, setNote] = useState("");
+  const [counterpartyName, setCounterpartyName] = useState("");
 
   useEffect(() => {
-    if (!existing && kindParam === "transfer") {
-      setKind("transfer");
-      setCategory("Transfer dana");
+    if (!existing) {
+      if (kindParam === "income" || kindParam === "expense" || kindParam === "transfer") setKind(kindParam);
+      if (amountParam) setAmount(amountParam.replace(/[^0-9]/g, ""));
+      if (categoryParam) setCategory(categoryParam);
+      else if (kindParam === "transfer") setCategory("Transfer dana");
+      if (noteParam) setNote(noteParam);
+      if (counterpartyNameParam) setCounterpartyName(counterpartyNameParam.slice(0, 120));
+      return;
     }
     if (!existing) return;
     setKind(existing.kind);
@@ -37,7 +44,8 @@ export default function AddTransactionScreen() {
     setWalletId(existing.walletId);
     setToWalletId(existing.toWalletId ?? "");
     setNote(existing.note);
-  }, [existing, kindParam]);
+    setCounterpartyName(existing.counterpartyName ?? "");
+  }, [amountParam, categoryParam, counterpartyNameParam, existing, kindParam, noteParam]);
 
   const selectedWalletId = walletId || state.wallets[0]?.id || "";
   const wallet = useMemo(() => state.wallets.find((item) => item.id === selectedWalletId), [selectedWalletId, state.wallets]);
@@ -52,6 +60,7 @@ export default function AddTransactionScreen() {
   const continueToConfirmation = () => {
     const numericAmount = Number(amount.replace(/[^0-9]/g, ""));
     const numericFee = Number(feeAmount.replace(/[^0-9]/g, "")) || 0;
+    const normalizedCounterpartyName = counterpartyName.trim().slice(0, 120);
     if (!selectedWalletId) { Alert.alert("Pilih sumber dana", "Tambahkan atau pilih dompet terlebih dahulu agar transaksi dapat dihitung dengan benar."); return; }
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) { Alert.alert("Nominal belum valid", "Masukkan nominal transaksi lebih dari nol."); return; }
     if (kind === "transfer" && !toWalletId) { Alert.alert("Pilih tujuan dana", "Pilih bank atau dompet digital tujuan transfer."); return; }
@@ -65,8 +74,10 @@ export default function AddTransactionScreen() {
         category: kind === "transfer" ? "Transfer dana" : category,
         walletId: selectedWalletId,
         toWalletId: kind === "transfer" ? toWalletId : "",
-        note: note.trim() || (kind === "income" ? "Pemasukan manual" : kind === "transfer" ? "Transfer dana" : "Pengeluaran manual"),
-        origin: "manual",
+        note: appendReceiptCounterpartyToNote(note || (kind === "income" ? "Pemasukan manual" : kind === "transfer" ? "Transfer dana" : "Pengeluaran manual"), kind, normalizedCounterpartyName),
+        counterpartyName: normalizedCounterpartyName,
+        origin: originParam === "ai_chat" || originParam === "ocr" || originParam === "voice" ? originParam : "manual",
+        proofUri: proofUriParam,
         occurredAt: existing?.occurredAt ?? new Date().toISOString(),
         editId: existing?.id ?? "",
       },
@@ -84,6 +95,7 @@ export default function AddTransactionScreen() {
         {wallet ? <Text style={[styles.walletHint, { color: colors.muted }]}>{kind === "transfer" ? `Dana akan keluar dari ${wallet.name}.` : `Akan dicatat pada ${wallet.name}.`}</Text> : null}
         {kind === "transfer" ? <><Text style={[styles.fieldLabel, { color: colors.foreground }]}>Tujuan dana</Text><WalletPicker wallets={state.wallets.filter((item) => item.id !== selectedWalletId)} selectedId={toWalletId} onSelect={setToWalletId} colors={colors} emptyAction={() => router.push("/wallets")} />{destination ? <Text style={[styles.walletHint, { color: colors.muted }]}>Dana akan masuk ke {destination.name}.</Text> : null}<Text style={[styles.fieldLabel, { color: colors.foreground }]}>Biaya admin tambahan (opsional)</Text><View style={[styles.feeBox, { backgroundColor: colors.surface, borderColor: colors.border }]}><Text style={[styles.feePrefix, { color: colors.muted }]}>Rp</Text><TextInput value={feeAmount} onChangeText={setFeeAmount} keyboardType="numeric" placeholder="0" placeholderTextColor={colors.muted} style={[styles.feeInput, { color: colors.foreground }]} /></View><Text style={[styles.walletHint, { color: colors.muted }]}>Biaya admin mengurangi saldo sumber dan dicatat sebagai pengeluaran tambahan.</Text></> : null}
         {kind !== "transfer" ? <><Text style={[styles.fieldLabel, { color: colors.foreground }]}>Kategori</Text><View style={styles.categoryGrid}>{CATEGORIES.map((item) => <Pressable key={item} onPress={() => setCategory(item)} style={({ pressed }) => [styles.categoryChip, { backgroundColor: category === item ? `${colors.primary}14` : colors.surface, borderColor: category === item ? colors.primary : colors.border }, pressed && styles.pressed]}><Text style={[styles.categoryLabel, { color: category === item ? colors.primary : colors.foreground }]}>{item}</Text></Pressable>)}</View></> : null}
+        <Text style={[styles.fieldLabel, { color: colors.foreground }]}>{getReceiptCounterpartyLabel(kind)} (opsional)</Text><TextInput value={counterpartyName} onChangeText={setCounterpartyName} placeholder={kind === "income" ? "Contoh: Andi" : "Contoh: Toko atau penerima transfer"} placeholderTextColor={colors.muted} style={[styles.noteInput, { color: colors.foreground, backgroundColor: colors.surface, borderColor: colors.border, minHeight: 46 }]} />
         <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Keterangan</Text><TextInput value={note} onChangeText={setNote} placeholder={kind === "transfer" ? "Contoh: Transfer tabungan" : "Contoh: Makan siang"} placeholderTextColor={colors.muted} style={[styles.noteInput, { color: colors.foreground, backgroundColor: colors.surface, borderColor: colors.border }]} multiline />
         <PrimaryButton label="Tinjau sebelum simpan" icon="fact-check" onPress={continueToConfirmation} />
       </ScrollView>
