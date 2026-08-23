@@ -446,10 +446,10 @@ function PassiveSpcaPatrol() {
 
   if (!visible) return null;
   const face = mood === "angry" ? { brows: "╲ ╱", eyes: "> <", mouth: "⌁" } : mood === "hurt" ? { brows: "╲ ╱", eyes: "× ×", mouth: "⌢" } : { brows: "— —", eyes: "◉ ◉", mouth: "—" };
-  return <Animated.View pointerEvents="auto" style={[passiveStyles.container, evasive && passiveStyles.evasiveRobot, { transform: [{ translateY: bob.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }) }, ...patrol.getTranslateTransform()] }]}>
+  return <Animated.View pointerEvents="auto" style={[passiveStyles.container, evasive && passiveStyles.evasiveRobot, { transform: [{ translateY: bob.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }) }, ...patrol.getTranslateTransform()] }]}> 
     {radarSettings.enabled ? <><Animated.View pointerEvents="none" style={[passiveStyles.radarTrail, { borderColor: `${radarColor}D0`, opacity: radarTrail.interpolate({ inputRange: [0, 0.75, 1], outputRange: [0.3, 0.1, 0] }), transform: [{ scale: radarTrail.interpolate({ inputRange: [0, 1], outputRange: [0.64, 1.55] }) }] }]} /><Animated.View pointerEvents="none" style={[passiveStyles.radarTrailInner, { borderColor: `${radarColor}A8`, opacity: radarTrail.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.22, 0.06, 0] }), transform: [{ scale: radarTrail.interpolate({ inputRange: [0, 1], outputRange: [0.44, 1.08] }) }] }]} /><Animated.View pointerEvents="none" style={[passiveStyles.radarSweepLine, { backgroundColor: radarColor, transform: [{ rotate: radarSweep.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] }) }] }]} /></> : null}
-    {bubble ? <View style={[passiveStyles.bubble, { backgroundColor: colors.foreground }]}><Text style={[passiveStyles.bubbleText, { color: colors.background }]}>{bubble}</Text></View> : null}
-    <Pressable accessibilityRole="button" accessibilityLabel="Robot SPCA patroli pasif" onPress={onPress} style={passiveStyles.robotButton}><ExpoImage source={ROBOT_ASSET} contentFit="contain" style={passiveStyles.robotImage} /><View pointerEvents="none" style={passiveStyles.faceScreen}><Text style={passiveStyles.faceBrows}>{face.brows}</Text><Text style={passiveStyles.faceEyes}>{face.eyes}</Text><Text style={passiveStyles.faceMouth}>{face.mouth}</Text></View><MaterialIcons pointerEvents="none" name="search" size={34} color="#A3F8FF" style={passiveStyles.magnifier} /></Pressable>
+    {bubble ? <View pointerEvents="none" style={[passiveStyles.bubble, { backgroundColor: colors.foreground }]}><Text style={[passiveStyles.bubbleText, { color: colors.background }]}>{bubble}</Text></View> : null}
+    <Pressable accessibilityRole="button" accessibilityLabel="Buka Pusat SPCA aktif" accessibilityHint="Ketuk untuk membuka pemeriksaan dan solusi SPCA. Tekan tahan untuk reaksi robot." delayLongPress={420} hitSlop={14} onLongPress={onPress} onPress={() => router.push("/spca-diagnostics" as never)} style={passiveStyles.robotButton}><ExpoImage source={ROBOT_ASSET} contentFit="contain" style={passiveStyles.robotImage} /><View pointerEvents="none" style={passiveStyles.faceScreen}><Text style={passiveStyles.faceBrows}>{face.brows}</Text><Text style={passiveStyles.faceEyes}>{face.eyes}</Text><Text style={passiveStyles.faceMouth}>{face.mouth}</Text></View><MaterialIcons pointerEvents="none" name="search" size={34} color="#A3F8FF" style={passiveStyles.magnifier} /></Pressable>
   </Animated.View>;
 }
 
@@ -469,12 +469,12 @@ const styles = StyleSheet.create({
 });
 
 const passiveStyles = StyleSheet.create({
-  container: { bottom: 76, height: 72, position: "absolute", right: -38, width: 72, zIndex: 48 },
+  container: { bottom: 76, elevation: 52, height: 72, position: "absolute", right: -38, width: 72, zIndex: 80 },
   evasiveRobot: { opacity: 0.92 },
   radarTrail: { borderRadius: 999, borderWidth: 1, height: 68, left: 2, position: "absolute", top: 3, width: 68 },
   radarTrailInner: { borderRadius: 999, borderWidth: 1, height: 52, left: 10, position: "absolute", top: 11, width: 52 },
   radarSweepLine: { height: 1.5, left: 36, position: "absolute", top: 35, transformOrigin: "0% 50%", width: 29 },
-  robotButton: { alignItems: "center", height: 72, justifyContent: "center", width: 72 },
+  robotButton: { alignItems: "center", elevation: 53, height: 72, justifyContent: "center", width: 72, zIndex: 81 },
   robotImage: { height: 54, width: 54 },
   faceScreen: { alignItems: "center", backgroundColor: "rgba(2,12,25,.9)", borderColor: "rgba(99,225,255,.9)", borderRadius: 6, borderWidth: 0.7, height: 18, justifyContent: "center", left: 21, position: "absolute", top: 27, width: 29 },
   faceBrows: { color: "#7CE7F3", fontSize: 5.5, fontWeight: "900", lineHeight: 5.5, position: "absolute", top: 0 },

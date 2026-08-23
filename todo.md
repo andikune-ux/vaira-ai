@@ -3571,3 +3571,6 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Audit lapisan pointer dan target sentuh Robot SPCA yang tidak dapat ditekan.
 - [x] Perbaiki screenshot dan interaksi sentuh SPCA dengan fallback aman lintas platform.
 - [x] Tambahkan regresi serta validasi screenshot dan sentuhan SPCA tanpa checkpoint otomatis.
+- [x] Audit konflik gesture PanResponder dan `onPress` yang membuat ketukan Robot SPCA tidak membuka panel.
+- [x] Pisahkan tap pembuka SPCA dari gesture geser yang hanya aktif setelah pergerakan nyata.
+- [x] Tambahkan regresi dan validasi ketukan Robot SPCA membuka panel tanpa checkpoint otomatis.

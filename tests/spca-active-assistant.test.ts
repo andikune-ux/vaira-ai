@@ -46,6 +46,17 @@ describe("antarmuka dan kontrak SPCA aktif", () => {
     expect(overlay).toContain("elevation: 51");
   });
 
+  it("membuka Pusat SPCA aktif dari ketukan robot patroli dan memindahkan reaksi ke tekan-tahan", () => {
+    const overlay = read("components/spca-overlay.tsx");
+    const passiveStart = overlay.indexOf("function PassiveSpcaPatrol()");
+    const passiveRobot = overlay.slice(passiveStart);
+
+    expect(passiveRobot).toContain('onPress={() => router.push("/spca-diagnostics" as never)}');
+    expect(passiveRobot).toContain("onLongPress={onPress}");
+    expect(passiveRobot).toContain("delayLongPress={420}");
+    expect(passiveRobot).toContain('accessibilityLabel="Buka Pusat SPCA aktif"');
+  });
+
   it("membatasi laporan ke akun pengirim dan Administrator terverifikasi", () => {
     const router = read("server/routers.ts");
     expect(router).toContain("submitDiagnostic");
