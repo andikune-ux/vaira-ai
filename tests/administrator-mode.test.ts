@@ -89,15 +89,12 @@ describe("Mode Administrator", () => {
     expect(routers).toContain("auditLog:");
   });
 
-  it("menjalankan tarik snapshot global uji ketika aplikasi dibuka atau aktif kembali", () => {
+  it("tidak lagi menarik snapshot keuangan global ketika aplikasi dibuka atau aktif kembali", () => {
     const sync = source("components/global-test-sync.tsx");
     const routers = source("server/routers.ts");
-    expect(sync).toContain("globalTestSnapshot.pull");
-    expect(sync).toContain('state.profile.mode === "guest"');
-    expect(sync).not.toContain("state.profile.syncEnabled || isSynchronizing.current");
-    expect(routers).toContain("pull: publicProcedure.query");
-    expect(sync).toContain("AppState.addEventListener");
-    expect(sync).toContain('window.addEventListener("online"');
+    expect(sync).toContain("return null;");
+    expect(sync).not.toContain("globalTestSnapshot");
+    expect(routers).not.toContain("globalTestSnapshot");
   });
 
   it("mempertahankan seluruh panel manajemen Administrator setelah cleanup Room Global", () => {

@@ -15,7 +15,6 @@ import { ToastProvider } from "@/components/app-toast";
 import { AppErrorBoundary } from "@/components/app-error-boundary";
 import { SpcaOverlay } from "@/components/spca-overlay";
 import { SpcaGazeProvider } from "@/components/spca-gaze";
-import { GlobalTestSync } from "@/components/global-test-sync";
 import { AppUpdatePrompt } from "@/components/app-update-prompt";
 import {
   SafeAreaFrameContext,
@@ -168,7 +167,6 @@ export default function RootLayout() {
             <Stack.Screen name="cache-maintenance" />
           </Stack>
           <SpcaOverlay />
-          <GlobalTestSync />
           <AppUpdatePrompt />
           <StatusBar style="auto" />
         </QueryClientProvider>

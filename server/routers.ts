@@ -450,6 +450,12 @@ export const appRouter = router({
     adminLeave: publicProcedure.input(z.object({ username: z.string().trim().min(1).max(80), password: z.string().min(1).max(180) })).mutation(async ({ input }) => { if (!verifyAdministratorCredentials(input.username, input.password)) throw new TRPCError({ code: "FORBIDDEN", message: "Verifikasi administrator diperlukan." }); await db.leaveGlobalRoom(0); return { success: true }; }),
     adminMessages: publicProcedure.input(z.object({ username: z.string().trim().min(1).max(80), password: z.string().min(1).max(180) })).query(async ({ input }) => { if (!verifyAdministratorCredentials(input.username, input.password)) throw new TRPCError({ code: "FORBIDDEN", message: "Verifikasi administrator diperlukan." }); return (await db.listGlobalRoomMessages(0, 100)).filter((message) => !message.deletedAt); }),
     adminDeleteMessages: publicProcedure.input(z.object({ username: z.string().trim().min(1).max(180), password: z.string().min(1).max(180), messageIds: z.array(z.number().int().positive()).max(500).optional(), deleteAll: z.boolean().optional() })).mutation(async ({ input }) => { if (!verifyAdministratorCredentials(input.username, input.password)) throw new TRPCError({ code: "FORBIDDEN", message: "Verifikasi administrator diperlukan." }); const ids = input.deleteAll ? "all" as const : (input.messageIds ?? []); if (ids !== "all" && !ids.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Pilih minimal satu pesan." }); const count = await db.deleteGlobalRoomMessagesByAdmin(ids); await db.createAdministratorAuditLog({ adminUsername: input.username, action: "Pesan Room Global dihapus massal", targetType: "message", targetId: ids === "all" ? "all" : ids.join(","), targetLabel: ids === "all" ? "Semua pesan Room Global" : `${ids.length} pesan terpilih`, detail: "Pesan disembunyikan dari daftar administrator dan ditandai sebagai Pesan dihapus admin." }); return { success: true, count }; }),
+    adminPurgeHistory: publicProcedure.input(z.object({ username: z.string().trim().min(1).max(80), password: z.string().min(1).max(180), confirmation: z.literal("HAPUS RIWAYAT ROOM GLOBAL") })).mutation(async ({ input }) => {
+      if (!verifyAdministratorCredentials(input.username, input.password)) throw new TRPCError({ code: "FORBIDDEN", message: "Verifikasi administrator diperlukan." });
+      const removed = await db.purgeGlobalRoomHistoryByAdmin();
+      await db.createAdministratorAuditLog({ adminUsername: input.username, action: "Riwayat Room Global dihapus permanen", targetType: "room", targetId: "global", targetLabel: "Room Global", detail: `${removed.messages} pesan dan ${removed.reactions} reaksi dihapus permanen; audit tidak menyimpan isi percakapan.` });
+      return { success: true, ...removed };
+    }),
     adminDeleteMessage: publicProcedure.input(z.object({ username: z.string().trim().min(1).max(80), password: z.string().min(1).max(180), messageId: z.number().int().positive() })).mutation(async ({ input }) => { if (!verifyAdministratorCredentials(input.username, input.password)) throw new TRPCError({ code: "FORBIDDEN", message: "Verifikasi administrator diperlukan." }); const deleted = await db.deleteGlobalRoomMessageByAdmin(input.messageId); if (!deleted) throw new TRPCError({ code: "NOT_FOUND", message: "Pesan Room Global tidak ditemukan." }); await db.createAdministratorAuditLog({ adminUsername: input.username, action: "Pesan Room Global dihapus", targetType: "message", targetId: String(input.messageId), targetLabel: `Pesan #${input.messageId}`, detail: "Isi pesan diganti menjadi Pesan dihapus admin." }); return { success: true }; }),
     pinnedMessage: publicProcedure.query(async ({ ctx }) => { await requireManualAccount(ctx.req); return db.getPinnedGlobalRoomMessage(); }),
     adminPinMessage: publicProcedure.input(z.object({ username: z.string().trim().min(1).max(80), password: z.string().min(1).max(180), messageId: z.number().int().positive(), pinned: z.boolean() })).mutation(async ({ input }) => { if (!verifyAdministratorCredentials(input.username, input.password)) throw new TRPCError({ code: "FORBIDDEN", message: "Verifikasi administrator diperlukan." }); const changed = await db.setGlobalRoomMessagePinned(input.messageId, input.pinned, input.username); if (!changed) throw new TRPCError({ code: "NOT_FOUND", message: "Pesan Room Global tidak ditemukan." }); await db.createAdministratorAuditLog({ adminUsername: input.username, action: input.pinned ? "Pesan Room Global disematkan" : "Sematan Pesan Room Global dilepas", targetType: "message", targetId: String(input.messageId), targetLabel: `Pesan #${input.messageId}`, detail: input.pinned ? "Pesan ditampilkan di bagian atas percakapan." : "Sematan pesan dilepas." }); return { success: true, pinned: input.pinned }; }),
@@ -1013,28 +1019,6 @@ export const appRouter = router({
         await db.createAdministratorAuditLog({ adminUsername: input.username, action: "Laporan Room Global dihapus", targetType: "laporan", targetId: ids === "all" ? "all" : ids.join(","), targetLabel: label, detail: "Laporan disembunyikan dengan soft-delete dan metadata administrator dipertahankan untuk audit." });
         return { success: true, count: ids === "all" ? null : ids.length };
       }),
-    globalTestSnapshot: router({
-      status: publicProcedure
-        .input(z.object({ username: z.string().trim().min(1).max(80), password: z.string().min(1).max(180) }))
-        .query(async ({ input }) => {
-          if (!verifyAdministratorCredentials(input.username, input.password)) throw new TRPCError({ code: "FORBIDDEN", message: "Verifikasi administrator diperlukan." });
-          const snapshot = await db.getGlobalTestSnapshot();
-          return { environment: "personal-test" as const, isServerAdministrator: true, hasSnapshot: Boolean(snapshot), updatedAt: snapshot?.updatedAt.toISOString() ?? null };
-        }),
-      pull: publicProcedure.query(async () => {
-        const snapshot = await db.getGlobalTestSnapshot();
-        return snapshot ? { payload: snapshot.payload, updatedAt: snapshot.updatedAt.toISOString() } : null;
-      }),
-      push: publicProcedure
-        .input(z.object({ payload: z.string().min(2).max(60_000), username: z.string().trim().min(1).max(80), password: z.string().min(1).max(180) }))
-        .mutation(async ({ input }) => {
-          if (!verifyAdministratorCredentials(input.username, input.password)) throw new TRPCError({ code: "FORBIDDEN", message: "Verifikasi administrator diperlukan." });
-          JSON.parse(input.payload);
-          await db.saveGlobalTestSnapshot(0, input.payload);
-          await db.createAdministratorAuditLog({ adminUsername: input.username, action: "Snapshot global diperbarui", targetType: "snapshot", targetId: "personal-test", targetLabel: "personal-test", detail: "Snapshot pusat untuk lingkungan uji disimpan." });
-          return { success: true, updatedAt: new Date().toISOString() };
-        }),
-    }),
   }),
   sync: router({
     pull: protectedProcedure.query(async ({ ctx }) => {

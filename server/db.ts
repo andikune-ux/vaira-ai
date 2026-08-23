@@ -1,6 +1,6 @@
 import { and, count, desc, eq, gt, isNotNull, isNull, lt, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { administratorAuditLogs, airaAccessTokens, airaConversationHistories, airaxCloudBackups, financeSnapshots, globalRoomBlocks, globalRoomConsents, globalRoomMessages, globalRoomModeration, globalRoomPresence, globalRoomReports, globalRoomSettings, globalRoomUserSettings, globalRoomMessageReactions, globalRoomProfileComments, globalRoomProfileLoves, globalRoomUserStatus, globalTestSnapshots, administratorTokenSettings, InsertAdministratorAuditLog, InsertAiraXCloudBackup, InsertManualAccount, InsertUser, manualAccounts, manualAccountSessions, users } from "../drizzle/schema";
+import { administratorAuditLogs, airaAccessTokens, airaConversationHistories, airaxCloudBackups, financeSnapshots, globalRoomBlocks, globalRoomConsents, globalRoomMessages, globalRoomModeration, globalRoomPresence, globalRoomReports, globalRoomSettings, globalRoomUserSettings, globalRoomMessageReactions, globalRoomProfileComments, globalRoomProfileLoves, globalRoomUserStatus, administratorTokenSettings, InsertAdministratorAuditLog, InsertAiraXCloudBackup, InsertManualAccount, InsertUser, manualAccounts, manualAccountSessions, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { storageGetSignedUrl } from "./storage";
 
@@ -138,19 +138,6 @@ export async function saveFinanceSnapshot(userId: number, payload: string) {
   const db = await getDb();
   if (!db) throw new Error("Database tidak tersedia untuk sinkronisasi.");
   await db.insert(financeSnapshots).values({ userId, payload }).onDuplicateKeyUpdate({ set: { payload, updatedAt: new Date() } });
-}
-
-export async function getGlobalTestSnapshot() {
-  const db = await getDb();
-  if (!db) return undefined;
-  const result = await db.select().from(globalTestSnapshots).where(eq(globalTestSnapshots.scope, "personal-test")).limit(1);
-  return result[0];
-}
-
-export async function saveGlobalTestSnapshot(userId: number, payload: string) {
-  const db = await getDb();
-  if (!db) throw new Error("Database tidak tersedia untuk snapshot global uji.");
-  await db.insert(globalTestSnapshots).values({ scope: "personal-test", payload, updatedByUserId: userId }).onDuplicateKeyUpdate({ set: { payload, updatedByUserId: userId, updatedAt: new Date() } });
 }
 
 export async function createAiraXCloudBackup(values: InsertAiraXCloudBackup) {
@@ -387,7 +374,7 @@ export async function listManualAccounts(query?: string) {
   const rows = await db.select().from(manualAccounts).orderBy(manualAccounts.createdAt);
   const needle = query?.trim().toLowerCase();
   if (!needle) return rows;
-  return rows.filter((account) => [account.fullName, account.username, account.email, account.phone].some((value) => value.toLowerCase().includes(needle)));
+  return rows.filter((account) => [account.fullName, account.username, account.publicId ?? "", String(account.id), account.email, account.phone].some((value) => value.toLowerCase().includes(needle)));
 }
 
 export async function findManualAccountIdentifierConflict(accountId: number, values: { username?: string; email?: string; phone?: string }) {
@@ -570,6 +557,19 @@ export async function deleteGlobalRoomMessagesByAdmin(messageIds: number[] | "al
   const result = await db.update(globalRoomMessages).set({ content: "Pesan dihapus admin", replyToId: null, replyToDisplayName: null, replyToContent: null, deletedAt: new Date(), pinnedAt: null, pinnedBy: null }).where(and(isNull(globalRoomMessages.deletedAt), or(...messageIds.map((id) => eq(globalRoomMessages.id, id)))));
   return Number(result[0].affectedRows ?? 0);
 }
+
+/** Menghapus riwayat Room Global serta reaksi terkait secara permanen; audit tidak menyimpan isi pesan. */
+export async function purgeGlobalRoomHistoryByAdmin() {
+  const db = await getDb();
+  if (!db) throw new Error("Database Room Global belum tersedia.");
+  const reactions = await db.delete(globalRoomMessageReactions);
+  const messages = await db.delete(globalRoomMessages);
+  return {
+    messages: Number(messages[0].affectedRows ?? 0),
+    reactions: Number(reactions[0].affectedRows ?? 0),
+  };
+}
+
 export async function deleteGlobalRoomMessageByAdmin(messageId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database Room Global belum tersedia.");

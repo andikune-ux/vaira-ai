@@ -3536,3 +3536,23 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Jadikan foto bukti yang dikirim di chat Aira sebagai draft transaksi setelah nominal dan rincian dapat dianalisis.
 - [x] Tampilkan pilihan eksplisit Tambah ke data keuangan atau Tidak sekarang; jangan pernah menyimpan transaksi tanpa persetujuan pengguna.
 - [x] Uji penolakan, pengeditan, dan persetujuan draft transaksi dari chat maupun foto bukti tanpa checkpoint otomatis.
+- [x] Audit semua jalur pengiriman, tampilan, dan sinkronisasi data keuangan terhadap Room Global, grup, serta profil publik.
+- [x] Pastikan data keuangan tidak dapat masuk ke konten publik tanpa tindakan berbagi eksplisit dari pengguna.
+- [x] Tutup setiap jalur eksposur yang ditemukan dan tambahkan regresi isolasi data keuangan.
+- [x] Validasi temuan keamanan privasi dan laporkan hasil tanpa checkpoint otomatis.
+- [x] Audit tombol, status, dan tindakan Snapshot Global pada menu Administrator.
+- [x] Hapus antarmuka Snapshot Global beserta pemanggilan data yang tidak lagi dipakai.
+- [x] Validasi tidak ada tombol atau navigasi Snapshot Global tersisa tanpa checkpoint otomatis.
+- [x] Audit penyimpanan Snapshot Global lama dan siapkan penghapusan yang tidak menyentuh data akun pribadi.
+- [x] Hapus isi Snapshot Global lama yang tersimpan setelah tindakan aman siap.
+- [x] Validasi pembersihan snapshot serta isolasi data keuangan tanpa checkpoint otomatis.
+- [x] Audit alur pemilihan gambar pada Pindai Bukti dan titik pemindaian OCR saat ini.
+- [x] Tambahkan layar pratinjau bukti transaksi sebelum pemindaian dengan Crop, Oke/Gunakan, dan Kembali/Batal.
+- [x] Tampilkan kembali gambar bukti yang telah digunakan pada formulir tinjauan transaksi.
+- [x] Tambahkan regresi dan validasi alur pratinjau bukti tanpa checkpoint otomatis.
+- [x] Audit penghapusan pesan Room Global untuk membedakan soft-delete moderator dan hapus riwayat permanen yang dikonfirmasi.
+- [x] Tambahkan tombol Hapus riwayat percakapan pada pesan Room Global untuk menghapus konten tanpa sisa placeholder.
+- [x] Tampilkan tanggal serta jam pembuatan akun pada daftar akun Administrator dengan tampilan ringkas.
+- [x] Perluas pencarian daftar akun ke nama, username, ID publik, email, dan nomor WhatsApp/telepon.
+- [x] Pastikan menu Administrator membuka daftar akun pada halaman khusus dan hapus panel Token Aira yang tampil ganda.
+- [x] Tambahkan regresi serta validasi penghapusan riwayat dan pengelolaan akun tanpa checkpoint otomatis.

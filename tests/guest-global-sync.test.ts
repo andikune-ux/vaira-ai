@@ -1,11 +1,12 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { appRouter } from "../server/routers";
+const source = (file: string) => fs.readFileSync(path.resolve(process.cwd(), file), "utf8");
 
-describe("tarik snapshot global Mode Guest", () => {
-  it("dapat dipanggil tanpa konteks login dan hanya mengembalikan snapshot bila tersedia", async () => {
-    const caller = appRouter.createCaller({} as never);
-    const snapshot = await caller.administrator.globalTestSnapshot.pull();
-    expect(snapshot === null || (typeof snapshot.payload === "string" && typeof snapshot.updatedAt === "string")).toBe(true);
+describe("penghapusan sinkronisasi snapshot global", () => {
+  it("tidak memasang pemuatan snapshot lintas pengguna pada aplikasi", () => {
+    expect(source("app/_layout.tsx")).not.toContain("<GlobalTestSync />");
+    expect(source("components/global-test-sync.tsx")).toContain("return null;");
   });
 });
