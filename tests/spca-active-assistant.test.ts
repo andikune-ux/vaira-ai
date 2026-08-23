@@ -24,6 +24,28 @@ describe("antarmuka dan kontrak SPCA aktif", () => {
     expect(hook).toContain("120_000");
   });
 
+  it("memproses garis radar scanner melalui Animated.View agar translateY valid pada Android", () => {
+    const overlay = read("components/spca-overlay.tsx");
+    const scannerLineIndex = overlay.indexOf("styles.miniScannerLine");
+    const animatedViewIndex = overlay.lastIndexOf("<Animated.View", scannerLineIndex);
+
+    expect(scannerLineIndex).toBeGreaterThan(-1);
+    expect(animatedViewIndex).toBeGreaterThan(-1);
+    expect(overlay.slice(animatedViewIndex, scannerLineIndex)).toContain("<Animated.View");
+    expect(overlay).toContain("translateY: radar.interpolate");
+    expect(overlay).not.toContain("translateY: { translateY:");
+  });
+
+  it("menjadwalkan screenshot dengan callback tugas yang valid dan menjaga target sentuh robot di atas dekorasi", () => {
+    const overlay = read("components/spca-overlay.tsx");
+
+    expect(overlay).toContain("InteractionManager.runAfterInteractions(() => resolve())");
+    expect(overlay).not.toContain("await InteractionManager.runAfterInteractions();");
+    expect(overlay).toContain('pointerEvents="box-none"');
+    expect(overlay).toContain("hitSlop={12}");
+    expect(overlay).toContain("elevation: 51");
+  });
+
   it("membatasi laporan ke akun pengirim dan Administrator terverifikasi", () => {
     const router = read("server/routers.ts");
     expect(router).toContain("submitDiagnostic");

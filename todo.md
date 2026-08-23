@@ -3561,3 +3561,13 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Tambahkan rekomendasi tindakan, coba ulang, pemeriksaan izin, dan laporan bug aman tanpa merekam sandi, token, isi chat, atau data keuangan.
 - [x] Tambahkan halaman status SPCA aktif serta laporan diagnostik privat untuk Administrator.
 - [x] Tambahkan regresi diagnosis, redaksi data sensitif, tindakan pemulihan, dan validasi tanpa checkpoint otomatis.
+- [x] Audit status konfigurasi rahasia dan indikator kesehatan layanan tanpa membaca atau menampilkan nilainya.
+- [x] Identifikasi konfigurasi yang benar-benar hilang dan pulihkan hanya jika diperlukan melalui isian aman.
+- [x] Validasi layanan terkait dan laporkan hasil pemeriksaan tanpa checkpoint otomatis.
+- [x] Audit transform animasi pada overlay dan layar SPCA yang menyebabkan crash Android saat tombol SPCA ditekan.
+- [x] Perbaiki nilai `translateY` agar selalu berupa angka atau persentase yang valid pada Android.
+- [x] Tambahkan regresi transform animasi dan validasi pembukaan SPCA tanpa checkpoint otomatis.
+- [x] Audit pemanggilan screenshot SPCA yang memicu tugas `undefined` pada Android.
+- [x] Audit lapisan pointer dan target sentuh Robot SPCA yang tidak dapat ditekan.
+- [x] Perbaiki screenshot dan interaksi sentuh SPCA dengan fallback aman lintas platform.
+- [x] Tambahkan regresi serta validasi screenshot dan sentuhan SPCA tanpa checkpoint otomatis.
