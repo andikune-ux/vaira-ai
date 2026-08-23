@@ -12,11 +12,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppToast } from "@/components/app-toast";
 import { useSpcaGaze } from "@/components/spca-gaze";
 import { useColors } from "@/hooks/use-colors";
+import { useSpcaDiagnostics } from "@/hooks/use-spca-diagnostics";
 import { getLastBugDiagnostic, type BugDiagnostic } from "@/lib/bug-diagnostics";
 import { useFinance } from "@/lib/finance/finance-context";
 import { clearTemporaryCache, formatCacheSize, getTemporaryCacheSize } from "@/lib/spca-cache";
 import { recordSpcaPassiveHistory } from "@/lib/spca-passive-history";
 import { getSpcaExtraSettings } from "@/lib/spca-extra-settings";
+import { createSpcaFindings } from "@/lib/spca-diagnostic-engine";
 
 type Mood = "happy" | "focused" | "sad" | "crying" | "laugh" | "sulky" | "confused" | "surprised" | "love" | "sleepy" | "sneeze" | "poop" | "cleanup" | "hurt" | "angry";
 type ReminderBubble = { text: string; target?: string } | null;
@@ -57,6 +59,7 @@ export function SpcaOverlay() {
   const { state, updateProfile } = useFinance();
   const { showToast } = useAppToast();
   const { gaze } = useSpcaGaze();
+  const activeDiagnostics = useSpcaDiagnostics();
   const { width, height } = useWindowDimensions();
   const safeArea = useSafeAreaInsets();
   const preferences = state.profile.uiPreferences;
@@ -93,6 +96,7 @@ export function SpcaOverlay() {
   const scanPatrol = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
   const bubbleMotion = useRef(new Animated.Value(0)).current;
   const bubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const announcedFinding = useRef<string | null>(null);
   const scannerAccent = SCANNER_COLORS[scannerColor];
   const scanInFlight = useRef(false);
   const captureInFlight = useRef(false);
@@ -131,6 +135,15 @@ export function SpcaOverlay() {
     const repeat = setInterval(showReminderBubble, Math.max(1, preferences.spcaBubbleRepeatMinutes) * 60_000);
     return () => { clearTimeout(initial); clearInterval(repeat); };
   }, [preferences.spcaBubbleRepeatMinutes, preferences.spcaEnabled, preferences.spcaReminderBubbleEnabled, showReminderBubble]);
+  useEffect(() => {
+    if (!preferences.spcaEnabled || activeDiagnostics.isScanning) return;
+    const finding = activeDiagnostics.findings.find((item) => item.id !== "healthy" && item.severity !== "info");
+    if (!finding) { announcedFinding.current = null; return; }
+    if (announcedFinding.current === finding.id) return;
+    announcedFinding.current = finding.id;
+    setMood(finding.severity === "critical" ? "crying" : "focused");
+    showBubble({ text: `SPCA menemukan: ${finding.title}. Tekan untuk solusi.`, target: "/spca-diagnostics" });
+  }, [activeDiagnostics.findings, activeDiagnostics.isScanning, preferences.spcaEnabled, showBubble]);
   useEffect(() => () => { if (bubbleTimer.current) clearTimeout(bubbleTimer.current); }, []);
   useEffect(() => {
     if (!preferences.spcaEnabled) return;
@@ -184,11 +197,12 @@ export function SpcaOverlay() {
     scanPatrol.setValue({ x: 0, y: 0 });
     const freeScan = Animated.loop(Animated.sequence([Animated.timing(scanPatrol, { toValue: { x: 54, y: -32 }, duration: 320, useNativeDriver: true }), Animated.timing(scanPatrol, { toValue: { x: -42, y: 18 }, duration: 380, useNativeDriver: true }), Animated.timing(scanPatrol, { toValue: { x: 28, y: 44 }, duration: 330, useNativeDriver: true }), Animated.timing(scanPatrol, { toValue: { x: -22, y: -22 }, duration: 350, useNativeDriver: true }), Animated.timing(scanPatrol, { toValue: { x: 0, y: 0 }, duration: 280, useNativeDriver: true })]));
     freeScan.start();
-    const { last, cache } = await refreshDiagnostic(); await pause(1550); clearInterval(progressTimer); setScanPercent(100); rotation.stop(); freeScan.stop(); scanPatrol.setValue({ x: 0, y: 0 });
-    const details = last ? `Masalah runtime tercatat pada ${new Date(last.createdAt).toLocaleString("id-ID")}: ${last.message}${last.stack ? `\nJejak kode: ${last.stack}` : ""}` : previewUri ? "Tidak ada crash JavaScript tersimpan. Tangkapan layar telah dibuat dan siap Anda tinjau secara visual." : "Tidak ada crash JavaScript tersimpan. Status cache dan pengingat diperiksa tanpa mengubah data.";
-    const result = `${details}\nCache sementara: ${formatCacheSize(cache)}.\nTindakan aman yang tersedia: hapus cache sementara, simpan tangkapan layar, atau salin laporan untuk diperbaiki pada pembaruan berikutnya.`;
+    const { last, cache } = await refreshDiagnostic(); const runtime = await activeDiagnostics.scan(); await pause(1550); clearInterval(progressTimer); setScanPercent(100); rotation.stop(); freeScan.stop(); scanPatrol.setValue({ x: 0, y: 0 });
+    const findings = runtime ? createSpcaFindings(runtime) : activeDiagnostics.findings;
+    const details = findings.length ? findings.map((item) => `${item.title}: ${item.summary}`).join("\n") : last ? `SPCA menemukan ringkasan kesalahan runtime pada ${new Date(last.createdAt).toLocaleString("id-ID")}. Isi teknis telah disaring demi privasi.` : previewUri ? "Tidak ada crash JavaScript tersimpan. Tangkapan layar telah dibuat dan siap Anda tinjau secara visual." : "Tidak ada masalah utama yang tercatat. Status cache dan izin perangkat diperiksa tanpa mengubah data.";
+    const result = `${details}\nCache sementara: ${formatCacheSize(cache)}.\nTindakan aman tersedia di Pusat SPCA: coba ulang, periksa izin, bersihkan cache, atau buat laporan aman untuk Administrator.`;
     setAnalysis(result); setReportDraft(`SPCA — Laporan Pemindaian\nWaktu: ${new Date().toLocaleString("id-ID")}\n\n${result}`); setMood(last ? "crying" : "happy"); setAnalyzing(false); scanInFlight.current = false;
-  }, [previewUri, radar, refreshDiagnostic, scanPatrol]);
+  }, [activeDiagnostics, previewUri, radar, refreshDiagnostic, scanPatrol]);
   const openAssistant = () => {
     setVisible(true);
     void scan().catch(() => {
@@ -264,6 +278,7 @@ export function SpcaOverlay() {
         {previewUri ? <View style={[styles.previewCard, { borderColor: colors.border }]}><ExpoImage source={{ uri: previewUri }} contentFit="contain" style={styles.preview} /><View style={styles.previewActions}><Action label="Batal" icon="close" color={colors.error} onPress={() => { setPreviewUri(null); setCaptureStage("idle"); }} /><Action label={captureStage === "cropping" ? "Memotong…" : "Crop tengah"} icon="crop" color={colors.warning} onPress={() => { void cropPreview(); }} /><Action label="Simpan" icon="save-alt" color={colors.success} onPress={() => { void savePreview(); }} /></View></View> : <View style={styles.actionGrid}><Action label="Analisis ulang" icon="radar" color={colors.primary} onPress={() => { void scan().catch(() => { setAnalyzing(false); setMood("crying"); showToast("Pemindaian SPCA gagal dimulai.", "info"); }); }} /><Action label="Tangkap layar" icon="screenshot-monitor" color={colors.success} onPress={() => { if (!captureInFlight.current && !analyzing) void capture(); }} /><Action label="Hapus cache" icon="cleaning-services" color={colors.warning} onPress={clearCache} /><Action label="Nonaktifkan SPCA" icon="power-settings-new" color={colors.error} onPress={() => { void updateProfile({ uiPreferences: { ...preferences, spcaEnabled: false } }); setVisible(false); showToast("SPCA dinonaktifkan. Aktifkan kembali dari Studio Developer."); }} /></View>}
         <Text style={[styles.cacheLabel, { color: colors.muted }]}>Cache sementara terdeteksi: {formatCacheSize(cacheSize)}</Text>
         <Text style={[styles.reportLabel, { color: colors.foreground }]}>Laporan pemindaian — dapat diedit</Text><TextInput value={reportDraft} onChangeText={setReportDraft} multiline placeholderTextColor={colors.muted} style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.surface }]} /><Action label="Salin laporan" icon="content-copy" color={colors.primary} onPress={() => { void Clipboard.setStringAsync(reportDraft); showToast("Laporan SPCA disalin."); }} />
+        <Pressable onPress={() => router.push("/spca-diagnostics" as never)} style={[styles.linkRow, { borderColor: colors.border }]}><MaterialIcons name="health-and-safety" size={18} color={colors.primary} /><Text style={[styles.linkText, { color: colors.foreground }]}>Buka Pusat SPCA aktif</Text><MaterialIcons name="chevron-right" size={20} color={colors.muted} /></Pressable>
         <Pressable onPress={() => router.push("/cache-maintenance" as never)} style={[styles.linkRow, { borderColor: colors.border }]}><MaterialIcons name="settings" size={18} color={colors.primary} /><Text style={[styles.linkText, { color: colors.foreground }]}>Buka pengelolaan cache lengkap</Text><MaterialIcons name="chevron-right" size={20} color={colors.muted} /></Pressable>
       </ScrollView>
     </View></View></Modal>

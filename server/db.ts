@@ -1,6 +1,6 @@
 import { and, count, desc, eq, gt, isNotNull, isNull, lt, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { administratorAuditLogs, airaAccessTokens, airaConversationHistories, airaxCloudBackups, financeSnapshots, globalRoomBlocks, globalRoomConsents, globalRoomMessages, globalRoomModeration, globalRoomPresence, globalRoomReports, globalRoomSettings, globalRoomUserSettings, globalRoomMessageReactions, globalRoomProfileComments, globalRoomProfileLoves, globalRoomUserStatus, administratorTokenSettings, InsertAdministratorAuditLog, InsertAiraXCloudBackup, InsertManualAccount, InsertUser, manualAccounts, manualAccountSessions, users } from "../drizzle/schema";
+import { administratorAuditLogs, airaAccessTokens, airaConversationHistories, airaxCloudBackups, financeSnapshots, globalRoomBlocks, globalRoomConsents, globalRoomMessages, globalRoomModeration, globalRoomPresence, globalRoomReports, globalRoomSettings, globalRoomUserSettings, globalRoomMessageReactions, globalRoomProfileComments, globalRoomProfileLoves, globalRoomUserStatus, administratorTokenSettings, InsertAdministratorAuditLog, InsertAiraXCloudBackup, InsertManualAccount, InsertUser, manualAccounts, manualAccountSessions, spcaDiagnosticReports, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { storageGetSignedUrl } from "./storage";
 
@@ -375,6 +375,36 @@ export async function listManualAccounts(query?: string) {
   const needle = query?.trim().toLowerCase();
   if (!needle) return rows;
   return rows.filter((account) => [account.fullName, account.username, account.publicId ?? "", String(account.id), account.email, account.phone].some((value) => value.toLowerCase().includes(needle)));
+}
+
+function sanitizeSpcaReportSummary(value: string) {
+  return value
+    .replace(/\b(?:AIza|sk-|AQ\.)[A-Za-z0-9_\-.]{12,}\b/g, "[DIHAPUS]")
+    .replace(/(password|kata\s*sandi|token|api[_ -]?key)\s*[:=]\s*[^\s,;]+/gi, "$1=[DIHAPUS]")
+    .replace(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g, "[DIHAPUS]")
+    .replace(/\b(?:\+?62|0)8\d{7,12}\b/g, "[DIHAPUS]")
+    .slice(0, 700);
+}
+
+export async function createSpcaDiagnosticReport(input: { accountId: number; severity: "info" | "warning" | "critical"; codes: string[]; summary: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database laporan SPCA belum tersedia.");
+  const codes = input.codes.map((code) => code.replace(/[^a-z0-9-]/gi, "").slice(0, 60)).filter(Boolean).slice(0, 12).join(",");
+  const result = await db.insert(spcaDiagnosticReports).values({ accountId: input.accountId, severity: input.severity, codes: codes || "healthy", summary: sanitizeSpcaReportSummary(input.summary) });
+  return Number(result[0].insertId);
+}
+
+export async function listSpcaDiagnosticReports(limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({ id: spcaDiagnosticReports.id, accountId: spcaDiagnosticReports.accountId, publicId: manualAccounts.publicId, username: manualAccounts.username, fullName: manualAccounts.fullName, severity: spcaDiagnosticReports.severity, codes: spcaDiagnosticReports.codes, summary: spcaDiagnosticReports.summary, status: spcaDiagnosticReports.status, createdAt: spcaDiagnosticReports.createdAt, resolvedAt: spcaDiagnosticReports.resolvedAt, resolvedBy: spcaDiagnosticReports.resolvedBy }).from(spcaDiagnosticReports).leftJoin(manualAccounts, eq(spcaDiagnosticReports.accountId, manualAccounts.id)).orderBy(desc(spcaDiagnosticReports.createdAt)).limit(Math.max(1, Math.min(limit, 200)));
+}
+
+export async function resolveSpcaDiagnosticReport(reportId: number, adminUsername: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database laporan SPCA belum tersedia.");
+  const result = await db.update(spcaDiagnosticReports).set({ status: "resolved", resolvedAt: new Date(), resolvedBy: adminUsername }).where(eq(spcaDiagnosticReports.id, reportId));
+  return Number(result[0].affectedRows ?? 0) > 0;
 }
 
 export async function findManualAccountIdentifierConflict(accountId: number, values: { username?: string; email?: string; phone?: string }) {

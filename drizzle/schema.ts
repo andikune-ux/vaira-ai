@@ -305,6 +305,20 @@ export const manualAccounts = mysqlTable("manualAccounts", {
 export type ManualAccount = typeof manualAccounts.$inferSelect;
 export type InsertManualAccount = typeof manualAccounts.$inferInsert;
 
+/** Ringkasan diagnostik SPCA; hanya menyimpan kode masalah dan ringkasan tersanitasi, bukan pesan, token, atau data keuangan. */
+export const spcaDiagnosticReports = mysqlTable("spcaDiagnosticReports", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull(),
+  severity: mysqlEnum("severity", ["info", "warning", "critical"]).notNull(),
+  codes: varchar("codes", { length: 500 }).notNull(),
+  summary: varchar("summary", { length: 700 }).notNull(),
+  status: mysqlEnum("status", ["open", "resolved"]).default("open").notNull(),
+  resolvedAt: timestamp("resolvedAt"),
+  resolvedBy: varchar("resolvedBy", { length: 80 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [uniqueIndex("spcaDiagnosticReports_account_created_index").on(table.accountId, table.createdAt)]);
+export type SpcaDiagnosticReport = typeof spcaDiagnosticReports.$inferSelect;
+
 /** Token sesi tidak disimpan mentah; server hanya menyimpan hash token. */
 export const manualAccountSessions = mysqlTable("manualAccountSessions", {
   id: int("id").autoincrement().primaryKey(),

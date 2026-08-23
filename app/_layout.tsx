@@ -164,7 +164,9 @@ export default function RootLayout() {
             <Stack.Screen name="voice-room" />
             <Stack.Screen name="chat-privacy" />
             <Stack.Screen name="report-bug" />
+            <Stack.Screen name="spca-diagnostics" />
             <Stack.Screen name="cache-maintenance" />
+            <Stack.Screen name="administrator-spca-reports" />
           </Stack>
           <SpcaOverlay />
           <AppUpdatePrompt />

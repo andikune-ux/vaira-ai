@@ -518,6 +518,24 @@ export const appRouter = router({
       return { success: true, status: input.status, deleted: input.status === "deleted" };
     }),
   }),
+  spca: router({
+    submitDiagnostic: publicProcedure.input(z.object({ severity: z.enum(["info", "warning", "critical"]), codes: z.array(z.string().regex(/^[a-z0-9-]{1,60}$/i)).min(1).max(12), summary: z.string().trim().min(3).max(600) })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      const reportId = await db.createSpcaDiagnosticReport({ accountId: account.id, severity: input.severity, codes: input.codes, summary: input.summary });
+      return { success: true, reportId };
+    }),
+    adminList: publicProcedure.input(z.object({ username: z.string().trim().min(1).max(80), password: z.string().min(1).max(180), limit: z.number().int().min(1).max(200).optional() })).query(async ({ input }) => {
+      if (!verifyAdministratorCredentials(input.username, input.password)) throw new TRPCError({ code: "FORBIDDEN", message: "Verifikasi administrator diperlukan." });
+      return db.listSpcaDiagnosticReports(input.limit);
+    }),
+    adminResolve: publicProcedure.input(z.object({ username: z.string().trim().min(1).max(80), password: z.string().min(1).max(180), reportId: z.number().int().positive() })).mutation(async ({ input }) => {
+      if (!verifyAdministratorCredentials(input.username, input.password)) throw new TRPCError({ code: "FORBIDDEN", message: "Verifikasi administrator diperlukan." });
+      const resolved = await db.resolveSpcaDiagnosticReport(input.reportId, input.username);
+      if (!resolved) throw new TRPCError({ code: "NOT_FOUND", message: "Laporan SPCA tidak ditemukan." });
+      await db.createAdministratorAuditLog({ adminUsername: input.username, action: "Laporan diagnostik SPCA diselesaikan", targetType: "diagnostic", targetId: String(input.reportId), targetLabel: `Laporan SPCA #${input.reportId}`, detail: "Status laporan diubah menjadi selesai tanpa menyimpan pesan, token, atau data keuangan." });
+      return { success: true };
+    }),
+  }),
   ai: router({
     analyzeReceipt: publicProcedure
       .input(z.object({ imageDataUrl: z.string().min(100).max(8_000_000) }))

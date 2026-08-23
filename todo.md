@@ -3556,3 +3556,8 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Perluas pencarian daftar akun ke nama, username, ID publik, email, dan nomor WhatsApp/telepon.
 - [x] Pastikan menu Administrator membuka daftar akun pada halaman khusus dan hapus panel Token Aira yang tampil ganda.
 - [x] Tambahkan regresi serta validasi penghapusan riwayat dan pengelolaan akun tanpa checkpoint otomatis.
+- [x] Audit komponen Robot SPCA, status layanan aplikasi, izin perangkat, dan jalur pelaporan Administrator yang sudah tersedia.
+- [x] Bangun mesin diagnosis SPCA untuk koneksi server/Aira, izin kamera-mikrofon-lokasi, unggahan, serta gejala UI yang dapat dideteksi aman.
+- [x] Tambahkan rekomendasi tindakan, coba ulang, pemeriksaan izin, dan laporan bug aman tanpa merekam sandi, token, isi chat, atau data keuangan.
+- [x] Tambahkan halaman status SPCA aktif serta laporan diagnostik privat untuk Administrator.
+- [x] Tambahkan regresi diagnosis, redaksi data sensitif, tindakan pemulihan, dan validasi tanpa checkpoint otomatis.
