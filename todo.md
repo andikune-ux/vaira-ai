@@ -3613,3 +3613,7 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Audit kembali kelengkapan tambah/edit transaksi dibanding Pindai Bukti, termasuk tanggal, jam, kalender, foto, dan metadata bukti.
 - [x] Lengkapi serta rapikan tambah/edit transaksi agar semua detail bukti dapat ditampilkan dan diubah sebelum konfirmasi.
 - [x] Tambahkan regresi kelengkapan edit transaksi lalu validasi tanpa checkpoint otomatis.
+- [x] Audit parser OCR transfer untuk status berhasil, pihak, rekening-bank, nominal-total, metode, biaya admin, tanggal-jam, dan referensi.
+- [x] Terapkan aturan parser transfer terstruktur, termasuk Gratis/coret biaya admin sebagai Rp0.
+- [x] Tampilkan serta izinkan penyuntingan semua rincian transfer pada tinjauan Pindai Bukti dan konfirmasi transaksi.
+- [x] Tambahkan regresi contoh transfer terstruktur dan validasi tanpa checkpoint otomatis.

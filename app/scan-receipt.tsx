@@ -180,6 +180,7 @@ export default function ScanReceiptScreen() {
       setCategory(matched.kind === "transfer" ? "Transfer dana" : result.category);
       setNote(result.note);
       setEvidence(matched.evidence);
+      if (matched.kind === "transfer" && typeof matched.evidence.adminFeeAmount === "number") setFeeAmount(String(matched.evidence.adminFeeAmount));
       setCounterpartyName(normalizeReceiptCounterpartyName(getReceiptCounterpartyRole(matched.kind) === "sender" ? result.senderName : result.recipientName));
       if (matched.kind === "transfer") {
         if (matched.sourceWalletId) setWalletId(matched.sourceWalletId);

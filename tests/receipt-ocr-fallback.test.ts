@@ -51,6 +51,67 @@ describe("fallback OCR online Pindai Bukti", () => {
     expect(parsed.note).toContain("Pembayaran QRIS kepada Warung Nasi Bu Siti");
   });
 
+  it("membaca struktur bukti transfer bank secara berurutan, termasuk status, rekening pihak, metode, total, dan biaya Gratis", () => {
+    const parsed = parseReceiptOcrText([
+      "Transfer Berhasil",
+      "Tanggal 26 Agustus 2026, 18.32 WIB",
+      "ID Transaksi",
+      "MB-REF-260826-X9",
+      "Pengirim",
+      "Andik Une",
+      "BCA mobile",
+      "1234 5678 9012",
+      "Penerima",
+      "Siti Aminah",
+      "Bank Mandiri",
+      "9876 5432 1098",
+      "Jenis Transfer",
+      "BI Fast",
+      "Nominal Transfer Rp 250.000",
+      "Biaya Admin Gratis",
+      "Total Transfer Rp 250.000",
+    ].join("\n"));
+
+    expect(parsed.kind).toBe("transfer");
+    expect(parsed.amount).toBe(250000);
+    expect(parsed.senderName).toBe("Andik Une");
+    expect(parsed.recipientName).toBe("Siti Aminah");
+    expect(parsed.transactionDate).toBe("26-08-2026");
+    expect(parsed.transactionTime).toBe("18:32");
+    expect(parsed.evidence).toMatchObject({
+      paymentMethod: "bank_transfer",
+      transferStatus: "succeeded",
+      transferMethodLabel: "BI Fast",
+      sourceBankName: "BCA",
+      destinationBankName: "MANDIRI",
+      senderAccountNumber: "123456789012",
+      recipientAccountNumber: "987654321098",
+      referenceNumber: "MB-REF-260826-X9",
+      adminFeeAmount: 0,
+      adminFeeWaived: true,
+      totalAmount: 250000,
+      classificationBasis: "ocr_text",
+    });
+  });
+
+  it("membaca biaya admin hanya ketika ada teks biaya yang jelas dan tidak menganggap nominal transfer sebagai biaya", () => {
+    const parsed = parseReceiptOcrText("Transfer berhasil\nPengirim: Andi\nPenerima: Budi\nNominal Rp 750.000\nBiaya admin Rp 2.500\nTotal transfer Rp 752.500");
+    expect(parsed.amount).toBe(750000);
+    expect(parsed.evidence.adminFeeAmount).toBe(2500);
+    expect(parsed.evidence.adminFeeWaived).toBeUndefined();
+    expect(parsed.evidence.totalAmount).toBe(752500);
+  });
+
+  it("membedakan status gagal atau menunggu dan tidak mengisi rincian pihak ketika tidak tertulis", () => {
+    expect(parseReceiptOcrText("Transfer gagal\nNominal Rp 10.000").evidence.transferStatus).toBe("failed");
+    expect(parseReceiptOcrText("Transfer sedang diproses\nNominal Rp 10.000").evidence.transferStatus).toBe("pending");
+    const incomplete = parseReceiptOcrText("Transfer berhasil\nNominal Rp 10.000");
+    expect(incomplete.senderName).toBeNull();
+    expect(incomplete.recipientName).toBeNull();
+    expect(incomplete.evidence.senderAccountNumber).toBeUndefined();
+    expect(incomplete.evidence.destinationBankName).toBeUndefined();
+  });
+
   it("tetap membiarkan metadata sensitif kosong bila label tidak terlihat pada teks OCR", () => {
     const parsed = parseReceiptOcrText("Pembayaran Rp 50.000\nTerima kasih");
     expect(parsed.evidence.senderAccountNumber).toBeUndefined();

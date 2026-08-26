@@ -51,14 +51,26 @@ export type Transaction = {
 
 export type TransactionEvidence = {
   paymentMethod?: TransactionPaymentMethod;
+  /** Status yang tercetak pada bukti transfer; selalu perlu ditinjau pengguna sebelum disimpan. */
+  transferStatus?: "succeeded" | "pending" | "failed" | "unknown";
+  /** Metode yang tercetak, misalnya BI Fast atau online transfer. */
+  transferMethodLabel?: string;
   sourceBankName?: string;
   destinationBankName?: string;
   senderAccountName?: string;
   recipientAccountName?: string;
   senderAccountNumber?: string;
   recipientAccountNumber?: string;
+  /** Nomor rekening yang terbaca sebagian, misalnya ***5237; bukan untuk pencocokan dompet. */
+  senderAccountDisplay?: string;
+  recipientAccountDisplay?: string;
   referenceNumber?: string;
   merchantName?: string;
+  /** Biaya admin yang dibaca dari bukti. Nilai 0 dapat berarti tertulis Gratis. */
+  adminFeeAmount?: number;
+  adminFeeWaived?: boolean;
+  /** Nilai total tercetak pada bukti, jika tersedia. */
+  totalAmount?: number;
   /** Dasar klasifikasi berbasis OCR atau data dompet lokal, bukan data akun lain. */
   classificationBasis?: "ocr_text" | "wallet_destination" | "wallet_source" | "wallet_internal";
 };

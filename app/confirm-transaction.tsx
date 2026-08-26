@@ -105,10 +105,12 @@ export default function ConfirmTransactionScreen() {
           {commitmentDetails ? <><Divider color={colors.border} /><SummaryRow label="Hubungan" value={commitmentDetails.label} />{linkedCommitment ? <><Divider color={colors.border} /><SummaryRow label="Daftar terkait" value={linkedCommitment.title} /></> : null}</> : null}
           {counterpartyName ? <><Divider color={colors.border} /><SummaryRow label={counterpartyLabel} value={counterpartyName} /></> : null}
           {evidence.paymentMethod && evidence.paymentMethod !== "unknown" ? <><Divider color={colors.border} /><SummaryRow label="Metode" value={evidence.paymentMethod === "qris" ? "QRIS" : evidence.paymentMethod === "bank_transfer" ? "Transfer bank" : "Tunai"} /></> : null}
+          {evidence.transferStatus && evidence.transferStatus !== "unknown" ? <><Divider color={colors.border} /><SummaryRow label="Status transfer" value={evidence.transferStatus === "succeeded" ? "Berhasil" : evidence.transferStatus === "pending" ? "Diproses" : "Gagal"} valueColor={evidence.transferStatus === "succeeded" ? colors.success : evidence.transferStatus === "failed" ? colors.error : colors.warning} /></> : null}
+          {evidence.transferMethodLabel ? <><Divider color={colors.border} /><SummaryRow label="Jalur transfer" value={evidence.transferMethodLabel} /></> : null}
           {evidence.sourceBankName ? <><Divider color={colors.border} /><SummaryRow label="Bank pengirim" value={evidence.sourceBankName} /></> : null}
           {evidence.destinationBankName ? <><Divider color={colors.border} /><SummaryRow label="Bank penerima" value={evidence.destinationBankName} /></> : null}
-          {evidence.senderAccountNumber ? <><Divider color={colors.border} /><SummaryRow label="Rekening pengirim" value={evidence.senderAccountNumber} /></> : null}
-          {evidence.recipientAccountNumber ? <><Divider color={colors.border} /><SummaryRow label="Rekening penerima" value={evidence.recipientAccountNumber} /></> : null}
+          {evidence.senderAccountDisplay || evidence.senderAccountNumber ? <><Divider color={colors.border} /><SummaryRow label="Rekening pengirim" value={evidence.senderAccountNumber ?? evidence.senderAccountDisplay ?? "—"} /></> : null}
+          {evidence.recipientAccountDisplay || evidence.recipientAccountNumber ? <><Divider color={colors.border} /><SummaryRow label="Rekening penerima" value={evidence.recipientAccountNumber ?? evidence.recipientAccountDisplay ?? "—"} /></> : null}
           {evidence.referenceNumber ? <><Divider color={colors.border} /><SummaryRow label="ID / referensi" value={evidence.referenceNumber} /></> : null}
           <Divider color={colors.border} /><SummaryRow label="Waktu" value={formatDateTime(occurredAt)} />
           <Divider color={colors.border} /><SummaryRow label="Keterangan" value={params.note || "—"} />
