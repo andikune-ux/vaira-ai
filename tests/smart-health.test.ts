@@ -16,7 +16,8 @@ describe("Keuangan Sehat lokal", () => {
     expect(advice).toContain("Si Polan");
     expect(advice).toContain("protein nabati");
     expect(advice).toContain("kacang");
-    expect(advice).toContain("karbohidrat");
+    expect(advice).toContain("bukan diagnosis");
+    expect(advice).not.toContain("kkal");
   });
 
   it("memiliki namespace penyimpanan lokal terpisah dari FinanceContext", () => {

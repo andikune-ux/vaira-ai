@@ -13,10 +13,13 @@ describe("pilihan jenis transaksi Pindai Bukti", () => {
     expect(screen).toContain("Pilih jenis yang benar bila struk terbaca keliru");
   });
 
-  it("mengarahkan model Aira untuk mengklasifikasikan bukti secara eksplisit", () => {
+  it("memakai OCR saja untuk mengklasifikasikan bukti secara eksplisit", () => {
+    const ocr = read("server/receipt-ocr-fallback.ts");
     const router = read("server/routers.ts");
-    expect(router).toContain("choose income only when");
-    expect(router).toContain("Choose expense");
-    expect(router).toContain("Choose transfer");
+    expect(ocr).toContain("classifyTransaction");
+    expect(ocr).toContain("uang|dana|saldo");
+    expect(ocr).toContain("transfer");
+    expect(router).toContain("analyzeReceiptOcr: publicProcedure");
+    expect(router).not.toContain("analyzeReceipt: publicProcedure");
   });
 });

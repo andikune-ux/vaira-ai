@@ -26,10 +26,10 @@ export default function PlansTab() {
           <Pressable accessibilityRole="button" accessibilityLabel="Target tabungan" onPress={() => router.push("/plan-form?sheet=goal")} style={styles.chickenAction}><View style={[styles.chickenIcon, { backgroundColor: `${colors.success}18` }]}><ChickenIcon size={31} /></View><Text numberOfLines={2} style={[styles.quickLabel, { color: colors.foreground }]}>Target</Text></Pressable>
           <IconCircleButton label="Tagihan" icon="receipt" tone="warning" onPress={() => router.push("/plan-form?sheet=bill")} />
           <IconCircleButton label="Hutang" icon="handshake" onPress={() => router.push("/plan-form?sheet=debt")} />
-          <IconCircleButton label="Keuangan Pintar" icon="auto-graph" tone="warning" onPress={() => router.push("/smart-finance?sheet=smart" as never)} />
+          <IconCircleButton label="Keuangan Pintar" icon="auto-graph" tone="warning" onPress={() => router.push("/household-finance-analysis" as never)} />
         </View>
-        <SectionHeading title="Perlu diperhatikan" action="Kelola" onPress={() => router.push("/plan-form?sheet=commitment")} />
-        {activeCommitments.length === 0 ? <EmptyState icon="notifications-none" title="Belum ada pengingat" detail="Tambahkan tagihan, utang, piutang, atau pengingat agar AiraX membantu Anda tetap tepat waktu." actionLabel="Buat pengingat" onAction={() => router.push("/plans?sheet=commitment")} /> : <AiraCard><Text style={[styles.placeholder, { color: colors.muted }]}>{activeCommitments.length} komitmen aktif menunggu tindakan Anda.</Text></AiraCard>}
+        <SectionHeading title="Perlu diperhatikan" action="Kelola" onPress={() => router.push("/plan-form?sheet=bill")} />
+        {activeCommitments.length === 0 ? <EmptyState icon="notifications-none" title="Belum ada pengingat" detail="Tambahkan tagihan, utang, piutang, atau pengingat agar AiraX membantu Anda tetap tepat waktu." actionLabel="Buat pengingat" onAction={() => router.push("/plan-form?sheet=bill")} /> : <AiraCard><Text style={[styles.placeholder, { color: colors.muted }]}>{activeCommitments.length} komitmen aktif menunggu tindakan Anda.</Text></AiraCard>}
         <SectionHeading title="Target tabungan" />
         {state.goals.length === 0 ? <AiraCard><Text style={[styles.placeholder, { color: colors.muted }]}>Tidak ada target aktif. Anda dapat membuat target dana darurat atau pembelian penting.</Text></AiraCard> : <AiraCard><Text style={[styles.placeholder, { color: colors.muted }]}>{state.goals.length} target sedang dipantau.</Text></AiraCard>}
       </ScrollView>

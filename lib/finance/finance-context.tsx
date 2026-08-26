@@ -3,6 +3,7 @@ import * as Auth from "@/lib/_core/auth";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type PropsWithChildren } from "react";
 import { AppState } from "react-native";
 
+import { applyConfirmedCommitmentTransaction } from "./commitment-sync";
 import { AIRAX_GENERATED_RESULTS_MAX, AIRAX_GENERATED_RESULTS_RETENTION_DAYS, AIRAX_GENERATION_ACTIVITY_MAX, DEFAULT_PROFILE, EMPTY_FINANCE_STATE, type AiraConversation, type AiraGeneratedResult, type AiraGeneratedResultCollection, type AiraGenerationActivity, type AiraGenerationQueueItem, type AiraResponseMode, type Budget, type Commitment, type FinanceState, type InstructionItem, type KnowledgeItem, type SavingsGoal, type TransactionInput, type Wallet } from "./types";
 
 const STORAGE_KEY = "airax-ai.finance-state.v1";
@@ -213,23 +214,11 @@ export function FinanceProvider({ children }: PropsWithChildren) {
 
   const addConfirmedTransaction = useCallback(
     (input: TransactionInput) =>
-      updateState((previous) => {
-        const normalizedNote = input.note.toLocaleLowerCase("id-ID");
-        const paidKinds = input.kind === "expense" ? ["bill", "debt"] : input.kind === "income" ? ["receivable"] : [];
-        return {
-          ...previous,
-          transactions: [
-            { ...input, id: createId("tx"), status: "confirmed", createdAt: new Date().toISOString() },
-            ...previous.transactions,
-          ],
-          commitments: previous.commitments.map((commitment) => {
-            const commitmentName = commitment.title.toLocaleLowerCase("id-ID");
-            const counterparty = commitment.counterparty?.toLocaleLowerCase("id-ID");
-            const matches = paidKinds.includes(commitment.kind) && !commitment.isDone && (normalizedNote.includes(commitmentName) || Boolean(counterparty && normalizedNote.includes(counterparty)));
-            return matches ? { ...commitment, isDone: true, remainingAmount: 0 } : commitment;
-          }),
-        };
-      }),
+      updateState((previous) => applyConfirmedCommitmentTransaction(previous, input, {
+        transactionId: createId("tx"),
+        commitmentId: createId("commitment"),
+        createdAt: new Date().toISOString(),
+      })),
     [updateState],
   );
 

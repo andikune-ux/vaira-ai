@@ -669,11 +669,7 @@ export default function HomeScreen() {
         label: "Keuangan Pintar",
         icon: "auto-graph",
         tone: "warning",
-        onPress: () =>
-          router.push({
-            pathname: "/smart-finance",
-            params: { sheet: "smart" },
-          } as never),
+        onPress: () => router.push("/household-finance-analysis" as never),
       },
     ],
     [t],

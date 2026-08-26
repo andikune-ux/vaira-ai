@@ -91,13 +91,13 @@ describe("target chicken icon coverage", () => {
     expect(home).toContain("AiraModeStatusCard");
     expect(home).not.toContain('assetUri: "/manus-storage/vaira-chicken-target_e1b64891.png"');
   });
-  it("uses ChickenIcon across target actions and target cards", () => {
-    const plans = read("app/smart-finance.tsx");
+  it("uses ChickenIcon on the tab target shortcut and rute Rencana terpadu untuk formulir Target", () => {
+    const plans = read("app/(tabs)/plans.tsx");
+    const planForm = read("app/plan-form.tsx");
     const status = read("components/aira-mode-status-card.tsx");
-    expect(plans).toContain('["goal", "chicken", "Target"]');
-    expect(plans).toContain("<ChickenIcon size={34} />");
-    expect(plans).toContain("<ChickenIcon size={28} />");
-    expect(plans).not.toContain('icon="egg"');
+    expect(plans).toContain("<ChickenIcon size={31} />");
+    expect(planForm).toContain('["goal", "savings", "Target"]');
+    expect(planForm).toContain('mode === "goal" ? "Target"');
     expect(status).toContain("GestureDetector");
   });
 });

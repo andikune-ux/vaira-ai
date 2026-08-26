@@ -1,0 +1,53 @@
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useEffect, useState } from "react";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+
+import { useColors } from "@/hooks/use-colors";
+import { normalizeTransactionEvidence } from "@/lib/finance/transaction-evidence";
+import type { TransactionEvidence, TransactionPaymentMethod } from "@/lib/finance/types";
+
+const methods: { id: TransactionPaymentMethod; label: string }[] = [
+  { id: "bank_transfer", label: "Transfer bank" },
+  { id: "qris", label: "QRIS" },
+  { id: "cash", label: "Tunai" },
+  { id: "unknown", label: "Belum diketahui" },
+];
+
+type Props = { value: TransactionEvidence; onChange: (value: TransactionEvidence) => void };
+
+export function TransactionEvidenceFields({ value, onChange }: Props) {
+  const colors = useColors();
+  const [expanded, setExpanded] = useState(false);
+  const normalized = normalizeTransactionEvidence(value);
+  const hasData = Boolean(normalized.paymentMethod && normalized.paymentMethod !== "unknown" || normalized.sourceBankName || normalized.destinationBankName || normalized.senderAccountNumber || normalized.recipientAccountNumber || normalized.referenceNumber || normalized.merchantName);
+
+  useEffect(() => { if (hasData) setExpanded(true); }, [hasData]);
+
+  const update = (key: keyof TransactionEvidence, next: string | TransactionPaymentMethod) => onChange(normalizeTransactionEvidence({ ...normalized, [key]: next }));
+
+  return <View style={[styles.wrapper, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+    <Pressable onPress={() => setExpanded((current) => !current)} style={({ pressed }) => [styles.toggle, pressed && styles.pressed]}>
+      <View style={[styles.icon, { backgroundColor: `${colors.primary}14` }]}><MaterialIcons name="account-balance" size={18} color={colors.primary} /></View>
+      <View style={styles.copy}><Text style={[styles.title, { color: colors.foreground }]}>Identitas bukti transaksi</Text><Text style={[styles.detail, { color: colors.muted }]}>{hasData ? "Hasil OCR dapat diperiksa dan disunting." : "Opsional; isi bila identitas transaksi tersedia."}</Text></View>
+      <MaterialIcons name={expanded ? "expand-less" : "expand-more"} size={22} color={colors.muted} />
+    </Pressable>
+    {expanded ? <View style={styles.fields}>
+      <Text style={[styles.label, { color: colors.foreground }]}>Metode pembayaran</Text>
+      <View style={styles.methodRow}>{methods.map((method) => <Pressable key={method.id} onPress={() => update("paymentMethod", method.id)} style={({ pressed }) => [styles.method, { backgroundColor: normalized.paymentMethod === method.id ? `${colors.primary}14` : colors.background, borderColor: normalized.paymentMethod === method.id ? colors.primary : colors.border }, pressed && styles.pressed]}><Text style={[styles.methodText, { color: normalized.paymentMethod === method.id ? colors.primary : colors.foreground }]}>{method.label}</Text></Pressable>)}</View>
+      <Text style={[styles.label, { color: colors.foreground }]}>Bank pengirim dan penerima</Text>
+      <View style={styles.row}><TextInput value={normalized.sourceBankName ?? ""} onChangeText={(next) => update("sourceBankName", next)} placeholder="Bank pengirim" placeholderTextColor={colors.muted} style={[styles.input, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]} /><TextInput value={normalized.destinationBankName ?? ""} onChangeText={(next) => update("destinationBankName", next)} placeholder="Bank penerima" placeholderTextColor={colors.muted} style={[styles.input, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]} /></View>
+      <Text style={[styles.label, { color: colors.foreground }]}>Nama dan nomor rekening</Text>
+      <TextInput value={normalized.senderAccountName ?? ""} onChangeText={(next) => update("senderAccountName", next)} placeholder="Nama rekening pengirim" placeholderTextColor={colors.muted} style={[styles.fullInput, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]} />
+      <TextInput value={normalized.senderAccountNumber ?? ""} onChangeText={(next) => update("senderAccountNumber", next)} keyboardType="numeric" placeholder="Nomor rekening pengirim" placeholderTextColor={colors.muted} style={[styles.fullInput, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]} />
+      <TextInput value={normalized.recipientAccountName ?? ""} onChangeText={(next) => update("recipientAccountName", next)} placeholder="Nama rekening penerima / merchant" placeholderTextColor={colors.muted} style={[styles.fullInput, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]} />
+      <TextInput value={normalized.recipientAccountNumber ?? ""} onChangeText={(next) => update("recipientAccountNumber", next)} keyboardType="numeric" placeholder="Nomor rekening penerima" placeholderTextColor={colors.muted} style={[styles.fullInput, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]} />
+      <TextInput value={normalized.referenceNumber ?? ""} onChangeText={(next) => update("referenceNumber", next)} placeholder="ID transaksi / nomor referensi" placeholderTextColor={colors.muted} style={[styles.fullInput, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]} />
+      <TextInput value={normalized.merchantName ?? ""} onChangeText={(next) => update("merchantName", next)} placeholder="Nama merchant QRIS (opsional)" placeholderTextColor={colors.muted} style={[styles.fullInput, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]} />
+      {normalized.classificationBasis && normalized.classificationBasis !== "ocr_text" ? <Text style={[styles.localHint, { color: colors.primary }]}>Saran jenis transaksi memakai kecocokan dompet yang tersimpan lokal pada perangkat ini.</Text> : null}
+    </View> : null}
+  </View>;
+}
+
+const styles = StyleSheet.create({
+  wrapper: { borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, overflow: "hidden" }, toggle: { alignItems: "center", flexDirection: "row", gap: 10, padding: 12 }, icon: { alignItems: "center", borderRadius: 11, height: 34, justifyContent: "center", width: 34 }, copy: { flex: 1 }, title: { fontSize: 13, fontWeight: "800" }, detail: { fontSize: 11, lineHeight: 15, marginTop: 1 }, fields: { gap: 8, padding: 12, paddingTop: 0 }, label: { fontSize: 12, fontWeight: "800", marginTop: 2 }, methodRow: { flexDirection: "row", flexWrap: "wrap", gap: 7 }, method: { borderRadius: 10, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 7 }, methodText: { fontSize: 10, fontWeight: "800" }, row: { flexDirection: "row", gap: 8 }, input: { borderRadius: 11, borderWidth: 1, flex: 1, fontSize: 12, minHeight: 43, paddingHorizontal: 10 }, fullInput: { borderRadius: 11, borderWidth: 1, fontSize: 12, minHeight: 43, paddingHorizontal: 10 }, localHint: { fontSize: 10, fontWeight: "700", lineHeight: 15, marginTop: 2 }, pressed: { opacity: 0.72 },
+});

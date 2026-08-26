@@ -2,6 +2,8 @@ export type WalletKind = "bank" | "e_wallet" | "cash" | "asset";
 export type TransactionKind = "income" | "expense" | "transfer";
 export type TransactionOrigin = "manual" | "ai_chat" | "ocr" | "voice" | "recurring";
 export type TransactionStatus = "draft" | "confirmed";
+export type CommitmentTransactionFlow = "debt_received" | "debt_payment" | "receivable_issued" | "receivable_payment";
+export type TransactionPaymentMethod = "bank_transfer" | "qris" | "cash" | "unknown";
 export type AiraResponseMode = "aira" | "hot_pro" | "scientist";
 export type GreetingCardAnimation = "spin" | "fade" | "slide" | "zoom" | "flip" | "bounce" | "wipe" | "pulse" | "tilt" | "blur" | "random";
 export type GreetingCardEffect = "text" | "card";
@@ -35,11 +37,30 @@ export type Transaction = {
   note: string;
   /** Nama pengirim untuk pemasukan, atau penerima/tujuan untuk pengeluaran dan transfer. */
   counterpartyName?: string;
+  /** Hubungan eksplisit dengan hutang/piutang; hanya boleh berubah setelah transaksi dikonfirmasi. */
+  commitmentFlow?: CommitmentTransactionFlow;
+  commitmentId?: string;
+  /** Metadata dari bukti transaksi atau input pengguna; semua nilai dapat disunting sebelum dikonfirmasi. */
+  evidence?: TransactionEvidence;
   occurredAt: string;
   origin: TransactionOrigin;
   status: TransactionStatus;
   proofUri?: string;
   createdAt: string;
+};
+
+export type TransactionEvidence = {
+  paymentMethod?: TransactionPaymentMethod;
+  sourceBankName?: string;
+  destinationBankName?: string;
+  senderAccountName?: string;
+  recipientAccountName?: string;
+  senderAccountNumber?: string;
+  recipientAccountNumber?: string;
+  referenceNumber?: string;
+  merchantName?: string;
+  /** Dasar klasifikasi berbasis OCR atau data dompet lokal, bukan data akun lain. */
+  classificationBasis?: "ocr_text" | "wallet_destination" | "wallet_source" | "wallet_internal";
 };
 
 export type Budget = {
@@ -78,6 +99,8 @@ export type Commitment = {
   dueAt?: string;
   reminderAt?: string;
   installmentMonths?: number;
+  /** Jumlah bulan cicilan atau tagihan berjangka yang masih tersisa. */
+  remainingInstallmentMonths?: number;
   counterparty?: string;
   remainingAmount?: number;
   isRecurring: boolean;
@@ -196,7 +219,17 @@ export type AiraConversation = {
   deletedAt?: string;
 };
 
-export type SmartFinanceIncome = { id: string; label: string; amount: number };
+export type SmartFinanceCadence = "monthly" | "weekly" | "daily";
+
+/** Sumber pemasukan dapat terhubung ke anggota keluarga, tetapi tetap mendukung data rencana lama. */
+export type SmartFinanceIncome = {
+  id: string;
+  label: string;
+  amount: number;
+  cadence?: SmartFinanceCadence;
+  memberId?: string;
+  kind?: "main" | "spouse" | "additional" | "other";
+};
 
 export type SmartFinanceItem = {
   id: string;
@@ -212,17 +245,111 @@ export type SmartFinanceItem = {
   voltage?: string;
   tariffType?: "subsidi" | "non_subsidi" | "unknown";
   amount: number;
-  cadence: "monthly" | "weekly" | "daily";
+  cadence: SmartFinanceCadence;
   isPaid: boolean;
   reminderEnabled: boolean;
 };
 
+/**
+ * Relasi lengkap untuk perencana rumah tangga. Nilai lama dipertahankan agar
+ * data yang sudah tersimpan sebelum pembaruan tetap dapat dibuka.
+ */
+export type SmartFinanceMemberRelation =
+  | "self"
+  | "spouse"
+  | "child"
+  | "parent"
+  | "other"
+  | "husband"
+  | "wife"
+  | "nephew"
+  | "niece"
+  | "sibling"
+  | "cousin"
+  | "father"
+  | "mother"
+  | "uncle"
+  | "aunt"
+  | "grandfather"
+  | "grandmother";
+
+export type SmartFinanceDietPattern = "seimbang" | "rendah_gula" | "tinggi_protein" | "vegetarian" | "halal" | "lainnya";
+export type SmartFinanceMemberActivity = "working" | "student" | "college" | "home" | "retired" | "other";
+export type SmartFinanceResidence = "with_family" | "boarding" | "rented" | "own_home" | "other";
+export type SmartFinanceTransportMode = "walking" | "bicycle" | "motorcycle" | "car" | "public_transport" | "online_transport" | "other";
+
+export type SmartFinancePeriodicAmount = {
+  amount?: number;
+  cadence?: SmartFinanceCadence;
+};
+
+export type SmartFinanceCommute = {
+  mode?: SmartFinanceTransportMode;
+  routeLabel?: string;
+  distanceKm?: number;
+  tripsPerDay?: number;
+  daysPerWeek?: number;
+  costPerTrip?: number;
+  comparisonMode?: SmartFinanceTransportMode;
+  comparisonCostPerTrip?: number;
+  fuelBudget?: SmartFinancePeriodicAmount;
+  maintenanceBudget?: SmartFinancePeriodicAmount;
+  lastServiceDate?: string;
+  nextServiceDate?: string;
+  parkingBudget?: SmartFinancePeriodicAmount;
+};
+
+export type SmartFinanceWorkProfile = {
+  workplace?: string;
+  employmentStatus?: "full_time" | "part_time" | "freelance" | "shift" | "other";
+  shiftLabel?: string;
+  scheduleLabel?: string;
+  hoursPerDay?: number;
+  commute?: SmartFinanceCommute;
+  mealArrangement?: "bring_from_home" | "buy" | "mixed" | "other";
+  mealBudget?: SmartFinancePeriodicAmount;
+  snackBudget?: SmartFinancePeriodicAmount;
+  recurringWorkCost?: SmartFinancePeriodicAmount;
+  quotaGb?: number;
+  quotaBudget?: SmartFinancePeriodicAmount;
+  otherCost?: SmartFinancePeriodicAmount;
+};
+
+export type SmartFinanceStudyProfile = {
+  institution?: string;
+  educationLevel?: "school" | "college" | "course" | "other";
+  scheduleLabel?: string;
+  commute?: SmartFinanceCommute;
+  mealAllowance?: SmartFinancePeriodicAmount;
+  snackAllowance?: SmartFinancePeriodicAmount;
+  recurringEducationCost?: SmartFinancePeriodicAmount;
+  quotaGb?: number;
+  quotaBudget?: SmartFinancePeriodicAmount;
+  otherCost?: SmartFinancePeriodicAmount;
+};
+
+export type SmartFinanceMemberPlanner = {
+  residence?: SmartFinanceResidence;
+  residenceLabel?: string;
+  residenceCost?: SmartFinancePeriodicAmount;
+  work?: SmartFinanceWorkProfile;
+  study?: SmartFinanceStudyProfile;
+};
+
 export type SmartFinanceMember = {
   id: string;
-  relation: "self" | "spouse" | "child" | "parent" | "other";
+  relation: SmartFinanceMemberRelation;
+  /** Label versi lama; gunakan name untuk data baru. */
   label: string;
+  name?: string;
   ageYears: number;
   ageMonths?: number;
+  heightCm?: number;
+  weightKg?: number;
+  dietPattern?: SmartFinanceDietPattern;
+  allergies?: string;
+  activity?: SmartFinanceMemberActivity;
+  planner?: SmartFinanceMemberPlanner;
 };
 
 export type SmartFinanceTransport = {
@@ -232,14 +359,47 @@ export type SmartFinanceTransport = {
   costPerTrip: number;
 };
 
+export type SmartFinancePersonalExpense = {
+  id: string;
+  memberId: string;
+  title: string;
+  category: "residence" | "transport" | "vehicle_service" | "parking" | "meal" | "snack" | "work" | "education" | "quota" | "other";
+  amount: number;
+  cadence: SmartFinanceCadence;
+  quantity?: number;
+  unit?: string;
+  notes?: string;
+};
+
+export type SmartFinanceSharedExpenseCategory = "rice" | "cooking_oil" | "spices" | "gas" | "protein" | "vegetables" | "water" | "wifi" | "electricity" | "tv_subscription" | "other_bill" | "other";
+
+export type SmartFinanceSharedExpense = {
+  id: string;
+  title: string;
+  category: SmartFinanceSharedExpenseCategory;
+  amount: number;
+  cadence: SmartFinanceCadence;
+  quantity?: number;
+  unit?: string;
+  /** Harga target hemat untuk jumlah dan periode yang sama; selalu berasal dari input pengguna. */
+  targetAmount?: number;
+  notes?: string;
+};
+
 export type SmartFinancePlan = {
   monthKey: string;
+  /** Pemasukan utama legacy. Data baru sebaiknya memakai incomeSources. */
   income: number;
   otherIncome?: SmartFinanceIncome[];
   members?: SmartFinanceMember[];
   riceSacks5kg?: number;
   transport?: SmartFinanceTransport;
   items: SmartFinanceItem[];
+  /** Menandai struktur perencana rumah tangga baru tanpa memutus data versi lama. */
+  analysisVersion?: 2;
+  incomeSources?: SmartFinanceIncome[];
+  personalExpenses?: SmartFinancePersonalExpense[];
+  sharedExpenses?: SmartFinanceSharedExpense[];
   updatedAt: string;
 };
 

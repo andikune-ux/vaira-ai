@@ -1,4 +1,4 @@
-import { boolean, int, mediumtext, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
+import { boolean, index, int, mediumtext, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -318,6 +318,22 @@ export const spcaDiagnosticReports = mysqlTable("spcaDiagnosticReports", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => [uniqueIndex("spcaDiagnosticReports_account_created_index").on(table.accountId, table.createdAt)]);
 export type SpcaDiagnosticReport = typeof spcaDiagnosticReports.$inferSelect;
+
+/**
+ * Hasil Perencana Rumah Tangga yang disimpan atas tindakan eksplisit pemilik akun.
+ * Payload hanya berisi ringkasan analisis tersanitasi; profil tinggi, berat, dan
+ * alergi mentah tetap berada pada perangkat pemilik.
+ */
+export const householdFinanceAnalyses = mysqlTable("householdFinanceAnalyses", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull(),
+  title: varchar("title", { length: 120 }).notNull(),
+  periodKey: varchar("periodKey", { length: 7 }).notNull(),
+  resultJson: text("resultJson").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("householdFinanceAnalyses_account_created_index").on(table.accountId, table.createdAt)]);
+export type HouseholdFinanceAnalysis = typeof householdFinanceAnalyses.$inferSelect;
 
 /** Token sesi tidak disimpan mentah; server hanya menyimpan hash token. */
 export const manualAccountSessions = mysqlTable("manualAccountSessions", {

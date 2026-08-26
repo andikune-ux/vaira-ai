@@ -1,0 +1,2 @@
+ALTER TABLE `householdFinanceAnalyses` DROP INDEX `householdFinanceAnalyses_account_created_index`;--> statement-breakpoint
+CREATE INDEX `householdFinanceAnalyses_account_created_index` ON `householdFinanceAnalyses` (`accountId`,`createdAt`);

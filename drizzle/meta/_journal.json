@@ -253,6 +253,20 @@
       "when": 1787454982094,
       "tag": "0035_greedy_jimmy_woo",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "5",
+      "when": 1787675954073,
+      "tag": "0036_good_kitty_pryde",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "5",
+      "when": 1787676103543,
+      "tag": "0037_slim_infant_terrible",
+      "breakpoints": true
     }
   ]
 }

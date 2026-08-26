@@ -5,6 +5,7 @@ import { Platform } from "react-native";
 import * as XLSX from "xlsx";
 
 import { formatCurrency, formatDateTime, getConfirmedTransactions, getMonthlyExpense, getMonthlyIncome, getTotalBalance, getWalletBalance } from "./finance-utils";
+import type { HouseholdAnalysis } from "./household-finance";
 import type { AiraGeneratedResult, AiraGeneratedResultCollection, FinanceState, Transaction } from "./types";
 
 type ExportOptions = { transactions?: Transaction[]; periodLabel?: string };
@@ -75,6 +76,20 @@ export async function exportExcelReport(state: FinanceState, options: ExportOpti
 }
 
 export async function exportPdfReport(state: FinanceState, options: ExportOptions = {}) { const transactions = asTransactions(state, options.transactions); await sharePdf(pdfDocument("Laporan Keuangan V A I R A  A I", state, transactions, options.periodLabel ?? "Seluruh periode", true), "Bagikan laporan PDF V A I R A  A I"); }
+
+function householdAnalysisPdf(analysis: HouseholdAnalysis) {
+  const row = (label: string, amount: number) => `<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(formatCurrency(amount))}</td></tr>`;
+  const incomeRows = analysis.incomeRows.map((item) => row(`Masuk · ${item.label}`, item.monthlyAmount)).join("");
+  const personalRows = analysis.personalByMember.flatMap((member) => member.rows.map((item) => row(`${member.memberLabel} · ${item.label}`, item.monthlyAmount))).join("");
+  const sharedRows = analysis.sharedRows.map((item) => row(`Bersama · ${item.label}`, item.monthlyAmount)).join("");
+  const priceRows = analysis.foodPriceRecommendations.map((item) => `<tr><td>${escapeHtml(item.label)}</td><td>${escapeHtml(formatCurrency(item.dailyAmount))}</td><td>${escapeHtml(formatCurrency(item.weeklyAmount))}</td><td>${escapeHtml(formatCurrency(item.monthlyAmount))}</td><td>${item.targetMonthlyAmount ? escapeHtml(formatCurrency(item.targetMonthlyAmount)) : "—"}</td></tr>`).join("");
+  const noteList = (title: string, values: string[]) => `<h2>${escapeHtml(title)}</h2><ul>${(values.length ? values : ["Belum ada catatan dari data yang diisi."]).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>@page{margin:22px}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#10233D}h1{font-size:23px;margin:0}h2{font-size:14px;margin:22px 0 8px}.meta{color:#66758A;font-size:11px}.metrics{display:flex;gap:9px;margin:18px 0;flex-wrap:wrap}.metric{flex:1;min-width:120px;background:#F4F8FF;border-radius:10px;padding:10px}.metric label{display:block;color:#66758A;font-size:10px}.metric strong{display:block;font-size:15px;margin-top:4px}table{border-collapse:collapse;font-size:9px;width:100%}th{background:#EAF1FC;text-align:left}th,td{border-bottom:1px solid #DCE5F2;padding:7px 4px;vertical-align:top}tfoot td{font-weight:700;background:#F4F8FF}li{font-size:10px;line-height:1.45;margin:4px 0}.note{font-size:9px;color:#66758A;line-height:1.45}</style></head><body><h1>Perencana Rumah Tangga · V A I R A  A I</h1><p class="meta">Periode: ${escapeHtml(analysis.periodLabel)} · Dibuat ${escapeHtml(new Date(analysis.generatedAt).toLocaleString("id-ID"))}</p><div class="metrics"><div class="metric"><label>Total pendapatan</label><strong>${escapeHtml(formatCurrency(analysis.totalIncome))}</strong></div><div class="metric"><label>Pengeluaran pribadi</label><strong>${escapeHtml(formatCurrency(analysis.totalPersonalExpense))}</strong></div><div class="metric"><label>Pengeluaran bersama</label><strong>${escapeHtml(formatCurrency(analysis.totalSharedExpense))}</strong></div><div class="metric"><label>Sisa dana rencana</label><strong>${escapeHtml(formatCurrency(analysis.remaining))}</strong></div></div><h2>Rincian per bulan</h2><table><thead><tr><th>Komponen</th><th>Nilai per bulan</th></tr></thead><tbody>${incomeRows}${personalRows}${sharedRows || '<tr><td colspan="2">Belum ada rincian biaya bersama.</td></tr>'}</tbody><tfoot><tr><td>Total pengeluaran pribadi</td><td>${escapeHtml(formatCurrency(analysis.totalPersonalExpense))}</td></tr><tr><td>Total pengeluaran bersama</td><td>${escapeHtml(formatCurrency(analysis.totalSharedExpense))}</td></tr><tr><td>TOTAL SEMUA HARGA / BIAYA</td><td>${escapeHtml(formatCurrency(analysis.totalExpense))}</td></tr><tr><td>NILAI AKHIR RENCANA</td><td>${escapeHtml(formatCurrency(analysis.remaining))}</td></tr></tfoot></table>${priceRows ? `<h2>Rekomendasi harga pangan dari catatan Anda</h2><table><thead><tr><th>Item</th><th>Harian</th><th>Mingguan</th><th>Bulanan</th><th>Target hemat</th></tr></thead><tbody>${priceRows}</tbody></table><p class="note">Harga target hemat hanya berasal dari angka yang Anda masukkan untuk jumlah dan frekuensi sama; laporan tidak mengambil atau mengarang harga pasar.</p>` : ""}${noteList("Peringatan yang perlu diperiksa", analysis.alerts)}${noteList("Saran berdasarkan data", analysis.suggestions)}${noteList("Catatan belanja dan pangan", analysis.pantryNotes)}<p class="note">${escapeHtml(analysis.wellbeingNote)}</p><p class="note">${escapeHtml(analysis.privacyNote)}</p></body></html>`;
+}
+
+export async function exportHouseholdAnalysisPdf(analysis: HouseholdAnalysis) {
+  await sharePdf(householdAnalysisPdf(analysis), "Ekspor analisis rumah tangga PDF V A I R A  A I");
+}
 
 export async function exportExcelGlobalRoomReports(reports: Array<{ id: number; reporterUsername: string; reportedUsername: string; reportedDisplayName: string; reason: string; priority: string; contextMessage: string | null; details: string | null; status: string; createdAt: string }>) {
   const workbook = XLSX.utils.book_new();

@@ -1,6 +1,6 @@
 import { and, count, desc, eq, gt, isNotNull, isNull, lt, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { administratorAuditLogs, airaAccessTokens, airaConversationHistories, airaxCloudBackups, financeSnapshots, globalRoomBlocks, globalRoomConsents, globalRoomMessages, globalRoomModeration, globalRoomPresence, globalRoomReports, globalRoomSettings, globalRoomUserSettings, globalRoomMessageReactions, globalRoomProfileComments, globalRoomProfileLoves, globalRoomUserStatus, administratorTokenSettings, InsertAdministratorAuditLog, InsertAiraXCloudBackup, InsertManualAccount, InsertUser, manualAccounts, manualAccountSessions, spcaDiagnosticReports, users } from "../drizzle/schema";
+import { administratorAuditLogs, airaAccessTokens, airaConversationHistories, airaxCloudBackups, financeSnapshots, globalRoomBlocks, globalRoomConsents, globalRoomMessages, globalRoomModeration, globalRoomPresence, globalRoomReports, globalRoomSettings, globalRoomUserSettings, globalRoomMessageReactions, globalRoomProfileComments, globalRoomProfileLoves, globalRoomUserStatus, administratorTokenSettings, householdFinanceAnalyses, InsertAdministratorAuditLog, InsertAiraXCloudBackup, InsertManualAccount, InsertUser, manualAccounts, manualAccountSessions, spcaDiagnosticReports, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { storageGetSignedUrl } from "./storage";
 
@@ -404,6 +404,43 @@ export async function resolveSpcaDiagnosticReport(reportId: number, adminUsernam
   const db = await getDb();
   if (!db) throw new Error("Database laporan SPCA belum tersedia.");
   const result = await db.update(spcaDiagnosticReports).set({ status: "resolved", resolvedAt: new Date(), resolvedBy: adminUsername }).where(eq(spcaDiagnosticReports.id, reportId));
+  return Number(result[0].affectedRows ?? 0) > 0;
+}
+
+function sanitizeHouseholdAnalysisPayload(raw: string) {
+  const parsed = JSON.parse(raw) as Record<string, unknown>;
+  if (!parsed || Array.isArray(parsed)) throw new Error("Format hasil analisis tidak valid.");
+  const serialized = JSON.stringify(parsed);
+  if (serialized.length > 60_000) throw new Error("Hasil analisis terlalu besar untuk disimpan.");
+  if (/"(?:heightCm|weightKg|allergies|birthDate|address)"\s*:/i.test(serialized)) {
+    throw new Error("Profil kesehatan atau alamat mentah tidak boleh dikirim ke server hasil analisis.");
+  }
+  return serialized;
+}
+
+export async function createHouseholdFinanceAnalysis(input: { accountId: number; title: string; periodKey: string; resultJson: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database hasil Keuangan Pintar belum tersedia.");
+  const resultJson = sanitizeHouseholdAnalysisPayload(input.resultJson);
+  const result = await db.insert(householdFinanceAnalyses).values({
+    accountId: input.accountId,
+    title: input.title.trim().slice(0, 120) || "Analisis rumah tangga",
+    periodKey: input.periodKey,
+    resultJson,
+  });
+  return Number(result[0].insertId);
+}
+
+export async function listHouseholdFinanceAnalysesForAccount(accountId: number, limit = 40) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(householdFinanceAnalyses).where(eq(householdFinanceAnalyses.accountId, accountId)).orderBy(desc(householdFinanceAnalyses.createdAt)).limit(Math.max(1, Math.min(limit, 100)));
+}
+
+export async function deleteHouseholdFinanceAnalysisForAccount(id: number, accountId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database hasil Keuangan Pintar belum tersedia.");
+  const result = await db.delete(householdFinanceAnalyses).where(and(eq(householdFinanceAnalyses.id, id), eq(householdFinanceAnalyses.accountId, accountId)));
   return Number(result[0].affectedRows ?? 0) > 0;
 }
 

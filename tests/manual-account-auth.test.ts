@@ -46,7 +46,7 @@ describe("autentikasi manual V A I R A  A I", () => {
     expect(router.match(/await requireManualAccount\(ctx\.req\)/g)?.length).toBeGreaterThanOrEqual(4);
     expect(chat).toContain("Aira AI terkunci");
     expect(scanner).not.toContain("Pindai bukti terkunci");
-    const receiptRouter = router.slice(router.indexOf("analyzeReceipt:"), router.indexOf("generateAsset:"));
+    const receiptRouter = router.slice(router.indexOf("analyzeReceiptOcr:"), router.indexOf("generateAsset:"));
     expect(receiptRouter).not.toContain("requireManualAccount(ctx.req)");
   });
 

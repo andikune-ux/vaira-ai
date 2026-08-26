@@ -518,6 +518,27 @@ export const appRouter = router({
       return { success: true, status: input.status, deleted: input.status === "deleted" };
     }),
   }),
+  householdFinance: router({
+    saveAnalysis: publicProcedure.input(z.object({ title: z.string().trim().max(120).optional(), periodKey: z.string().regex(/^\d{4}-\d{2}$/), resultJson: z.string().min(20).max(60_000) })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      try {
+        const id = await db.createHouseholdFinanceAnalysis({ accountId: account.id, title: input.title ?? "Analisis rumah tangga", periodKey: input.periodKey, resultJson: input.resultJson });
+        return { success: true, id };
+      } catch (error) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: error instanceof Error ? error.message : "Hasil analisis tidak dapat disimpan." });
+      }
+    }),
+    listMine: publicProcedure.query(async ({ ctx }) => {
+      const account = await requireManualAccount(ctx.req);
+      return (await db.listHouseholdFinanceAnalysesForAccount(account.id)).map((item) => ({ id: item.id, title: item.title, periodKey: item.periodKey, resultJson: item.resultJson, createdAt: item.createdAt.toISOString(), updatedAt: item.updatedAt.toISOString() }));
+    }),
+    deleteMine: publicProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+      const account = await requireManualAccount(ctx.req);
+      const deleted = await db.deleteHouseholdFinanceAnalysisForAccount(input.id, account.id);
+      if (!deleted) throw new TRPCError({ code: "NOT_FOUND", message: "Hasil analisis tidak ditemukan atau bukan milik akun ini." });
+      return { success: true };
+    }),
+  }),
   spca: router({
     submitDiagnostic: publicProcedure.input(z.object({ severity: z.enum(["info", "warning", "critical"]), codes: z.array(z.string().regex(/^[a-z0-9-]{1,60}$/i)).min(1).max(12), summary: z.string().trim().min(3).max(600) })).mutation(async ({ ctx, input }) => {
       const account = await requireManualAccount(ctx.req);
@@ -537,56 +558,7 @@ export const appRouter = router({
     }),
   }),
   ai: router({
-    analyzeReceipt: publicProcedure
-      .input(z.object({ imageDataUrl: z.string().min(100).max(8_000_000) }))
-      .mutation(async ({ input, ctx }) => {
-        const prompt = `Analyze this receipt or payment proof. Extract only what is actually visible. Return JSON only in this shape:
-{
-	  "kind": "income" | "expense" | "transfer",
-	  "amount": number | null,
-	  "category": "string",
-	  "note": "string",
-	  "senderName": "string" | null,
-	  "recipientName": "string" | null,
-	  "occurredAt": "ISO-8601 string" | null,
-	  "sourceHint": "string" | null,
-	  "destinationHint": "string" | null,
-  "confidence": number,
-  "needsReview": boolean
-}
-	The first priority is to find the transaction amount, including when the date or time is not visible. Classification rules: choose income only when the proof clearly shows money received, credit, deposit, top up, or balance added. Choose expense for payment, debit, cash withdrawal, purchase, or balance deducted. Choose transfer only when funds move between bank accounts or digital wallets. If uncertain, choose expense. If a monetary total, transfer amount, or paid amount is clearly visible, return it even when occurredAt is null. Extract senderName only when a visible sender, source person, or account owner is named. Extract recipientName only when a visible recipient, merchant, payee, or destination is named. Extract occurredAt only when both a visible date and time can be confidently interpreted; otherwise return null. Do not invent an amount, sender, recipient, date, time, source, or destination. This is a suggestion only and must be confirmed by the user.`;
-        try {
-          const catalog = await listLLMModels();
-          const model = catalog.data.find((item) => item.id.startsWith("gemini-3-flash"))?.id
-            ?? catalog.data.find((item) => item.id === "gpt-5-mini")?.id
-            ?? catalog.data[0]?.id;
-          const response = await invokeLLM({
-            model,
-            messages: [{ role: "user", content: [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: input.imageDataUrl, detail: "high" } }] }],
-          });
-          const raw = response.choices[0]?.message?.content;
-          const parsed = parseModelJson(raw);
-          const amount = Number(parsed.amount);
-          return {
-	            kind: parsed.kind === "income" ? "income" as const : parsed.kind === "transfer" ? "transfer" as const : "expense" as const,
-	            amount: Number.isFinite(amount) && amount > 0 ? amount : null,
-	            category: String(parsed.category || "Lainnya").slice(0, 80),
-	            note: String(parsed.note || "Bukti transaksi untuk ditinjau").slice(0, 240),
-	            senderName: typeof parsed.senderName === "string" && parsed.senderName.trim() ? parsed.senderName.trim().slice(0, 120) : null,
-	            recipientName: typeof parsed.recipientName === "string" && parsed.recipientName.trim() ? parsed.recipientName.trim().slice(0, 120) : null,
-	            occurredAt: typeof parsed.occurredAt === "string" && Number.isFinite(new Date(parsed.occurredAt).getTime()) ? new Date(parsed.occurredAt).toISOString() : null,
-	            sourceHint: typeof parsed.sourceHint === "string" ? parsed.sourceHint.slice(0, 80) : null,
-	            destinationHint: typeof parsed.destinationHint === "string" ? parsed.destinationHint.slice(0, 80) : null,
-	            confidence: Math.min(1, Math.max(0, Number(parsed.confidence) || 0)),
-	            needsReview: true,
-	            provider: "aira" as const,
-	          };
-	        } catch (error) {
-	          console.error("[Aira OCR] Provider utama gagal", error instanceof Error ? error.message : error);
-	          return { kind: "expense" as const, amount: null, category: "Lainnya", note: "Bukti transaksi untuk ditinjau", senderName: null, recipientName: null, occurredAt: null, sourceHint: null, destinationHint: null, confidence: 0, needsReview: true, provider: "manual" as const };
-	        }
-	      }),
-	    analyzeReceiptOcr: publicProcedure
+    analyzeReceiptOcr: publicProcedure
 	      .input(z.object({ imageDataUrl: z.string().min(100).max(8_000_000) }))
 	      .mutation(async ({ input }) => analyzeReceiptWithOcrSpace(input.imageDataUrl)),
     generateAsset: publicProcedure

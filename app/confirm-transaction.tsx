@@ -6,14 +6,16 @@ import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { AiraCard, OutlineButton, PrimaryButton } from "@/components/aira-ui";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
+import { commitmentFlowDetails, isCommitmentTransactionFlow, isNewCommitmentFlow, isSettlementCommitmentFlow } from "@/lib/finance/commitment-sync";
 import { useFinance } from "@/lib/finance/finance-context";
 import { formatCurrency, formatDateTime, getWalletBalance } from "@/lib/finance/finance-utils";
-import type { TransactionKind, TransactionOrigin } from "@/lib/finance/types";
+import { parseTransactionEvidence } from "@/lib/finance/transaction-evidence";
+import type { CommitmentTransactionFlow, TransactionKind, TransactionOrigin } from "@/lib/finance/types";
 
 export default function ConfirmTransactionScreen() {
   const colors = useColors();
-  const params = useLocalSearchParams<{ kind: TransactionKind; amount: string; feeAmount?: string; category: string; walletId: string; toWalletId?: string; note: string; counterpartyName?: string; origin?: TransactionOrigin; proofUri?: string; occurredAt?: string; editId?: string }>();
-  const { state, addConfirmedTransaction, updateConfirmedTransaction, addCommitment } = useFinance();
+  const params = useLocalSearchParams<{ kind: TransactionKind; amount: string; feeAmount?: string; category: string; walletId: string; toWalletId?: string; note: string; counterpartyName?: string; origin?: TransactionOrigin; proofUri?: string; occurredAt?: string; editId?: string; commitmentFlow?: CommitmentTransactionFlow; commitmentId?: string; evidenceJson?: string }>();
+  const { state, addConfirmedTransaction, updateConfirmedTransaction } = useFinance();
   const [saving, setSaving] = useState(false);
   const wallet = state.wallets.find((item) => item.id === params.walletId);
   const destination = state.wallets.find((item) => item.id === params.toWalletId);
@@ -21,7 +23,12 @@ export default function ConfirmTransactionScreen() {
   const feeAmount = Number(params.feeAmount ?? 0) || 0;
   const occurredAt = params.occurredAt || new Date().toISOString();
   const isTransfer = params.kind === "transfer";
+  const commitmentFlow = isCommitmentTransactionFlow(params.commitmentFlow) ? params.commitmentFlow : undefined;
+  const commitmentDetails = commitmentFlow ? commitmentFlowDetails(commitmentFlow) : undefined;
+  const linkedCommitment = state.commitments.find((item) => item.id === params.commitmentId);
   const counterpartyName = params.counterpartyName?.trim().slice(0, 120) || undefined;
+  const evidence = parseTransactionEvidence(params.evidenceJson);
+  const isLoanLikeDebt = commitmentFlow === "debt_received" && /\b(?:pinjol|pinjaman\s+(?:online|offline)|paylater|loan|kredit|cicilan)\b/i.test(`${params.note} ${counterpartyName ?? ""} ${evidence.merchantName ?? ""}`);
   const counterpartyLabel = params.kind === "income" ? "Pengirim" : params.kind === "transfer" ? "Penerima / tujuan" : "Penerima";
   const currentBalance = wallet ? getWalletBalance(wallet, state.transactions) : 0;
   const destinationBalance = destination ? getWalletBalance(destination, state.transactions) : 0;
@@ -29,6 +36,14 @@ export default function ConfirmTransactionScreen() {
 
   const confirm = async () => {
     if (!wallet || !params.kind || !amount || (isTransfer && !destination)) return;
+    if (commitmentFlow && (!commitmentDetails || commitmentDetails.kind !== params.kind)) {
+      Alert.alert("Jenis transaksi tidak sesuai", "Pilih kembali jenis hutang atau piutang dari formulir sebelum menyimpan.");
+      return;
+    }
+    if (commitmentFlow && isSettlementCommitmentFlow(commitmentFlow) && !linkedCommitment) {
+      Alert.alert("Daftar terkait belum ditemukan", "Pilih kembali hutang atau piutang yang akan dibayar dari formulir sebelum menyimpan.");
+      return;
+    }
     setSaving(true);
     const payload = {
       kind: params.kind,
@@ -42,34 +57,29 @@ export default function ConfirmTransactionScreen() {
       occurredAt,
       origin: params.origin ?? "manual",
       proofUri: params.proofUri,
+      evidence,
+      commitmentFlow,
+      commitmentId: commitmentFlow && isSettlementCommitmentFlow(commitmentFlow) ? linkedCommitment?.id : undefined,
     };
     try {
       if (params.editId) await updateConfirmedTransaction(params.editId, payload);
-      else {
-        await addConfirmedTransaction(payload);
-        const normalizedNote = params.note.toLowerCase();
-        const plannedKind = params.origin === "ocr" && params.kind === "income" && /\b(hutang|utang)\b/.test(normalizedNote)
-          ? "debt"
-          : params.origin === "ocr" && params.kind === "expense" && /\bpiutang\b/.test(normalizedNote)
-            ? "receivable"
-            : null;
-        if (plannedKind) {
-          const counterparty = normalizedNote.match(/(?:dari|ke)\s+([\p{L}\p{N}\s.'-]{2,60})/iu)?.[1]?.trim();
-          await addCommitment({
-            title: plannedKind === "debt" ? `Hutang ${counterparty ? `dari ${counterparty}` : "dari bukti transaksi"}` : `Piutang ${counterparty ? `ke ${counterparty}` : "dari bukti transaksi"}`,
-            amount,
-            remainingAmount: amount,
-            kind: plannedKind,
-            counterparty,
-            isRecurring: false,
-            isDone: false,
-          });
-        }
-      }
+      else await addConfirmedTransaction(payload);
+      const message = params.editId
+        ? "Perubahan mutasi telah diterapkan ke data keuangan."
+        : commitmentFlow && isNewCommitmentFlow(commitmentFlow)
+          ? "Saldo telah diperbarui dan daftar hutang/piutang baru sudah ditambahkan."
+          : commitmentFlow && isSettlementCommitmentFlow(commitmentFlow)
+            ? "Saldo telah diperbarui dan sisa hutang/piutang terkait sudah disesuaikan."
+            : "Catatan telah dikonfirmasi dan sudah masuk ke data keuangan Anda.";
       Alert.alert(
         params.editId ? "Transaksi diperbarui" : "Transaksi tersimpan",
-        params.editId ? "Perubahan mutasi telah diterapkan ke data keuangan." : "Catatan telah dikonfirmasi dan sudah masuk ke data keuangan Anda.",
-        [{ text: "Lihat keuangan", onPress: () => router.replace("/(tabs)/finance") }],
+        isLoanLikeDebt ? `${message} Bukti ini tampak terkait pinjaman. Apakah Anda ingin melengkapi Tagihan untuk pengingat cicilan?` : message,
+        isLoanLikeDebt
+          ? [
+              { text: "Nanti", style: "cancel", onPress: () => router.replace("/(tabs)/finance") },
+              { text: "Lengkapi Tagihan", onPress: () => router.replace({ pathname: "/plan-form", params: { sheet: "bill", draftTitle: counterpartyName ? `Tagihan pinjaman ${counterpartyName}` : "Tagihan pinjaman", draftAmount: String(amount), draftCounterparty: counterpartyName ?? "" } }) },
+            ]
+          : [{ text: "Lihat keuangan", onPress: () => router.replace("/(tabs)/finance") }],
       );
     } finally {
       setSaving(false);
@@ -92,7 +102,14 @@ export default function ConfirmTransactionScreen() {
           <Divider color={colors.border} /><SummaryRow label={isTransfer ? "Dari" : "Sumber dana"} value={wallet.name} />
           {isTransfer ? <><Divider color={colors.border} /><SummaryRow label="Ke" value={destination?.name ?? "Tujuan dana"} /><Divider color={colors.border} /><SummaryRow label="Biaya admin" value={feeAmount > 0 ? formatCurrency(feeAmount) : "Tidak ada"} valueColor={feeAmount > 0 ? colors.error : undefined} /></> : null}
           <Divider color={colors.border} /><SummaryRow label="Kategori" value={params.category || "Lainnya"} />
+          {commitmentDetails ? <><Divider color={colors.border} /><SummaryRow label="Hubungan" value={commitmentDetails.label} />{linkedCommitment ? <><Divider color={colors.border} /><SummaryRow label="Daftar terkait" value={linkedCommitment.title} /></> : null}</> : null}
           {counterpartyName ? <><Divider color={colors.border} /><SummaryRow label={counterpartyLabel} value={counterpartyName} /></> : null}
+          {evidence.paymentMethod && evidence.paymentMethod !== "unknown" ? <><Divider color={colors.border} /><SummaryRow label="Metode" value={evidence.paymentMethod === "qris" ? "QRIS" : evidence.paymentMethod === "bank_transfer" ? "Transfer bank" : "Tunai"} /></> : null}
+          {evidence.sourceBankName ? <><Divider color={colors.border} /><SummaryRow label="Bank pengirim" value={evidence.sourceBankName} /></> : null}
+          {evidence.destinationBankName ? <><Divider color={colors.border} /><SummaryRow label="Bank penerima" value={evidence.destinationBankName} /></> : null}
+          {evidence.senderAccountNumber ? <><Divider color={colors.border} /><SummaryRow label="Rekening pengirim" value={evidence.senderAccountNumber} /></> : null}
+          {evidence.recipientAccountNumber ? <><Divider color={colors.border} /><SummaryRow label="Rekening penerima" value={evidence.recipientAccountNumber} /></> : null}
+          {evidence.referenceNumber ? <><Divider color={colors.border} /><SummaryRow label="ID / referensi" value={evidence.referenceNumber} /></> : null}
           <Divider color={colors.border} /><SummaryRow label="Waktu" value={formatDateTime(occurredAt)} />
           <Divider color={colors.border} /><SummaryRow label="Keterangan" value={params.note || "—"} />
         </AiraCard>

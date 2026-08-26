@@ -25,6 +25,19 @@ export function receiptDateTimeFromIso(iso: string) {
   return { date: formatReceiptDate(date), time: formatReceiptTime(date) };
 }
 
+export function isReceiptDateTimeInputValid(dateInput: string, timeInput: string) {
+  const dateMatch = dateInput.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  const timeMatch = timeInput.match(/^(\d{2}):(\d{2})$/);
+  if (!dateMatch || !timeMatch) return false;
+  const day = Number(dateMatch[1]);
+  const month = Number(dateMatch[2]) - 1;
+  const year = Number(dateMatch[3]);
+  const hour = Number(timeMatch[1]);
+  const minute = Number(timeMatch[2]);
+  const candidate = new Date(year, month, day, hour, minute, 0, 0);
+  return candidate.getFullYear() === year && candidate.getMonth() === month && candidate.getDate() === day && hour >= 0 && hour < 24 && minute >= 0 && minute < 60;
+}
+
 export function receiptDateTimeToIso(dateInput: string, timeInput: string, fallback = new Date()) {
   const dateMatch = dateInput.match(/^(\d{2})-(\d{2})-(\d{4})$/);
   const timeMatch = timeInput.match(/^(\d{2}):(\d{2})$/);
@@ -34,7 +47,5 @@ export function receiptDateTimeToIso(dateInput: string, timeInput: string, fallb
   const hour = timeMatch ? Number(timeMatch[1]) : fallback.getHours();
   const minute = timeMatch ? Number(timeMatch[2]) : fallback.getMinutes();
   const candidate = new Date(year, month, day, hour, minute, 0, 0);
-  const validDate = candidate.getFullYear() === year && candidate.getMonth() === month && candidate.getDate() === day;
-  const validTime = hour >= 0 && hour < 24 && minute >= 0 && minute < 60;
-  return validDate && validTime ? candidate.toISOString() : fallback.toISOString();
+  return isReceiptDateTimeInputValid(dateInput, timeInput) ? candidate.toISOString() : fallback.toISOString();
 }

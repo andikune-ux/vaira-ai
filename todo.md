@@ -3574,3 +3574,42 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Audit konflik gesture PanResponder dan `onPress` yang membuat ketukan Robot SPCA tidak membuka panel.
 - [x] Pisahkan tap pembuka SPCA dari gesture geser yang hanya aktif setelah pergerakan nyata.
 - [x] Tambahkan regresi dan validasi ketukan Robot SPCA membuka panel tanpa checkpoint otomatis.
+- [x] Audit model data, layar Keuangan Pintar, analisis anggaran, penyimpanan, dan ekspor yang ada.
+- [x] Tambahkan pendapatan utama/pasangan/tambahan serta pemisahan pengeluaran pribadi dan pengeluaran bersama.
+- [x] Tambahkan profil anggota keluarga wajib dengan peran, umur, tinggi, berat, pola makan, dan alergi.
+- [x] Tambahkan pertanyaan adaptif dewasa bekerja dan anggota sekolah/kuliah berdasarkan profil, tempat tinggal, transportasi, serta kebutuhan.
+- [x] Tambahkan pertanyaan kebutuhan rumah tangga bersama untuk pangan, gas, air, internet, listrik, TV, dan tagihan lain dengan frekuensi.
+- [x] Bangun analisis anggaran terstruktur, saran efisiensi yang transparan, dan batas aman rekomendasi kesehatan/nutrisi.
+- [x] Hitung dan tampilkan total pendapatan, total pengeluaran pribadi, total pengeluaran bersama, total keseluruhan, serta sisa dana per periode.
+- [x] Simpan, hapus, lihat kembali, dan ekspor hasil analisis per akun tanpa membocorkan data anggota keluarga.
+- [ ] Tambahkan regresi analisis, privasi, perhitungan frekuensi, dan validasi tanpa checkpoint otomatis.
+- [x] Tambahkan rekomendasi belanja sayur, lauk/protein, dan bumbu untuk periode harian, mingguan, serta bulanan berdasarkan nominal pengguna.
+- [x] Tampilkan kembali total keseluruhan seluruh komponen di bagian paling bawah hasil analisis dan laporan PDF.
+- [x] Validasi rekomendasi harga pangan serta total akhir tanpa checkpoint otomatis.
+- [x] Audit jalur Pindai Bukti agar hanya menggunakan OCR dan tidak memakai Aira.
+- [x] Optimalkan OCR untuk nominal, tipe transaksi masuk/keluar/pindah dana, nama pengirim/penerima, tanggal, dan jam tanpa nilai buatan.
+- [x] Tambahkan pengaturan tanggal dan jam pada edit mutasi agar transaksi terlambat dapat dikoreksi.
+- [x] Tambahkan kalender mini serta input jam untuk catatan transaksi manual masuk, keluar, dan pindah dana.
+- [x] Tambahkan regresi OCR dan waktu transaksi lalu validasi tanpa checkpoint otomatis.
+- [x] Audit keselarasan formulir Anggaran, Target, Tagihan, Hutang, dan Piutang dalam menu Rencana.
+- [x] Selaraskan tampilan serta pengisian setiap tujuan rencana agar tidak memunculkan formulir yang salah atau tidak konsisten.
+- [x] Tambahkan isian sisa tenor tagihan dalam bulan dan tampilkan informasinya pada daftar serta ringkasan tagihan.
+- [x] Tambahkan regresi sisa tenor serta validasi tanpa checkpoint otomatis.
+- [x] Audit hubungan hutang, piutang, transaksi, saldo dompet, dan Pindai Bukti.
+- [x] Sinkronkan pencatatan pembayaran hutang dan penerimaan piutang dengan transaksi saldo setelah konfirmasi pengguna.
+- [x] Tambahkan pilihan hutang dan piutang pada Pindai Bukti serta buat komitmen terkait setelah konfirmasi pengguna.
+- [x] Tambahkan regresi saldo dan pemindaian hutang-piutang lalu validasi tanpa checkpoint otomatis.
+- [x] Audit ulang model transaksi, OCR, dompet, foto bukti, serta alur Hutang/Piutang berdasarkan dokumen pengguna.
+- [x] Perluas OCR untuk identitas bank/QRIS, nama dan nomor rekening pihak, tanggal-jam, ID referensi, serta klasifikasi berbasis dompet pengguna tanpa nilai buatan.
+- [x] Tambahkan keterangan transaksi terstruktur yang dapat disunting, termasuk kategori saran yang transparan dari nama merchant/QRIS.
+- [x] Samakan data inti antara tambah transaksi, edit mutasi, dan Pindai Bukti; tambahkan tombol Pindai Bukti dan peninjauan foto pada formulir manual.
+- [x] Pastikan foto bukti tetap tersimpan pada transaksi serta dapat ditinjau ketika menambah atau mengedit catatan.
+- [x] Lengkapi sinkronisasi dua arah Hutang/Piutang dengan transaksi serta Pindai Bukti, termasuk tombol Pindai Bukti khusus per komitmen.
+- [x] Tambahkan tawaran draft Tagihan untuk pinjaman online/offline hanya setelah pengguna mengonfirmasi, dengan data OCR yang diketahui terisi sebagai draft.
+- [x] Tambahkan regresi OCR bank/QRIS, metadata transaksi, foto bukti, sinkronisasi Hutang/Piutang, dan draft Tagihan tanpa checkpoint otomatis.
+- [x] Audit pemilihan foto, pemuatan URI, serta modal pratinjau Pindai Bukti yang tidak menampilkan gambar.
+- [x] Perbaiki tampilan dan pembesaran foto bukti sebelum OCR maupun konfirmasi transaksi.
+- [x] Tambahkan regresi pratinjau foto bukti dan validasi tanpa checkpoint otomatis.
+- [x] Audit kembali kelengkapan tambah/edit transaksi dibanding Pindai Bukti, termasuk tanggal, jam, kalender, foto, dan metadata bukti.
+- [x] Lengkapi serta rapikan tambah/edit transaksi agar semua detail bukti dapat ditampilkan dan diubah sebelum konfirmasi.
+- [x] Tambahkan regresi kelengkapan edit transaksi lalu validasi tanpa checkpoint otomatis.
