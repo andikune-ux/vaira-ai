@@ -3633,3 +3633,7 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Sederhanakan pilihan pengeluaran menjadi Transaksi biasa, Bayar hutang, dan Piutang diberikan.
 - [x] Hilangkan seluruh pilihan hubungan saat jenis transaksi adalah Pindah saldo.
 - [x] Tambahkan regresi perubahan jenis transaksi dan validasi sinkronisasi sebelum checkpoint.
+- [x] Audit bukti masuk ketika nama/rekening tujuan cocok dengan dompet pengguna tetapi pengirimnya pihak lain.
+- [x] Bedakan transfer internal dari pemasukan eksternal berdasarkan identitas rekening asal dan tujuan.
+- [x] Pastikan nama penerima tidak masuk ke field nama pengirim, kecuali transfer internal yang memang dipilih pengguna.
+- [x] Tambahkan regresi pemasukan eksternal dan validasi saldo tanpa checkpoint otomatis.

@@ -317,8 +317,9 @@ export function parseReceiptOcrText(text: string): ReceiptOcrFallback {
   const recipientLabels = ["nama penerima", "nama rekening penerima", "penerima", "tujuan transfer", "tujuan dana", "kepada", "merchant", "payee", "untuk"];
   const amount = labelledAmount(lines, ["nominal", "total transfer", "jumlah transfer", "total bayar", "total transaksi", "jumlah bayar", "nilai transfer"]) ?? findAmount(lines);
   const totalAmount = labelledAmount(lines, ["total transfer", "total bayar", "total transaksi", "jumlah transfer", "jumlah bayar"]);
-  const senderName = extractLabelledName(lines, senderLabels);
   const bcaDestination = extractBcaDestination(lines);
+  const senderNameCandidate = extractLabelledName(lines, senderLabels);
+  const senderName = senderNameCandidate && bcaDestination.name && senderNameCandidate.replace(/[^\p{L}\p{N}]/gu, "").toLocaleLowerCase("id-ID") === bcaDestination.name.replace(/[^\p{L}\p{N}]/gu, "").toLocaleLowerCase("id-ID") ? null : senderNameCandidate;
   const recipientName = bcaDestination.name ?? extractLabelledName(lines, recipientLabels);
   const senderAccount = extractPartyAccount(lines, ["no rekening pengirim", "rekening pengirim", "nomor rekening pengirim", "account sender", "a/n pengirim"], senderLabels, recipientLabels);
   const recipientAccount = bcaDestination.account.display ? bcaDestination.account : extractPartyAccount(lines, ["no rekening penerima", "rekening penerima", "nomor rekening penerima", "account recipient", "a/n penerima"], recipientLabels, senderLabels);

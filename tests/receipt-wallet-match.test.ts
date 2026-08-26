@@ -24,8 +24,13 @@ describe("klasifikasi bukti berdasarkan dompet lokal", () => {
     expect(result).toMatchObject({ kind: "transfer", sourceWalletId: "bca", destinationWalletId: "dana", evidence: { classificationBasis: "wallet_internal" } });
   });
 
-  it("mempertahankan bukti transfer berstatus jelas sebagai transfer walau rekening tujuan cocok dompet lokal", () => {
+  it("mengenali bukti transfer dari pihak lain sebagai pemasukan saat hanya rekening tujuan cocok dompet lokal", () => {
     const result = classifyReceiptWithWallets({ kind: "transfer", evidence: { transferStatus: "succeeded", recipientAccountNumber: "123456789012" } }, wallets);
-    expect(result).toMatchObject({ kind: "transfer", destinationWalletId: "bca", evidence: { classificationBasis: "wallet_destination" } });
+    expect(result).toMatchObject({ kind: "income", destinationWalletId: "bca", evidence: { classificationBasis: "wallet_destination" } });
+  });
+
+  it("tetap mengenali pindah saldo bila rekening asal dan tujuan sama-sama dompet lokal", () => {
+    const result = classifyReceiptWithWallets({ kind: "transfer", evidence: { transferStatus: "succeeded", senderAccountNumber: "123456789012", recipientAccountNumber: "9988776655" } }, wallets);
+    expect(result).toMatchObject({ kind: "transfer", sourceWalletId: "bca", destinationWalletId: "dana", evidence: { classificationBasis: "wallet_internal" } });
   });
 });

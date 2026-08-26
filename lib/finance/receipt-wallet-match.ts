@@ -39,11 +39,11 @@ export function classifyReceiptWithWallets(input: ReceiptWalletMatchInput, walle
   if (sourceWallet && destinationWallet && sourceWallet.id !== destinationWallet.id) {
     return { kind: "transfer", sourceWalletId: sourceWallet.id, destinationWalletId: destinationWallet.id, evidence: { ...evidence, classificationBasis: "wallet_internal" } };
   }
-  if (input.kind === "transfer" && evidence.transferStatus && evidence.transferStatus !== "unknown") {
-    return { kind: "transfer", sourceWalletId: sourceWallet?.id, destinationWalletId: destinationWallet?.id, evidence: { ...evidence, classificationBasis: destinationWallet ? "wallet_destination" : sourceWallet ? "wallet_source" : "ocr_text" } };
-  }
   if (destinationWallet) {
     return { kind: "income", destinationWalletId: destinationWallet.id, evidence: { ...evidence, classificationBasis: "wallet_destination" } };
+  }
+  if (input.kind === "transfer" && evidence.transferStatus && evidence.transferStatus !== "unknown") {
+    return { kind: "transfer", sourceWalletId: sourceWallet?.id, evidence: { ...evidence, classificationBasis: sourceWallet ? "wallet_source" : "ocr_text" } };
   }
   if (sourceWallet) {
     return { kind: "expense", sourceWalletId: sourceWallet.id, evidence: { ...evidence, classificationBasis: "wallet_source" } };
