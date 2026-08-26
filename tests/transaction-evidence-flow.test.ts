@@ -12,6 +12,7 @@ describe("alur metadata bukti transaksi", () => {
   const plan = read("app/plan-form.tsx");
   const fields = read("components/transaction-evidence-fields.tsx");
   const walletMatch = read("lib/finance/receipt-wallet-match.ts");
+  const commitmentSync = read("lib/finance/commitment-sync.ts");
 
   it("meneruskan metadata OCR dan dasar klasifikasi dompet lokal ke konfirmasi", () => {
     expect(scan).toContain("classifyReceiptWithWallets(result, state.wallets)");
@@ -35,6 +36,32 @@ describe("alur metadata bukti transaksi", () => {
     expect(history).toContain("evidenceLabel");
     expect(fields).toContain("Nomor rekening pengirim");
     expect(fields).toContain("ID transaksi / nomor referensi");
+  });
+
+  it("menjaga hasil OCR ringkas dan menyembunyikan field tambahan sampai pengguna memintanya", () => {
+    expect(fields).toContain('const [expanded, setExpanded] = useState(false)');
+    expect(fields).not.toContain("useEffect");
+    expect(fields).toContain("Field kosong tidak wajib diisi.");
+    expect(scan).toContain("showOptionalDetails");
+    expect(scan).toContain("Tambah nama atau keterangan lain");
+    expect(scan).toContain("Keterangan tambahan (opsional)");
+  });
+
+  it("menyaring hubungan Hutang/Piutang mengikuti jenis transaksi", () => {
+    expect(scan).toContain('const visibleCommitmentOptions = kind === "transfer" ? [] : COMMITMENT_FLOW_OPTIONS.filter((option) => option.kind === kind)');
+    expect(scan).toContain('{kind !== "transfer" ? <>');
+    expect(scan).not.toContain("COMMITMENT_FLOW_OPTIONS.map");
+    expect(commitmentSync).toContain('label: "Hutang diterima"');
+    expect(commitmentSync).toContain('label: "Terima piutang"');
+    expect(commitmentSync).toContain('label: "Bayar hutang"');
+    expect(commitmentSync).toContain('label: "Piutang diberikan"');
+  });
+
+  it("membersihkan note OCR dan tidak menambahkan metadata pihak ke Keterangan secara otomatis", () => {
+    expect(scan).toContain("const cleanOcrNote =");
+    expect(scan).toContain("setNote(isGeneratedOcrNote(cleanedNote) ? \"\" : cleanedNote)");
+    expect(scan).toContain('note: note.trim() || "Bukti transaksi"');
+    expect(scan).not.toContain("appendReceiptCounterpartyToNote(note");
   });
 
   it("membuat draft Tagihan pinjaman hanya dari konfirmasi transaksi Hutang yang terdeteksi", () => {

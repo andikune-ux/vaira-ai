@@ -3617,3 +3617,19 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Terapkan aturan parser transfer terstruktur, termasuk Gratis/coret biaya admin sebagai Rp0.
 - [x] Tampilkan serta izinkan penyuntingan semua rincian transfer pada tinjauan Pindai Bukti dan konfirmasi transaksi.
 - [x] Tambahkan regresi contoh transfer terstruktur dan validasi tanpa checkpoint otomatis.
+- [x] Audit hasil OCR bukti BCA: bank tujuan, rekening, nama penerima, referensi multi-baris, biaya, tujuan transaksi, dan keterangan yang salah masuk ke field lain.
+- [x] Perbaiki parser bukti BCA serta pemetaan metadata agar detail hanya masuk ke field yang tepat.
+- [x] Tampilkan ringkasan detail transfer BCA secara jelas pada Pindai Bukti tanpa mengarang data pengirim.
+- [x] Tambahkan regresi bukti BCA dan validasi tanpa checkpoint otomatis.
+- [x] Audit field Pindai Bukti yang kosong, berulang, atau membuat hasil OCR transfer terlalu panjang.
+- [x] Ubah hasil OCR menjadi ringkasan detail yang ringkas; tampilkan editor lengkap hanya saat diperlukan.
+- [x] Hilangkan duplikasi nama penerima dan keterangan referensi yang tidak perlu pada alur hasil OCR.
+- [x] Tambahkan regresi struktur tampilan ringkas serta validasi tanpa checkpoint otomatis.
+- [x] Audit sumber keterangan OCR yang masih memasukkan referensi atau teks yang tidak relevan.
+- [x] Bersihkan pembentukan note agar hanya berisi ringkasan transaksi yang relevan.
+- [x] Tambahkan regresi keterangan bersih dan validasi alur Pindai Bukti tanpa checkpoint otomatis.
+- [x] Audit pilihan hubungan Hutang/Piutang yang saat ini menampilkan opsi lintas jenis transaksi.
+- [x] Sederhanakan pilihan pemasukan menjadi Transaksi biasa, Hutang diterima, dan Piutang diterima.
+- [x] Sederhanakan pilihan pengeluaran menjadi Transaksi biasa, Bayar hutang, dan Piutang diberikan.
+- [x] Hilangkan seluruh pilihan hubungan saat jenis transaksi adalah Pindah saldo.
+- [x] Tambahkan regresi perubahan jenis transaksi dan validasi sinkronisasi sebelum checkpoint.

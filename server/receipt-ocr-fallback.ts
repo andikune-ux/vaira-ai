@@ -104,6 +104,42 @@ const extractLabelledValue = (lines: string[], labels: string[], accept: (value:
   return null;
 };
 
+const extractReferenceNumber = (lines: string[]) => {
+  const labelPattern = ["id transaksi", "id trx", "nomor referensi", "no referensi", "ref", "reference", "kode transaksi"].map((label) => label.replace(/\s+/g, "\\s+")).join("|");
+  const inline = new RegExp(`^(?:${labelPattern})\\s*[:\\-]?\\s*(.*)$`, "i");
+  const stop = /^(?:pengirim|penerima|nama\s+(?:pengirim|penerima)|ke\s+rekening\s+tujuan|bank\s+(?:pengirim|penerima|tujuan)|jenis\s+transfer|metode(?:\s+transfer)?|nominal|total|biaya|layanan|tujuan\s+transaksi|no\s+urut|pt\.?|menara|npwp)\b/i;
+  for (const [index, line] of lines.entries()) {
+    const match = line.match(inline);
+    if (!match) continue;
+    const parts = match[1] ? [match[1]] : [];
+    for (let offset = 1; offset <= 3; offset += 1) {
+      const candidate = lines[index + offset];
+      if (!candidate || stop.test(candidate) || !/^[A-Za-z0-9._/\- ]{3,80}$/.test(candidate)) break;
+      parts.push(candidate);
+    }
+    const reference = parts.join("").replace(/\s+/g, "");
+    if (/^[A-Za-z0-9._/\-]{4,100}$/.test(reference)) return reference;
+  }
+  return null;
+};
+
+const extractTransactionPurpose = (lines: string[]) => {
+  const label = /^tujuan\s+transaksi\s*[:\-]?\s*(.*)$/i;
+  const stop = /^(?:ref(?:erence)?|no\s+urut|biaya|layanan|nominal|total|pt\.?|menara|npwp)\b/i;
+  for (const [index, line] of lines.entries()) {
+    const match = line.match(label);
+    if (!match) continue;
+    const parts = match[1] ? [match[1]] : [];
+    const continuation = lines[index + 1];
+    if (continuation && !stop.test(continuation) && isIdentityValue(continuation)) parts.push(continuation);
+    const purpose = cleanLine(parts.join(" "));
+    if (purpose) return purpose.slice(0, 120);
+  }
+  return null;
+};
+
+const extractSequenceNumber = (lines: string[]) => extractLabelledValue(lines, ["no urut", "nomor urut"], (value) => /^[A-Za-z0-9._/\- ]{3,40}$/.test(value))?.replace(/\s+/g, "") ?? null;
+
 const isAccountNumber = (value: string) => {
   const digits = value.replace(/\D/g, "");
   return digits.length >= 8 && digits.length <= 24;
@@ -149,7 +185,7 @@ const extractPartyAccount = (lines: string[], accountLabels: string[], partyLabe
   return { number: null, display: null };
 };
 
-const bankNames = ["BCA", "BRI", "BNI", "MANDIRI", "BTN", "BSI", "CIMB", "PERMATA", "DANAMON", "JAGO", "SEABANK", "NEO", "BLU", "OVO", "DANA", "GOPAY", "SHOPEEPAY", "LINKAJA"];
+const bankNames = ["BCA", "BRI", "BNI", "MANDIRI", "BTN", "BSI", "CIMB", "PERMATA", "DANAMON", "JAGO", "SEABANK", "SINARMAS", "NEO", "BLU", "OVO", "DANA", "GOPAY", "SHOPEEPAY", "LINKAJA"];
 
 const detectBank = (value: string) => {
   const uppercase = value.toUpperCase();
@@ -162,6 +198,24 @@ const detectPartyBank = (lines: string[], labels: string[], otherLabels: string[
     if (bank) return bank;
   }
   return null;
+};
+
+const extractBcaDestination = (lines: string[]) => {
+  const index = lines.findIndex((line) => /^ke\s+rekening\s+tujuan\b/i.test(line));
+  if (index < 0) return { bank: null, account: { number: null, display: null } as AccountDetails, name: null };
+  const values = lines.slice(index + 1, index + 6);
+  const bank = values.map(detectBank).find((value): value is string => Boolean(value)) ?? null;
+  const account = values.map(accountFromText).find((value) => Boolean(value.display)) ?? { number: null, display: null };
+  const name = values.find((value) => isIdentityValue(value) && !detectBank(value) && !accountFromText(value).display) ?? null;
+  return { bank, account, name: name ? cleanLine(name).slice(0, 120) : null };
+};
+
+const detectSourceBank = (lines: string[], senderName: string | null) => {
+  const labelled = extractLabelledValue(lines, ["bank pengirim", "bank asal", "dari bank", "source bank"], (value) => Boolean(detectBank(value)));
+  if (labelled) return detectBank(labelled);
+  const joined = lines.join("\n");
+  if (/\bm-?transfer\b/i.test(joined) || /\b(?:pt\.?\s*)?bank\s+central\s+asia\b/i.test(joined)) return "BCA";
+  return detectBank(senderName ?? "");
 };
 
 const parseTransferStatus = (text: string): NonNullable<TransactionEvidence["transferStatus"]> => {
@@ -182,7 +236,7 @@ const parseTransferMethod = (lines: string[]) => {
 };
 
 const parseAdminFee = (lines: string[]) => {
-  const feeLabel = /\b(?:biaya\s+(?:admin|administrasi|layanan|transfer)|admin\s*fee)\b/i;
+  const feeLabel = /^\s*(?:biaya\b|admin\s*fee\b)/i;
   for (const [index, line] of lines.entries()) {
     if (!feeLabel.test(line)) continue;
     const scope = `${line} ${lines[index + 1] ?? ""}`;
@@ -260,16 +314,19 @@ export function parseReceiptOcrText(text: string): ReceiptOcrFallback {
   const lines = text.split(/\r?\n/).map(cleanLine).filter(Boolean);
   const kind = classifyTransaction(text);
   const senderLabels = ["nama pengirim", "nama rekening pengirim", "pengirim", "sender", "dari", "asal dana"];
-  const recipientLabels = ["nama penerima", "nama rekening penerima", "penerima", "tujuan", "kepada", "merchant", "payee", "untuk"];
+  const recipientLabels = ["nama penerima", "nama rekening penerima", "penerima", "tujuan transfer", "tujuan dana", "kepada", "merchant", "payee", "untuk"];
   const amount = labelledAmount(lines, ["nominal", "total transfer", "jumlah transfer", "total bayar", "total transaksi", "jumlah bayar", "nilai transfer"]) ?? findAmount(lines);
   const totalAmount = labelledAmount(lines, ["total transfer", "total bayar", "total transaksi", "jumlah transfer", "jumlah bayar"]);
   const senderName = extractLabelledName(lines, senderLabels);
-  const recipientName = extractLabelledName(lines, recipientLabels);
+  const bcaDestination = extractBcaDestination(lines);
+  const recipientName = bcaDestination.name ?? extractLabelledName(lines, recipientLabels);
   const senderAccount = extractPartyAccount(lines, ["no rekening pengirim", "rekening pengirim", "nomor rekening pengirim", "account sender", "a/n pengirim"], senderLabels, recipientLabels);
-  const recipientAccount = extractPartyAccount(lines, ["no rekening penerima", "rekening penerima", "nomor rekening penerima", "account recipient", "a/n penerima"], recipientLabels, senderLabels);
-  const sourceBankName = extractLabelledValue(lines, ["bank pengirim", "bank asal", "dari bank", "source bank"], (value) => Boolean(detectBank(value))) ?? detectPartyBank(lines, senderLabels, recipientLabels) ?? detectBank(senderName ?? "") ?? null;
-  const destinationBankName = extractLabelledValue(lines, ["bank penerima", "bank tujuan", "tujuan bank", "destination bank"], (value) => Boolean(detectBank(value))) ?? detectPartyBank(lines, recipientLabels, senderLabels) ?? detectBank(recipientName ?? "") ?? null;
-  const referenceNumber = extractLabelledValue(lines, ["id transaksi", "id trx", "nomor referensi", "no referensi", "ref", "reference", "kode transaksi"], (value) => /^[A-Za-z0-9._/\- ]{4,80}$/.test(value)) ?? null;
+  const recipientAccount = bcaDestination.account.display ? bcaDestination.account : extractPartyAccount(lines, ["no rekening penerima", "rekening penerima", "nomor rekening penerima", "account recipient", "a/n penerima"], recipientLabels, senderLabels);
+  const sourceBankName = detectSourceBank(lines, senderName) ?? detectPartyBank(lines, senderLabels, recipientLabels) ?? null;
+  const destinationBankName = bcaDestination.bank ?? extractLabelledValue(lines, ["bank penerima", "bank tujuan", "tujuan bank", "destination bank"], (value) => Boolean(detectBank(value))) ?? detectPartyBank(lines, recipientLabels, senderLabels) ?? detectBank(recipientName ?? "") ?? null;
+  const referenceNumber = extractReferenceNumber(lines);
+  const transactionPurpose = extractTransactionPurpose(lines);
+  const sequenceNumber = extractSequenceNumber(lines);
   const transferStatus = parseTransferStatus(text);
   const transferMethodLabel = parseTransferMethod(lines);
   const adminFee = parseAdminFee(lines);
@@ -279,8 +336,8 @@ export function parseReceiptOcrText(text: string): ReceiptOcrFallback {
   const suggestedNote = merchantName
     ? `${isQris ? "Pembayaran QRIS" : "Pembayaran"} kepada ${merchantName}${category !== "Lainnya" ? ` · kategori saran ${category}` : ""}`
     : kind === "transfer" && recipientName
-      ? `Transfer${transferStatus === "succeeded" ? " berhasil" : ""} kepada ${recipientName}${referenceNumber ? ` · referensi ${referenceNumber}` : ""}; periksa hasil sebelum menyimpan.`
-      : `Bukti dibaca melalui OCR online${referenceNumber ? ` · referensi ${referenceNumber}` : ""}; periksa hasil sebelum menyimpan.`;
+      ? `Transfer${transferStatus === "succeeded" ? " berhasil" : ""} kepada ${recipientName}${transactionPurpose ? ` · ${transactionPurpose}` : ""}; periksa hasil sebelum menyimpan.`
+      : "Bukti dibaca melalui OCR online; periksa hasil sebelum menyimpan.";
   const { transactionDate, transactionTime } = detectDateTime(lines);
   const evidence: TransactionEvidence = {
     paymentMethod: isQris ? "qris" : sourceBankName || destinationBankName || senderAccount.display || recipientAccount.display || transferStatus !== "unknown" ? "bank_transfer" : "unknown",
@@ -295,13 +352,15 @@ export function parseReceiptOcrText(text: string): ReceiptOcrFallback {
     senderAccountDisplay: senderAccount.display ?? undefined,
     recipientAccountDisplay: recipientAccount.display ?? undefined,
     referenceNumber: referenceNumber ?? undefined,
+    transactionPurpose: transactionPurpose ?? undefined,
+    sequenceNumber: sequenceNumber ?? undefined,
     merchantName: merchantName ?? undefined,
     adminFeeAmount: kind === "transfer" ? adminFee.amount ?? undefined : undefined,
     adminFeeWaived: kind === "transfer" && adminFee.waived ? true : undefined,
     totalAmount: totalAmount ?? undefined,
     classificationBasis: "ocr_text",
   };
-  const evidenceCount = [amount, senderName, recipientName, senderAccount.display, recipientAccount.display, referenceNumber, transactionDate, transactionTime, transferStatus !== "unknown"].filter(Boolean).length;
+  const evidenceCount = [amount, senderName, recipientName, senderAccount.display, recipientAccount.display, referenceNumber, transactionPurpose, transactionDate, transactionTime, transferStatus !== "unknown"].filter(Boolean).length;
   return {
     kind,
     amount,

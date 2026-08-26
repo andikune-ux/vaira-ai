@@ -65,6 +65,10 @@ export type TransactionEvidence = {
   senderAccountDisplay?: string;
   recipientAccountDisplay?: string;
   referenceNumber?: string;
+  /** Tujuan yang tercetak pada bukti, misalnya Pemindahan Dana. */
+  transactionPurpose?: string;
+  /** Nomor urut bukti, terpisah dari referensi transaksi. */
+  sequenceNumber?: string;
   merchantName?: string;
   /** Biaya admin yang dibaca dari bukti. Nilai 0 dapat berarti tertulis Gratis. */
   adminFeeAmount?: number;

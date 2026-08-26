@@ -30,6 +30,8 @@ export function normalizeTransactionEvidence(value: unknown): TransactionEvidenc
     senderAccountDisplay: accountDisplay(raw.senderAccountDisplay ?? raw.senderAccountNumber),
     recipientAccountDisplay: accountDisplay(raw.recipientAccountDisplay ?? raw.recipientAccountNumber),
     referenceNumber: text(raw.referenceNumber, 80),
+    transactionPurpose: text(raw.transactionPurpose, 120),
+    sequenceNumber: text(raw.sequenceNumber, 40),
     merchantName: text(raw.merchantName),
     adminFeeAmount: money(raw.adminFeeAmount),
     adminFeeWaived: raw.adminFeeWaived === true ? true : undefined,

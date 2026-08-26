@@ -112,6 +112,8 @@ export default function ConfirmTransactionScreen() {
           {evidence.senderAccountDisplay || evidence.senderAccountNumber ? <><Divider color={colors.border} /><SummaryRow label="Rekening pengirim" value={evidence.senderAccountNumber ?? evidence.senderAccountDisplay ?? "—"} /></> : null}
           {evidence.recipientAccountDisplay || evidence.recipientAccountNumber ? <><Divider color={colors.border} /><SummaryRow label="Rekening penerima" value={evidence.recipientAccountNumber ?? evidence.recipientAccountDisplay ?? "—"} /></> : null}
           {evidence.referenceNumber ? <><Divider color={colors.border} /><SummaryRow label="ID / referensi" value={evidence.referenceNumber} /></> : null}
+          {evidence.transactionPurpose ? <><Divider color={colors.border} /><SummaryRow label="Tujuan transaksi" value={evidence.transactionPurpose} /></> : null}
+          {evidence.sequenceNumber ? <><Divider color={colors.border} /><SummaryRow label="Nomor urut" value={evidence.sequenceNumber} /></> : null}
           <Divider color={colors.border} /><SummaryRow label="Waktu" value={formatDateTime(occurredAt)} />
           <Divider color={colors.border} /><SummaryRow label="Keterangan" value={params.note || "—"} />
         </AiraCard>

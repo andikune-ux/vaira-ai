@@ -46,9 +46,12 @@ describe("Pindai Bukti Hutang dan Piutang", () => {
   const scan = fs.readFileSync("app/scan-receipt.tsx", "utf8");
   const confirm = fs.readFileSync("app/confirm-transaction.tsx", "utf8");
 
-  it("menyediakan empat pilihan eksplisit dan meneruskannya ke konfirmasi", () => {
+  it("menyediakan pilihan eksplisit sesuai jenis transaksi dan meneruskannya ke konfirmasi", () => {
     expect(COMMITMENT_FLOW_OPTIONS.map((item) => item.label)).toEqual(["Hutang diterima", "Bayar hutang", "Piutang diberikan", "Terima piutang"]);
-    expect(scan).toContain("COMMITMENT_FLOW_OPTIONS.map");
+    expect(COMMITMENT_FLOW_OPTIONS.filter((item) => item.kind === "income").map((item) => item.label)).toEqual(["Hutang diterima", "Terima piutang"]);
+    expect(COMMITMENT_FLOW_OPTIONS.filter((item) => item.kind === "expense").map((item) => item.label)).toEqual(["Bayar hutang", "Piutang diberikan"]);
+    expect(scan).toContain("visibleCommitmentOptions");
+    expect(scan).toContain('kind === "transfer" ? []');
     expect(scan).toContain("commitmentFlow: commitmentFlow ??");
     expect(scan).toContain("commitmentId");
   });

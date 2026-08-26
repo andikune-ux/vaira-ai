@@ -112,6 +112,51 @@ describe("fallback OCR online Pindai Bukti", () => {
     expect(incomplete.evidence.destinationBankName).toBeUndefined();
   });
 
+  it("membaca bukti m-Transfer BCA dengan tujuan rekening, biaya, tujuan transaksi, serta referensi yang terpecah baris", () => {
+    const parsed = parseReceiptOcrText([
+      "m-Transfer:",
+      "BERHASIL",
+      "19/07/2026 10:16:23",
+      "Ke Rekening Tujuan",
+      "BANK SINARMAS",
+      "0019605237",
+      "ANDIK",
+      "NOMINAL TRANSFER Rp 250,000.00",
+      "BIAYA Rp 2,500.00",
+      "LAYANAN BI FAST",
+      "TUJUAN TRANSAKSI Pemindahan",
+      "Dana",
+      "Ref 9503120260719101622787817923",
+      "D450962",
+      "No Urut 113713",
+      "Biaya Termasuk PPN (Bila ada)",
+      "PT. BANK CENTRAL ASIA TBK.",
+      "MENARA BCA - JAKARTA PUSAT",
+    ].join("\n"));
+
+    expect(parsed.kind).toBe("transfer");
+    expect(parsed.amount).toBe(250000);
+    expect(parsed.transactionDate).toBe("19-07-2026");
+    expect(parsed.transactionTime).toBe("10:16");
+    expect(parsed.senderName).toBeNull();
+    expect(parsed.recipientName).toBe("ANDIK");
+    expect(parsed.evidence).toMatchObject({
+      paymentMethod: "bank_transfer",
+      transferStatus: "succeeded",
+      transferMethodLabel: "BI Fast",
+      sourceBankName: "BCA",
+      destinationBankName: "SINARMAS",
+      recipientAccountNumber: "0019605237",
+      recipientAccountDisplay: "0019605237",
+      adminFeeAmount: 2500,
+      transactionPurpose: "Pemindahan Dana",
+      sequenceNumber: "113713",
+      referenceNumber: "9503120260719101622787817923D450962",
+    });
+    expect(parsed.note).toContain("Pemindahan Dana");
+    expect(parsed.note).not.toContain("9503120260719101622787817923D450962");
+  });
+
   it("tetap membiarkan metadata sensitif kosong bila label tidak terlihat pada teks OCR", () => {
     const parsed = parseReceiptOcrText("Pembayaran Rp 50.000\nTerima kasih");
     expect(parsed.evidence.senderAccountNumber).toBeUndefined();
