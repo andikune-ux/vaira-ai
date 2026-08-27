@@ -26,7 +26,7 @@ describe("sinkronisasi bukti transaksi per akun", () => {
 
   it("menghapus URI file lokal dari payload remote yang tidak dapat dipulihkan", () => {
     const router = read("server/routers.ts");
-    expect(router).toContain('uri.startsWith("file:") || uri.startsWith("blob:")');
+    expect(router).toContain('/^(?:file|blob|content|ph|data):/i.test(uri)');
     expect(router).toContain("storageGetSignedUrl(key)");
   });
 });

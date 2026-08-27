@@ -396,7 +396,7 @@ export const appRouter = router({
         const parsed = JSON.parse(snapshot.payload) as { transactions?: Array<{ proofUri?: string }>; profile?: { userAvatarUri?: string; featuredPhotoUris?: string[] }; generatedResults?: Array<{ uri?: string; storageKey?: string; [key: string]: unknown }> };
         const transactions = await Promise.all((parsed.transactions ?? []).map(async (transaction) => {
           const uri = transaction.proofUri;
-          if (!uri || uri.startsWith("file:") || uri.startsWith("blob:")) return { ...transaction, proofUri: undefined };
+          if (!uri || /^(?:file|blob|content|ph|data):/i.test(uri)) return { ...transaction, proofUri: undefined };
           try {
             const key = uri.startsWith("http") ? new URL(uri).searchParams.get("path") ?? new URL(uri).searchParams.get("key") : uri;
             return key ? { ...transaction, proofUri: await storageGetSignedUrl(key) } : transaction;

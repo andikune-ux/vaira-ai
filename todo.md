@@ -3678,3 +3678,8 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Validasi satu per satu aset logo lokal dan catat hanya berkas yang rusak atau hilang.
 - [x] Ganti hanya aset logo bermasalah dengan salinan permanen; pertahankan semua logo valid tanpa perubahan.
 - [x] Jalankan typecheck, tes katalog, dan pemeriksaan visual setelah penggantian selektif.
+
+- [x] Audit mengapa foto bukti transaksi hasil pindai tidak tampil pada riwayat/detail mutasi.
+- [x] Pastikan storageKey bukti transaksi tersimpan dan signed URL dipulihkan tanpa kehilangan foto.
+- [x] Pulihkan preview foto bukti pada daftar riwayat dan detail/edit transaksi.
+- [x] Tambahkan fallback untuk URL lama/local URI dan regresi pemulihan bukti transaksi.

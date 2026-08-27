@@ -1,6 +1,7 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
 import * as FileSystem from "expo-file-system/legacy";
+import * as MediaLibrary from "expo-media-library";
 import { useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
@@ -52,11 +53,37 @@ export default function ConfirmTransactionScreen() {
     let proofUri = params.proofUri;
     try {
       const manualSession = await Auth.getManualSessionToken();
-      if (proofUri?.startsWith("file:") && manualSession) {
-        const base64 = await FileSystem.readAsStringAsync(proofUri, { encoding: FileSystem.EncodingType.Base64 });
-        const mimeType = /\.png$/i.test(proofUri) ? "image/png" : /\.webp$/i.test(proofUri) ? "image/webp" : "image/jpeg";
-        const uploaded = await uploadProof.mutateAsync({ file: `data:${mimeType};base64,${base64}`, mimeType });
+      if (proofUri && manualSession && /^(?:file|content|ph|data):/i.test(proofUri)) {
+        let sourceUri = proofUri;
+        if (/^ph:/i.test(sourceUri)) {
+          const assetId = sourceUri.replace(/^ph:\/\//i, "");
+          const assetInfo = await MediaLibrary.getAssetInfoAsync(assetId);
+          sourceUri = assetInfo.localUri ?? assetInfo.uri ?? sourceUri;
+        }
+        let mimeType = /\.png(?:\?|$)/i.test(sourceUri) ? "image/png" : /\.webp(?:\?|$)/i.test(sourceUri) ? "image/webp" : "image/jpeg";
+        let dataUri = sourceUri;
+        if (!/^data:image\/(?:jpeg|jpg|png|webp);base64,/i.test(sourceUri)) {
+          const cacheBase = FileSystem.cacheDirectory ?? FileSystem.documentDirectory;
+          const cachedUri = cacheBase ? `${cacheBase}vaira-proof-${Date.now()}.jpg` : sourceUri;
+          if (/^content:/i.test(sourceUri) && cachedUri !== sourceUri) {
+            await FileSystem.copyAsync({ from: sourceUri, to: cachedUri });
+            sourceUri = cachedUri;
+          }
+          const base64 = await FileSystem.readAsStringAsync(sourceUri, { encoding: FileSystem.EncodingType.Base64 });
+          dataUri = `data:${mimeType};base64,${base64}`;
+        } else {
+          const match = sourceUri.match(/^data:(image\/(?:jpeg|jpg|png|webp));base64,/i);
+          mimeType = match?.[1]?.toLowerCase() === "image/jpg" ? "image/jpeg" : match?.[1]?.toLowerCase() ?? mimeType;
+        }
+        const uploaded = await uploadProof.mutateAsync({ file: dataUri, mimeType });
         proofUri = uploaded.storageKey;
+      } else if (proofUri && /^https?:/i.test(proofUri)) {
+        try {
+          const parsed = new URL(proofUri);
+          proofUri = parsed.searchParams.get("path") ?? parsed.searchParams.get("key") ?? proofUri;
+        } catch {
+          // Biarkan referensi lama diteruskan; server tetap memiliki fallback hydration.
+        }
       }
     } catch {
       setSaving(false);

@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
+import * as MediaLibrary from "expo-media-library";
 import * as Auth from "@/lib/_core/auth";
 import { trpc } from "@/lib/trpc";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type PropsWithChildren } from "react";
@@ -175,8 +176,15 @@ export function FinanceProvider({ children }: PropsWithChildren) {
       const remoteTime = new Date(remote.lastUpdatedAt ?? financePull.data.updatedAt).getTime();
       const localTime = new Date(state.lastUpdatedAt ?? 0).getTime();
       if (remoteTime < localTime && state.transactions.length + state.wallets.length > 0) return;
-      setState(remote);
-      void AsyncStorage.setItem(storageKeyFor(storageScope), JSON.stringify(remote));
+      const mergedRemote = {
+        ...remote,
+        transactions: remote.transactions.map((transaction) => {
+          const local = state.transactions.find((item) => item.id === transaction.id);
+          return transaction.proofUri || !local?.proofUri ? transaction : { ...transaction, proofUri: local.proofUri };
+        }),
+      };
+      setState(mergedRemote);
+      void AsyncStorage.setItem(storageKeyFor(storageScope), JSON.stringify(mergedRemote));
     } catch {
       // Snapshot rusak tidak boleh menghapus data lokal.
     }
@@ -202,7 +210,7 @@ export function FinanceProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     if (!isHydrated || storageScope === "guest" || financePull.isFetching || financePull.data === undefined || proofMigrationScopes.current.has(storageScope)) return;
-    const localProofs = state.transactions.filter((transaction) => transaction.proofUri?.startsWith("file:") || transaction.proofUri?.startsWith("content:"));
+    const localProofs = state.transactions.filter((transaction) => Boolean(transaction.proofUri && /^(?:file|content|ph|data):/i.test(transaction.proofUri)));
     if (!localProofs.length) {
       proofMigrationScopes.current.add(storageScope);
       return;
@@ -212,9 +220,23 @@ export function FinanceProvider({ children }: PropsWithChildren) {
     void Promise.all(localProofs.map(async (transaction) => {
       if (!transaction.proofUri) return null;
       try {
-        const base64 = await FileSystem.readAsStringAsync(transaction.proofUri, { encoding: FileSystem.EncodingType.Base64 });
-        const mimeType = /\\.png$/i.test(transaction.proofUri) ? "image/png" : /\\.webp$/i.test(transaction.proofUri) ? "image/webp" : "image/jpeg";
-        const uploaded = await proofUpload.mutateAsync({ file: `data:${mimeType};base64,${base64}`, mimeType });
+        let sourceUri = transaction.proofUri;
+        if (/^ph:/i.test(sourceUri)) {
+          const assetId = sourceUri.replace(/^ph:\/\//i, "");
+          const assetInfo = await MediaLibrary.getAssetInfoAsync(assetId);
+          sourceUri = assetInfo.localUri ?? assetInfo.uri ?? sourceUri;
+        }
+        const mimeType = /\\.png(?:\\?|$)/i.test(sourceUri) ? "image/png" : /\\.webp(?:\\?|$)/i.test(sourceUri) ? "image/webp" : "image/jpeg";
+        let readableUri = sourceUri;
+        if (/^content:/i.test(readableUri) && FileSystem.cacheDirectory) {
+          const cachedUri = `${FileSystem.cacheDirectory}vaira-proof-migration-${transaction.id}.jpg`;
+          await FileSystem.copyAsync({ from: readableUri, to: cachedUri });
+          readableUri = cachedUri;
+        }
+        const dataUri = /^data:image\/(?:jpeg|jpg|png|webp);base64,/i.test(readableUri)
+          ? readableUri
+          : `data:${mimeType};base64,${await FileSystem.readAsStringAsync(readableUri, { encoding: FileSystem.EncodingType.Base64 })}`;
+        const uploaded = await proofUpload.mutateAsync({ file: dataUri, mimeType });
         return { id: transaction.id, proofUri: uploaded.storageKey };
       } catch {
         return null;
