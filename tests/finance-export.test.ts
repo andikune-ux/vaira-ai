@@ -20,6 +20,18 @@ describe("ekspor keuangan", () => {
     expect(report).toContain("transactions: report.transactions");
     expect(report).toContain("periodLabel");
   });
+
+  it("menyelaraskan PDF dan Excel dengan field form transaksi terbaru", () => {
+    const exporter = read("lib/finance/report-export.ts");
+    ["Metode Pembayaran", "Status Transfer", "Bank Pengirim", "Bank Penerima", "Nama Pengirim", "Nama Penerima", "Rekening Pengirim", "Rekening Penerima", "Referensi", "Tujuan Transaksi", "Nomor Urut", "transactionColumnWidths", "A1:U"].forEach((field) => expect(exporter).toContain(field));
+  });
+
+  it("tidak merender nama pengirim dan keterangan tambahan sebagai input terpisah di Pindai Bukti", () => {
+    const scan = read("app/scan-receipt.tsx");
+    expect(scan).not.toContain("Nama pengirim (opsional)");
+    expect(scan).not.toContain("Keterangan tambahan (opsional)");
+    expect(scan).not.toContain("Tambah nama atau keterangan lain");
+  });
 });
 
 describe("wallet picker and target chicken icon", () => {

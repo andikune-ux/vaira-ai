@@ -12,7 +12,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { TransactionEvidenceFields } from "@/components/transaction-evidence-fields";
 import { useColors } from "@/hooks/use-colors";
 import { COMMITMENT_FLOW_OPTIONS, commitmentFlowDetails, isCommitmentTransactionFlow, isNewCommitmentFlow, isSettlementCommitmentFlow } from "@/lib/finance/commitment-sync";
-import { getReceiptCounterpartyLabel, getReceiptCounterpartyRole, normalizeReceiptCounterpartyName } from "@/lib/finance/receipt-counterparty";
+import { getReceiptCounterpartyRole, normalizeReceiptCounterpartyName } from "@/lib/finance/receipt-counterparty";
 import { formatReceiptDate, formatReceiptTime, isReceiptDateTimeInputValid, normalizeReceiptDateInput, normalizeReceiptTimeInput, receiptDateTimeToIso } from "@/lib/finance/receipt-date-time";
 import { classifyReceiptWithWallets } from "@/lib/finance/receipt-wallet-match";
 import { serializeTransactionEvidence } from "@/lib/finance/transaction-evidence";
@@ -56,7 +56,6 @@ export default function ScanReceiptScreen() {
   const [transactionDate, setTransactionDate] = useState(() => formatReceiptDate());
   const [transactionTime, setTransactionTime] = useState(() => formatReceiptTime());
   const [timeDetected, setTimeDetected] = useState(false);
-  const [showOptionalDetails, setShowOptionalDetails] = useState(false);
   const [isPicking, setIsPicking] = useState(false);
   const receiptOcr = trpc.ai.analyzeReceiptOcr.useMutation();
   const sourceWalletId = walletId || state.wallets[0]?.id || "";
@@ -104,7 +103,6 @@ export default function ScanReceiptScreen() {
     setTransactionDate(formatReceiptDate());
     setTransactionTime(formatReceiptTime());
     setTimeDetected(false);
-    setShowOptionalDetails(false);
     setKind("expense");
     setCommitmentFlow(null);
     setCommitmentId("");
@@ -244,7 +242,8 @@ export default function ScanReceiptScreen() {
       Alert.alert("Pilih daftar terkait", "Pilih hutang atau piutang yang ingin dibayar agar sisa nominalnya dapat diperbarui dengan tepat.");
       return;
     }
-    const normalizedCounterpartyName = normalizeReceiptCounterpartyName(counterpartyName);
+    const evidenceCounterpartyName = kind === "income" ? evidence.senderAccountName : evidence.recipientAccountName;
+    const normalizedCounterpartyName = normalizeReceiptCounterpartyName(evidenceCounterpartyName || counterpartyName);
     router.push({
       pathname: "/confirm-transaction",
       params: {
@@ -316,12 +315,6 @@ export default function ScanReceiptScreen() {
         </View>
         <Text style={[styles.hint, { color: colors.muted }]}>{timeDetected ? "Tanggal atau jam yang terbaca dari bukti sudah diisikan. Lengkapi atau perbaiki sendiri sebelum menyimpan." : "Tanggal atau jam tidak terbaca; nominal tetap dapat diproses. Nilai sementara memakai waktu saat ini dan dapat Anda ubah."}</Text>
         <TransactionEvidenceFields value={evidence} onChange={setEvidence} />
-        {showOptionalDetails ? <><Text style={[styles.fieldLabel, { color: colors.foreground }]}>{getReceiptCounterpartyLabel(kind)} (opsional)</Text>
-          <TextInput value={counterpartyName} onChangeText={setCounterpartyName} placeholder={kind === "income" ? "Contoh: Andi" : "Contoh: Toko atau penerima transfer"} placeholderTextColor={colors.muted} style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.surface }]} />
-          <Text style={[styles.hint, { color: colors.muted }]}>Gunakan bila nama pihak tidak tersedia atau perlu diganti dari hasil OCR.</Text>
-          <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Keterangan tambahan (opsional)</Text>
-          <TextInput value={note} onChangeText={setNote} placeholder="Catatan tambahan" placeholderTextColor={colors.muted} style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.surface }]} />
-          <Pressable onPress={() => setShowOptionalDetails(false)} style={({ pressed }) => [styles.optionalToggle, { borderColor: colors.border, backgroundColor: colors.surface }, pressed && styles.pressed]}><MaterialIcons name="expand-less" size={18} color={colors.muted} /><Text style={[styles.optionalToggleText, { color: colors.foreground }]}>Sembunyikan detail tambahan</Text></Pressable></> : <Pressable onPress={() => setShowOptionalDetails(true)} style={({ pressed }) => [styles.optionalToggle, { borderColor: colors.border, backgroundColor: colors.surface }, pressed && styles.pressed]}><MaterialIcons name="add-circle-outline" size={18} color={colors.primary} /><Text style={[styles.optionalToggleText, { color: colors.foreground }]}>Tambah nama atau keterangan lain</Text></Pressable>}
         <PrimaryButton label="Tinjau transaksi" icon="fact-check" onPress={continueDraft} />
       </> : null}
     </ScrollView>

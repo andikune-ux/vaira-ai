@@ -38,13 +38,13 @@ describe("alur metadata bukti transaksi", () => {
     expect(fields).toContain("ID transaksi / nomor referensi");
   });
 
-  it("menjaga hasil OCR ringkas dan menyembunyikan field tambahan sampai pengguna memintanya", () => {
+  it("menjaga hasil OCR ringkas tanpa field tambahan yang duplikat", () => {
     expect(fields).toContain('const [expanded, setExpanded] = useState(false)');
     expect(fields).not.toContain("useEffect");
     expect(fields).toContain("Field kosong tidak wajib diisi.");
-    expect(scan).toContain("showOptionalDetails");
-    expect(scan).toContain("Tambah nama atau keterangan lain");
-    expect(scan).toContain("Keterangan tambahan (opsional)");
+    expect(scan).not.toContain("showOptionalDetails");
+    expect(scan).not.toContain("Tambah nama atau keterangan lain");
+    expect(scan).not.toContain("Keterangan tambahan (opsional)");
   });
 
   it("menyaring hubungan Hutang/Piutang mengikuti jenis transaksi", () => {

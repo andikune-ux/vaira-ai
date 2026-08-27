@@ -3637,3 +3637,7 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Bedakan transfer internal dari pemasukan eksternal berdasarkan identitas rekening asal dan tujuan.
 - [x] Pastikan nama penerima tidak masuk ke field nama pengirim, kecuali transfer internal yang memang dipilih pengguna.
 - [x] Tambahkan regresi pemasukan eksternal dan validasi saldo tanpa checkpoint otomatis.
+- [x] Audit input duplikat nama rekening pengirim, nama pengirim opsional, keterangan transaksi, dan keterangan tambahan.
+- [x] Hapus nama pengirim opsional dan keterangan tambahan dari Pindai Bukti karena sudah terwakili di rincian utama.
+- [x] Selaraskan ekspor PDF dan Excel dengan field form transaksi terbaru, termasuk metadata bukti yang tersedia.
+- [x] Tambahkan regresi form serta ekspor dan validasi tanpa checkpoint otomatis.
