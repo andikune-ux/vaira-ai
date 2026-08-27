@@ -117,7 +117,9 @@
   },
   "expo": {
     "install": {
-      "exclude": ["react-native-webview"]
+      "exclude": [
+        "react-native-webview"
+      ]
     }
   },
   "packageManager": "pnpm@9.12.0"

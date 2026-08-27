@@ -62,7 +62,7 @@ type FinanceContextValue = {
   removeQueuedGeneration: (id: string) => Promise<void>;
   toggleCommitment: (id: string) => Promise<void>;
   updateProfile: (patch: Partial<FinanceState["profile"]>) => Promise<void>;
-  replaceAllData: (nextState: FinanceState) => Promise<void>;
+  replaceAllData: (nextState: FinanceState) => Promise<{ migratedProofCount: number; unavailableProofCount: number }>;
   clearLocalData: () => Promise<void>;
   refreshStorageScope: () => Promise<FinanceState>;
 };
@@ -209,7 +209,7 @@ export function FinanceProvider({ children }: PropsWithChildren) {
   }, [financePush, storageScope]);
 
   useEffect(() => {
-    if (!isHydrated || storageScope === "guest" || financePull.isFetching || financePull.data === undefined || proofMigrationScopes.current.has(storageScope)) return;
+    if (!isHydrated || storageScope === "guest" || financePull.isFetching || financePull.data === undefined || !appliedRemoteScopes.current.has(storageScope) || proofMigrationScopes.current.has(storageScope)) return;
     const localProofs = state.transactions.filter((transaction) => Boolean(transaction.proofUri && /^(?:file|content|ph|data):/i.test(transaction.proofUri)));
     if (!localProofs.length) {
       proofMigrationScopes.current.add(storageScope);
@@ -520,10 +520,41 @@ export function FinanceProvider({ children }: PropsWithChildren) {
   );
 
   const replaceAllData = useCallback(async (nextState: FinanceState) => {
-    const normalized = normalizeState(nextState);
+    let normalized = normalizeState(nextState);
+    let migratedProofCount = 0;
+    let unavailableProofCount = 0;
+    if (storageScope !== "guest") {
+      const localProofTransactions = normalized.transactions.filter((transaction) => Boolean(transaction.proofUri && /^(?:file|content|ph|data):/i.test(transaction.proofUri)));
+      const updates = await Promise.all(localProofTransactions.map(async (transaction) => {
+        try {
+          const proofReference = transaction.proofUri;
+          if (!proofReference) return null;
+          let sourceUri = proofReference;
+          if (/^ph:/i.test(sourceUri)) {
+            const assetInfo = await MediaLibrary.getAssetInfoAsync(sourceUri.replace(/^ph:\/\//i, ""));
+            sourceUri = assetInfo.localUri ?? assetInfo.uri ?? sourceUri;
+          }
+          if (/^content:/i.test(sourceUri) && FileSystem.cacheDirectory) {
+            const cachedUri = `${FileSystem.cacheDirectory}vaira-offline-restore-${transaction.id}.jpg`;
+            await FileSystem.copyAsync({ from: sourceUri, to: cachedUri });
+            sourceUri = cachedUri;
+          }
+          const mimeType = /\.png(?:\?|$)/i.test(sourceUri) ? "image/png" : /\.webp(?:\?|$)/i.test(sourceUri) ? "image/webp" : "image/jpeg";
+          const dataUri = /^data:image\/(?:jpeg|jpg|png|webp);base64,/i.test(sourceUri) ? sourceUri : `data:${mimeType};base64,${await FileSystem.readAsStringAsync(sourceUri, { encoding: FileSystem.EncodingType.Base64 })}`;
+          const uploaded = await proofUpload.mutateAsync({ file: dataUri, mimeType });
+          return { id: transaction.id, proofUri: uploaded.storageKey };
+        } catch { return null; }
+      }));
+      const valid = updates.filter((item): item is { id: string; proofUri: string } => Boolean(item));
+      migratedProofCount = valid.length;
+      unavailableProofCount = updates.filter((item) => item === null).length;
+      if (valid.length) normalized = { ...normalized, transactions: normalized.transactions.map((transaction) => valid.find((item) => item.id === transaction.id) ? { ...transaction, proofUri: valid.find((item) => item.id === transaction.id)?.proofUri } : transaction) };
+    }
     setState(normalized);
     await AsyncStorage.setItem(storageKeyFor(storageScope), JSON.stringify(normalized));
-  }, [storageScope]);
+    if (storageScope !== "guest" && migratedProofCount > 0) void financePush.mutateAsync({ payload: JSON.stringify(normalized) }).catch(() => undefined);
+    return { migratedProofCount, unavailableProofCount };
+  }, [financePush, proofUpload, storageScope]);
 
   const clearLocalData = useCallback(async () => {
     setState(EMPTY_FINANCE_STATE);

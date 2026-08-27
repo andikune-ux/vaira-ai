@@ -40,14 +40,16 @@ describe("AiraXCloud dan AiraXBackup", () => {
     expect(cloudPage).toContain("Arsip tidak dihapus otomatis");
   });
 
-  it("memulihkan AiraXCloud setelah login dan mempertahankan snapshot global hanya untuk guest", () => {
+  it("memulihkan AiraXCloud setelah login dan menjaga sinkronisasi global tetap dinonaktifkan", () => {
     const login = read("app/login.tsx");
     const globalSync = read("components/global-test-sync.tsx");
     expect(login).toContain("cloudRestore.refetch()");
-    expect(login).toContain("replaceAllData({ ...cloudState, profile: { ...cloudState.profile, ...accountProfile, mode: \"account\" as const } } as FinanceState)");
+    expect(login).toContain("effectiveState = { ...cloudState");
+    expect(login).toContain("await replaceAllData(effectiveState)");
     expect(login).toContain("const localState = await refreshStorageScope");
     expect(login).toContain("featuredPhotoUris: result.account.featuredPhotoUris");
-    expect(globalSync).toContain('state.profile.mode === "guest"');
+    expect(globalSync).toContain("Sinkronisasi snapshot lintas pengguna");
+    expect(globalSync).toContain("sengaja dinonaktifkan");
   });
 
   it("menyediakan folder AiraXBackup, pencarian otomatis, dan pemulihan berkas untuk guest", () => {
@@ -58,6 +60,26 @@ describe("AiraXCloud dan AiraXBackup", () => {
     expect(backup).toContain("restoreLatestLocalBackup");
     expect(screen).toContain("Mode Guest juga dapat memulihkan berkas");
     expect(screen).toContain("Pilih berkas cadangan sendiri");
+  });
+
+  it("membundel bukti transaksi ke arsip offline v3 dan memulihkannya hanya pada akun pemilik", () => {
+    const backup = read("lib/local-backup.ts");
+    const screen = read("app/local-backup.tsx");
+    const router = read("server/routers.ts");
+    expect(backup).toContain('backupFormat: "V A I R A  A I Backup/v3"');
+    expect(backup).toContain("transactionProofs");
+    expect(backup).toContain("MAX_EMBEDDED_PROOF_BYTES");
+    expect(backup).toContain("MAX_OFFLINE_BACKUP_BYTES = 200 * 1024 * 1024");
+    expect(backup).toContain("compressProofForBackup");
+    expect(backup).toContain("BACKUP_RECEIPT_MIN_LONG_EDGE = 2_048");
+    expect(backup).toContain("longEdge > targetLongEdge");
+    expect(backup).toContain("compress: 0.86");
+    expect(backup).not.toContain("crop:");
+    expect(backup).toContain("backupOwnerAccountId");
+    expect(screen).toContain("Akun tidak sesuai");
+    expect(screen).toContain("foto bukti akan dipulihkan");
+    expect(router).toContain("getProofReadUrl");
+    expect(router).toContain("finance-proofs/${account.id}/");
   });
 
   it("menampilkan tahap progres dan hasil proses untuk cadangan maupun pemulihan", () => {

@@ -14,13 +14,19 @@ export default function FactoryResetScreen() {
   const colors = useColors();
   const { state, clearLocalData } = useFinance();
   const cloudPush = trpc.airaxCloud.create.useMutation();
+  const manualAccount = trpc.manualAccount.me.useQuery(undefined, { retry: false, staleTime: 0 });
+  const trpcUtils = trpc.useUtils();
   const [source, setSource] = useState<"file" | "cloud">("file");
   const [isWorking, setIsWorking] = useState(false);
   const backupThenReset = async () => {
     if (source === "cloud" && state.profile.mode !== "account") { Alert.alert("Masuk diperlukan", "Pilih cadangan berkas lokal atau masuk dengan akun untuk mencadangkan ke AiraXCloud.", [{ text: "Batal", style: "cancel" }, { text: "Masuk", onPress: () => router.push("/login") }]); return; }
     setIsWorking(true);
     try {
-      if (source === "file") await createLocalBackup(state);
+      if (source === "file") {
+        const account = manualAccount.data ?? (await manualAccount.refetch()).data;
+        if (state.profile.mode === "account" && !account) throw new Error("Sesi akun diperlukan agar foto bukti dapat dimasukkan ke AiraXBackup.");
+        await createLocalBackup(state, { backupOwnerAccountId: account?.id, resolveProofUrl: async (proofReference) => (await trpcUtils.manualAccount.finance.getProofReadUrl.fetch({ proofReference })).url });
+      }
       else await cloudPush.mutateAsync({ payload: JSON.stringify(state) });
       Alert.alert("Konfirmasi terakhir", "Cadangan telah dibuat. Reset factory akan menghapus seluruh data lokal pada akun/scope ini dan tidak dapat dibatalkan.", [{ text: "Batal", style: "cancel" }, { text: "Hapus total", style: "destructive", onPress: () => { void (async () => { await clearLocalData(); Alert.alert("Reset selesai", "Data lokal telah dihapus.", [{ text: "Kembali", onPress: () => router.replace("/(tabs)") }]); })(); } }]);
     } catch { Alert.alert("Cadangan gagal", "Data tidak dihapus karena cadangan pilihan Anda belum berhasil dibuat."); } finally { setIsWorking(false); }

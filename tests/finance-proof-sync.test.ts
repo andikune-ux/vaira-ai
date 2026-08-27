@@ -29,4 +29,13 @@ describe("sinkronisasi bukti transaksi per akun", () => {
     expect(router).toContain('/^(?:file|blob|content|ph|data):/i.test(uri)');
     expect(router).toContain("storageGetSignedUrl(key)");
   });
+
+  it("memulihkan referensi bukti lama dari AiraXCloud sebelum migrasi upload", () => {
+    const router = read("server/routers.ts");
+    const finance = read("lib/finance/finance-context.tsx");
+    expect(router).toContain("legacyProofByTransactionId");
+    expect(router).toContain("db.getLatestAiraXCloudBackup(account.id)");
+    expect(finance).toContain("appliedRemoteScopes.current.has(storageScope)");
+    expect(finance).toContain('/^(?:file|content|ph|data):/i.test(transaction.proofUri)');
+  });
 });

@@ -3683,3 +3683,19 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Pastikan storageKey bukti transaksi tersimpan dan signed URL dipulihkan tanpa kehilangan foto.
 - [x] Pulihkan preview foto bukti pada daftar riwayat dan detail/edit transaksi.
 - [x] Tambahkan fallback untuk URL lama/local URI dan regresi pemulihan bukti transaksi.
+
+- [x] Audit isi snapshot akun nyata dan referensi object storage untuk bukti transaksi yang masih hilang.
+- [x] Perbaiki jalur recovery bila transaksi lama hanya memiliki URI lokal atau URL yang tidak dapat diurai.
+- [x] Tambahkan tampilan status bukti yang hilang tanpa menghapus transaksi atau saldo.
+- [x] Validasi pemulihan foto bukti pada riwayat transaksi yang sudah ada dan transaksi baru.
+
+- [x] Audit format ekspor dan impor AiraXBackup offline yang berjalan saat ini.
+- [x] Tambahkan paket media foto bukti privat ke arsip AiraXBackup offline.
+- [x] Tambahkan pemulihan paket foto bukti dengan pencocokan ID transaksi dan isolasi akun.
+- [x] Tambahkan validasi integritas arsip, batas ukuran yang jelas, dan kegagalan pemulihan yang aman.
+- [x] Uji ekspor-impor transaksi beserta foto tanpa perubahan saldo atau data transaksi.
+
+- [x] Audit kompresi foto yang aman untuk bukti transaksi tanpa pemotongan isi struk.
+- [x] Naikkan batas total foto dalam AiraXBackup menjadi 200 MB.
+- [x] Terapkan kompresi adaptif sebelum foto bukti dimasukkan ke arsip offline.
+- [x] Validasi kualitas visual, integritas arsip, dan pemulihan foto hasil kompresi.

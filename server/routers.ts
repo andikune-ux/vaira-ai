@@ -13,7 +13,7 @@ import { storageCreateUploadUrl, storageGetSignedUrl, storagePut } from "./stora
 import { transcribeAudio } from "./_core/voiceTranscription";
 import { createPublicAccountId, createRecoveryToken, createSessionToken, getManualAccountFromRequest, hashSecret, hashSessionToken, toManualAccountAdmin, toManualAccountPublic, verifySecret } from "./manual-auth";
 import * as privateGroups from "./private-groups";
-import { refreshMediaReference, refreshMediaReferences } from "./media-storage";
+import { mediaKeyBelongsToPrefix, mediaStorageKeyFromReference, refreshMediaReference, refreshMediaReferences } from "./media-storage";
 import { analyzeReceiptWithOcrSpace } from "./receipt-ocr-fallback";
 
 const parseModelJson = (content: unknown): Record<string, unknown> => {
@@ -393,10 +393,39 @@ export const appRouter = router({
         const account = await requireManualAccount(ctx.req);
         const snapshot = await db.getManualFinanceSnapshot(account.id);
         if (!snapshot) return null;
-        const parsed = JSON.parse(snapshot.payload) as { transactions?: Array<{ proofUri?: string }>; profile?: { userAvatarUri?: string; featuredPhotoUris?: string[] }; generatedResults?: Array<{ uri?: string; storageKey?: string; [key: string]: unknown }> };
+        let parsed = JSON.parse(snapshot.payload) as { transactions?: Array<{ id?: string; proofUri?: string; [key: string]: unknown }>; profile?: { userAvatarUri?: string; featuredPhotoUris?: string[] }; generatedResults?: Array<{ uri?: string; storageKey?: string; [key: string]: unknown }> };
+        const transactionsWithoutProof = (parsed.transactions ?? []).some((transaction) => !transaction.proofUri && transaction.id);
+        if (transactionsWithoutProof) {
+          try {
+            const latestBackup = await db.getLatestAiraXCloudBackup(account.id);
+            if (latestBackup) {
+              const backupResponse = await fetch(await storageGetSignedUrl(latestBackup.storageKey));
+              const backupPayload = backupResponse.ok
+                ? JSON.parse(await backupResponse.text()) as { transactions?: Array<{ id?: string; proofUri?: string }> }
+                : null;
+              const legacyProofByTransactionId = new Map(
+                (backupPayload?.transactions ?? [])
+                  .filter((transaction): transaction is { id: string; proofUri: string } => Boolean(transaction.id && transaction.proofUri))
+                  .map((transaction) => [transaction.id, transaction.proofUri]),
+              );
+              let recoveredProofReferences = 0;
+              const recoveredTransactions = (parsed.transactions ?? []).map((transaction) => {
+                const legacyProofUri = !transaction.proofUri && transaction.id ? legacyProofByTransactionId.get(transaction.id) : undefined;
+                if (!legacyProofUri) return transaction;
+                recoveredProofReferences += 1;
+                return { ...transaction, proofUri: legacyProofUri };
+              });
+              if (recoveredProofReferences) {
+                parsed = { ...parsed, transactions: recoveredTransactions };
+              }
+            }
+          } catch {
+            // Backup lama bersifat opsional; snapshot aktif tidak boleh gagal hanya karena arsip tidak dapat dibaca.
+          }
+        }
         const transactions = await Promise.all((parsed.transactions ?? []).map(async (transaction) => {
           const uri = transaction.proofUri;
-          if (!uri || /^(?:file|blob|content|ph|data):/i.test(uri)) return { ...transaction, proofUri: undefined };
+          if (!uri || /^(?:file|blob|content|ph|data):/i.test(uri)) return transaction;
           try {
             const key = uri.startsWith("http") ? new URL(uri).searchParams.get("path") ?? new URL(uri).searchParams.get("key") : uri;
             return key ? { ...transaction, proofUri: await storageGetSignedUrl(key) } : transaction;
@@ -432,6 +461,14 @@ export const appRouter = router({
         const extension = input.mimeType.includes("png") ? "png" : input.mimeType.includes("webp") ? "webp" : "jpg";
         const stored = await storagePut(`finance-proofs/${account.id}/${Date.now()}-${randomBytes(4).toString("hex")}.${extension}`, raw, input.mimeType);
         return { storageKey: stored.key, url: await storageGetSignedUrl(stored.key) };
+      }),
+      getProofReadUrl: publicProcedure.input(z.object({ proofReference: z.string().trim().min(1).max(2_000) })).query(async ({ ctx, input }) => {
+        const account = await requireManualAccount(ctx.req);
+        const storageKey = mediaStorageKeyFromReference(input.proofReference);
+        if (!storageKey || !mediaKeyBelongsToPrefix(storageKey, `finance-proofs/${account.id}/`)) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Bukti transaksi bukan milik akun yang sedang masuk." });
+        }
+        return { storageKey, url: await storageGetSignedUrl(storageKey) };
       }),
     }),
     adminUpdate: publicProcedure.input(z.object({ username: z.string().trim().min(1), password: z.string().min(1), accountId: z.number().int().positive(), fullName: z.string().trim().min(3).max(120).optional(), publicId: z.string().trim().regex(/^\d{9,12}$/).optional(), accountUsername: z.string().trim().toLowerCase().regex(/^[a-z0-9._-]{3,40}$/).optional(), birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), email: z.string().trim().toLowerCase().email().max(320).optional(), phone: z.string().trim().regex(/^\+?[0-9]{8,20}$/).optional(), status: ACCOUNT_STATUS.optional(), isVerified: z.boolean().optional(), createdByAdministrator: z.boolean().optional(), newPassword: MANUAL_PASSWORD.optional() })).mutation(async ({ input }) => {
