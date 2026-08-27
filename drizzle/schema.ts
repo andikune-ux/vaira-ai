@@ -273,6 +273,14 @@ export const airaxCloudBackups = mysqlTable("airaxCloudBackups", {
 export type AiraXCloudBackup = typeof airaxCloudBackups.$inferSelect;
 export type InsertAiraXCloudBackup = typeof airaxCloudBackups.$inferInsert;
 
+/** Snapshot keuangan privat per akun manual; payload menyimpan metadata transaksi tanpa byte foto. */
+export const manualFinanceSnapshots = mysqlTable("manualFinanceSnapshots", {
+  accountId: int("accountId").primaryKey(),
+  payload: mediumtext("payload").notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ManualFinanceSnapshot = typeof manualFinanceSnapshots.$inferSelect;
+
 /** Akun manual AiraX; kata sandi dan token cadangan hanya disimpan sebagai hash. */
 export const manualAccounts = mysqlTable("manualAccounts", {
   id: int("id").autoincrement().primaryKey(),

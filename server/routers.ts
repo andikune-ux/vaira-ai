@@ -375,6 +375,41 @@ export const appRouter = router({
       await db.blacklistExpiredManualAccounts();
       return (await db.listManualAccounts(input.query)).map(toManualAccountAdmin);
     }),
+    finance: router({
+      pull: publicProcedure.query(async ({ ctx }) => {
+        const account = await requireManualAccount(ctx.req);
+        const snapshot = await db.getManualFinanceSnapshot(account.id);
+        if (!snapshot) return null;
+        const parsed = JSON.parse(snapshot.payload) as { transactions?: Array<{ proofUri?: string }> };
+        const transactions = await Promise.all((parsed.transactions ?? []).map(async (transaction) => {
+          const uri = transaction.proofUri;
+          if (!uri || uri.startsWith("file:") || uri.startsWith("blob:")) return { ...transaction, proofUri: undefined };
+          try {
+            const key = uri.startsWith("http") ? new URL(uri).searchParams.get("path") ?? new URL(uri).searchParams.get("key") : uri;
+            return key ? { ...transaction, proofUri: await storageGetSignedUrl(key) } : transaction;
+          } catch {
+            return transaction;
+          }
+        }));
+        return { payload: JSON.stringify({ ...parsed, transactions }), updatedAt: snapshot.updatedAt.toISOString() };
+      }),
+      push: publicProcedure.input(z.object({ payload: z.string().min(2).max(2_000_000) })).mutation(async ({ ctx, input }) => {
+        const account = await requireManualAccount(ctx.req);
+        JSON.parse(input.payload);
+        await db.saveManualFinanceSnapshot(account.id, input.payload);
+        return { success: true, updatedAt: new Date().toISOString() };
+      }),
+      uploadProof: publicProcedure.input(z.object({ file: z.string().max(10_500_000), mimeType: z.string().regex(/^image\/(?:jpeg|jpg|png|webp)$/i) })).mutation(async ({ ctx, input }) => {
+        const account = await requireManualAccount(ctx.req);
+        const match = input.file.match(MEDIA_DATA_URL);
+        if (!match || !match[1].startsWith("image/")) throw new TRPCError({ code: "BAD_REQUEST", message: "Foto bukti transaksi tidak valid." });
+        const raw = Buffer.from(match[2], "base64");
+        if (raw.byteLength > 7_500_000) throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "Foto bukti maksimal 7,5 MB." });
+        const extension = input.mimeType.includes("png") ? "png" : input.mimeType.includes("webp") ? "webp" : "jpg";
+        const stored = await storagePut(`finance-proofs/${account.id}/${Date.now()}-${randomBytes(4).toString("hex")}.${extension}`, raw, input.mimeType);
+        return { storageKey: stored.key, url: await storageGetSignedUrl(stored.key) };
+      }),
+    }),
     adminUpdate: publicProcedure.input(z.object({ username: z.string().trim().min(1), password: z.string().min(1), accountId: z.number().int().positive(), fullName: z.string().trim().min(3).max(120).optional(), publicId: z.string().trim().regex(/^\d{9,12}$/).optional(), accountUsername: z.string().trim().toLowerCase().regex(/^[a-z0-9._-]{3,40}$/).optional(), birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), email: z.string().trim().toLowerCase().email().max(320).optional(), phone: z.string().trim().regex(/^\+?[0-9]{8,20}$/).optional(), status: ACCOUNT_STATUS.optional(), isVerified: z.boolean().optional(), createdByAdministrator: z.boolean().optional(), newPassword: MANUAL_PASSWORD.optional() })).mutation(async ({ input }) => {
       if (!verifyAdministratorCredentials(input.username, input.password)) throw new TRPCError({ code: "FORBIDDEN", message: "Verifikasi administrator diperlukan." });
       const account = await db.getManualAccountById(input.accountId);

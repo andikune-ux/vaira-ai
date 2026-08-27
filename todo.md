@@ -3641,3 +3641,7 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Hapus nama pengirim opsional dan keterangan tambahan dari Pindai Bukti karena sudah terwakili di rincian utama.
 - [x] Selaraskan ekspor PDF dan Excel dengan field form transaksi terbaru, termasuk metadata bukti yang tersedia.
 - [x] Tambahkan regresi form serta ekspor dan validasi tanpa checkpoint otomatis.
+- [x] Audit alur foto bukti dari Pindai Bukti hingga riwayat transaksi dan perangkat lain.
+- [x] Simpan foto bukti secara privat per akun di server dan simpan referensinya pada transaksi.
+- [x] Muat kembali foto bukti dari server saat akun login di perangkat lain.
+- [x] Tambahkan kontrol akses, fallback, dan regresi pemulihan foto bukti tanpa checkpoint otomatis.

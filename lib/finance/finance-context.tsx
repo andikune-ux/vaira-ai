@@ -1,5 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from "expo-file-system/legacy";
 import * as Auth from "@/lib/_core/auth";
+import { trpc } from "@/lib/trpc";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type PropsWithChildren } from "react";
 import { AppState } from "react-native";
 
@@ -135,6 +137,11 @@ export function FinanceProvider({ children }: PropsWithChildren) {
   const [storageScope, setStorageScope] = useState("guest");
   const [isHydrated, setIsHydrated] = useState(false);
   const storageQueue = useRef(Promise.resolve());
+  const appliedRemoteScopes = useRef(new Set<string>());
+  const financePull = trpc.manualAccount.finance.pull.useQuery(undefined, { enabled: isHydrated && storageScope !== "guest", staleTime: 0 });
+  const financePush = trpc.manualAccount.finance.push.useMutation();
+  const proofUpload = trpc.manualAccount.finance.uploadProof.useMutation();
+  const proofMigrationScopes = useRef(new Set<string>());
 
   const refreshStorageScope = useCallback(async () => {
     const user = await Auth.getUserInfo();
@@ -156,6 +163,25 @@ export function FinanceProvider({ children }: PropsWithChildren) {
 
   useEffect(() => { void refreshStorageScope().catch(() => { setState(EMPTY_FINANCE_STATE); setIsHydrated(true); }); }, [refreshStorageScope]);
 
+  useEffect(() => {
+    if (!isHydrated || storageScope === "guest" || financePull.isFetching || financePull.data === undefined || appliedRemoteScopes.current.has(storageScope)) return;
+    appliedRemoteScopes.current.add(storageScope);
+    if (!financePull.data) {
+      if (state.transactions.length + state.wallets.length > 0) void financePush.mutateAsync({ payload: JSON.stringify(state) }).catch(() => undefined);
+      return;
+    }
+    try {
+      const remote = normalizeState(JSON.parse(financePull.data.payload) as FinanceState);
+      const remoteTime = new Date(remote.lastUpdatedAt ?? financePull.data.updatedAt).getTime();
+      const localTime = new Date(state.lastUpdatedAt ?? 0).getTime();
+      if (remoteTime < localTime && state.transactions.length + state.wallets.length > 0) return;
+      setState(remote);
+      void AsyncStorage.setItem(storageKeyFor(storageScope), JSON.stringify(remote));
+    } catch {
+      // Snapshot rusak tidak boleh menghapus data lokal.
+    }
+  }, [financePull.data, financePull.isFetching, financePush, isHydrated, state, storageScope]);
+
   const updateState = useCallback(async (updater: (previous: FinanceState) => FinanceState) => {
     let nextState: FinanceState | undefined;
     setState((previous) => {
@@ -170,8 +196,37 @@ export function FinanceProvider({ children }: PropsWithChildren) {
     if (nextState) {
       storageQueue.current = storageQueue.current.catch(() => undefined).then(() => AsyncStorage.setItem(storageKeyFor(storageScope), JSON.stringify(nextState)));
       await storageQueue.current;
+      if (storageScope !== "guest") void financePush.mutateAsync({ payload: JSON.stringify(nextState) }).catch(() => undefined);
     }
-  }, [storageScope]);
+  }, [financePush, storageScope]);
+
+  useEffect(() => {
+    if (!isHydrated || storageScope === "guest" || financePull.isFetching || financePull.data === undefined || proofMigrationScopes.current.has(storageScope)) return;
+    const localProofs = state.transactions.filter((transaction) => transaction.proofUri?.startsWith("file:") || transaction.proofUri?.startsWith("content:"));
+    if (!localProofs.length) {
+      proofMigrationScopes.current.add(storageScope);
+      return;
+    }
+    proofMigrationScopes.current.add(storageScope);
+    let cancelled = false;
+    void Promise.all(localProofs.map(async (transaction) => {
+      if (!transaction.proofUri) return null;
+      try {
+        const base64 = await FileSystem.readAsStringAsync(transaction.proofUri, { encoding: FileSystem.EncodingType.Base64 });
+        const mimeType = /\\.png$/i.test(transaction.proofUri) ? "image/png" : /\\.webp$/i.test(transaction.proofUri) ? "image/webp" : "image/jpeg";
+        const uploaded = await proofUpload.mutateAsync({ file: `data:${mimeType};base64,${base64}`, mimeType });
+        return { id: transaction.id, proofUri: uploaded.storageKey };
+      } catch {
+        return null;
+      }
+    })).then((updates) => {
+      if (cancelled) return;
+      const valid = updates.filter((item): item is { id: string; proofUri: string } => Boolean(item));
+      if (!valid.length) return;
+      void updateState((previous) => ({ ...previous, transactions: previous.transactions.map((transaction) => valid.find((item) => item.id === transaction.id) ? { ...transaction, proofUri: valid.find((item) => item.id === transaction.id)?.proofUri } : transaction) }));
+    });
+    return () => { cancelled = true; };
+  }, [financePull.data, financePull.isFetching, isHydrated, proofUpload, state.transactions, storageScope, updateState]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {

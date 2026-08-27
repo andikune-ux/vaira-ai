@@ -1,6 +1,6 @@
 import { and, count, desc, eq, gt, isNotNull, isNull, lt, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { administratorAuditLogs, airaAccessTokens, airaConversationHistories, airaxCloudBackups, financeSnapshots, globalRoomBlocks, globalRoomConsents, globalRoomMessages, globalRoomModeration, globalRoomPresence, globalRoomReports, globalRoomSettings, globalRoomUserSettings, globalRoomMessageReactions, globalRoomProfileComments, globalRoomProfileLoves, globalRoomUserStatus, administratorTokenSettings, householdFinanceAnalyses, InsertAdministratorAuditLog, InsertAiraXCloudBackup, InsertManualAccount, InsertUser, manualAccounts, manualAccountSessions, spcaDiagnosticReports, users } from "../drizzle/schema";
+import { administratorAuditLogs, airaAccessTokens, airaConversationHistories, airaxCloudBackups, financeSnapshots, globalRoomBlocks, globalRoomConsents, globalRoomMessages, globalRoomModeration, globalRoomPresence, globalRoomReports, globalRoomSettings, globalRoomUserSettings, globalRoomMessageReactions, globalRoomProfileComments, globalRoomProfileLoves, globalRoomUserStatus, administratorTokenSettings, householdFinanceAnalyses, InsertAdministratorAuditLog, InsertAiraXCloudBackup, InsertManualAccount, InsertUser, manualAccounts, manualAccountSessions, manualFinanceSnapshots, spcaDiagnosticReports, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { storageGetSignedUrl } from "./storage";
 
@@ -138,6 +138,19 @@ export async function saveFinanceSnapshot(userId: number, payload: string) {
   const db = await getDb();
   if (!db) throw new Error("Database tidak tersedia untuk sinkronisasi.");
   await db.insert(financeSnapshots).values({ userId, payload }).onDuplicateKeyUpdate({ set: { payload, updatedAt: new Date() } });
+}
+
+export async function getManualFinanceSnapshot(accountId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(manualFinanceSnapshots).where(eq(manualFinanceSnapshots.accountId, accountId)).limit(1);
+  return result[0];
+}
+
+export async function saveManualFinanceSnapshot(accountId: number, payload: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database tidak tersedia untuk sinkronisasi akun.");
+  await db.insert(manualFinanceSnapshots).values({ accountId, payload }).onDuplicateKeyUpdate({ set: { payload, updatedAt: new Date() } });
 }
 
 export async function createAiraXCloudBackup(values: InsertAiraXCloudBackup) {

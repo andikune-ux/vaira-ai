@@ -1,5 +1,6 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
+import * as FileSystem from "expo-file-system/legacy";
 import { useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
@@ -8,6 +9,8 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { commitmentFlowDetails, isCommitmentTransactionFlow, isNewCommitmentFlow, isSettlementCommitmentFlow } from "@/lib/finance/commitment-sync";
 import { useFinance } from "@/lib/finance/finance-context";
+import * as Auth from "@/lib/_core/auth";
+import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDateTime, getWalletBalance } from "@/lib/finance/finance-utils";
 import { parseTransactionEvidence } from "@/lib/finance/transaction-evidence";
 import type { CommitmentTransactionFlow, TransactionKind, TransactionOrigin } from "@/lib/finance/types";
@@ -16,6 +19,7 @@ export default function ConfirmTransactionScreen() {
   const colors = useColors();
   const params = useLocalSearchParams<{ kind: TransactionKind; amount: string; feeAmount?: string; category: string; walletId: string; toWalletId?: string; note: string; counterpartyName?: string; origin?: TransactionOrigin; proofUri?: string; occurredAt?: string; editId?: string; commitmentFlow?: CommitmentTransactionFlow; commitmentId?: string; evidenceJson?: string }>();
   const { state, addConfirmedTransaction, updateConfirmedTransaction } = useFinance();
+  const uploadProof = trpc.manualAccount.finance.uploadProof.useMutation();
   const [saving, setSaving] = useState(false);
   const wallet = state.wallets.find((item) => item.id === params.walletId);
   const destination = state.wallets.find((item) => item.id === params.toWalletId);
@@ -45,6 +49,20 @@ export default function ConfirmTransactionScreen() {
       return;
     }
     setSaving(true);
+    let proofUri = params.proofUri;
+    try {
+      const manualSession = await Auth.getManualSessionToken();
+      if (proofUri?.startsWith("file:") && manualSession) {
+        const base64 = await FileSystem.readAsStringAsync(proofUri, { encoding: FileSystem.EncodingType.Base64 });
+        const mimeType = /\.png$/i.test(proofUri) ? "image/png" : /\.webp$/i.test(proofUri) ? "image/webp" : "image/jpeg";
+        const uploaded = await uploadProof.mutateAsync({ file: `data:${mimeType};base64,${base64}`, mimeType });
+        proofUri = uploaded.storageKey;
+      }
+    } catch {
+      setSaving(false);
+      Alert.alert("Foto bukti belum tersimpan", "Foto tidak dapat diunggah ke server akun. Periksa koneksi lalu coba Konfirmasi & simpan lagi agar bukti dapat dilihat di perangkat lain.");
+      return;
+    }
     const payload = {
       kind: params.kind,
       amount,
@@ -56,7 +74,7 @@ export default function ConfirmTransactionScreen() {
       counterpartyName,
       occurredAt,
       origin: params.origin ?? "manual",
-      proofUri: params.proofUri,
+      proofUri,
       evidence,
       commitmentFlow,
       commitmentId: commitmentFlow && isSettlementCommitmentFlow(commitmentFlow) ? linkedCommitment?.id : undefined,
