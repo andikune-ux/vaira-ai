@@ -3664,3 +3664,8 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Perbaiki hydration foto Room Global dan grup agar upload pengguna lain tampil.
 - [x] Perbaiki pemutaran voice note Room Global dan grup untuk media pengguna lain.
 - [x] Tambahkan regresi key/signed URL/render media dan validasi lintas akun.
+
+- [x] Tambahkan pratinjau foto/media yang dapat dibuka lebih besar pada Room Global, grup, dan hasil Aira.
+- [x] Tampilkan durasi aktual voice note serta status memuat dan selesai.
+- [x] Tambahkan indikator gagal muat dan tombol Coba lagi untuk foto dan audio.
+- [x] Validasi preview, durasi, error, dan retry pada semua layar media terkait.

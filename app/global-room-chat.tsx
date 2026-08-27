@@ -17,6 +17,7 @@ import { trpc } from "@/lib/trpc";
 import { getUserFacingError } from "@/lib/user-facing-error";
 import { VerifyBadge } from "@/components/verify-badge";
 import { VoiceNotePlayer } from "@/components/voice-note-player";
+import { RetryableMediaImage } from "@/components/retryable-media-image";
 import { KeyboardAvoidingView } from "@/components/chat-keyboard-avoiding";
 
 const ROOM_COLORS = { background: "#050A15", surface: "#0B1425", foreground: "#F1F6FF", muted: "#8EA5C7", border: "#1C2B44", primary: "#36B7FF", success: "#46E0AF", warning: "#F5B83D", error: "#FF7D91" };
@@ -199,7 +200,7 @@ export default function GlobalRoomChatScreen() {
   };
   const renderMessageContent = (rawContent: string, scale: number, messageId: number, mediaUrl?: string | null) => {
     const photoMatch = rawContent.match(/^\[Room photo (?:url|key)=([^\s]+)\]\s*(.*)$/s);
-    if (photoMatch) return <View style={styles.photoPost}><Image source={{ uri: mediaUrl ?? photoMatch[1] }} contentFit="cover" cachePolicy="none" style={[styles.photoPostImage, { height: 170 * scale }]} /><Text numberOfLines={3} style={[styles.photoPostCaption, { color: colors.muted, fontSize: 12 * scale }]}>{photoMatch[2]}</Text></View>;
+    if (photoMatch) return <View style={styles.photoPost}><RetryableMediaImage uri={mediaUrl ?? photoMatch[1]} previewLabel="Buka pratinjau foto Room Global" contentFit="cover" cachePolicy="none" style={[styles.photoPostImage, { height: 170 * scale }]} /><Text numberOfLines={3} style={[styles.photoPostCaption, { color: colors.muted, fontSize: 12 * scale }]}>{photoMatch[2]}</Text></View>;
     const voiceMatch = rawContent.match(/^\[Voice note (?:(?:url|key)=([^ ·]+)|audio=([^ ·]+)) · (\d+s)\]\s*(.*)$/s);
     if (voiceMatch) { const audioUrl = mediaUrl ?? voiceMatch[1] ?? voiceMatch[2]; const durationLabel = voiceMatch[3]; const transcript = voiceMatch[4]; if (audioUrl) return <VoiceNotePlayer uri={audioUrl} durationLabel={durationLabel} transcript={transcript} scale={scale} colors={colors} />; const isPlayed = playedVoiceNoteIds.has(messageId); return <Pressable accessibilityRole="button" accessibilityLabel={isPlayed ? "Voice note sudah diputar" : "Voice note belum diputar"} onPress={() => setPlayedVoiceNoteIds((current) => { const next = new Set(current); next.add(messageId); return next; })} style={styles.voiceNoteBubble}><MaterialIcons name={isPlayed ? "play-circle" : "record-voice-over"} size={20} color={colors.primary} /><View style={styles.flex}><Text style={[styles.messageText, { color: colors.foreground, fontSize: 13 * scale, lineHeight: 19 * scale }]}>Voice note · {durationLabel}</Text><Text style={[styles.voiceNoteStatus, { color: isPlayed ? colors.success : colors.muted }]}>{isPlayed ? "Sudah diputar" : "Voice note lama · hanya transkripsi"}</Text>{transcript ? <Text numberOfLines={2} style={[styles.voiceNoteTranscript, { color: colors.muted }]}>{transcript}</Text> : null}</View></Pressable>; }
     const target = [state.profile.displayName, state.profile.username].find((value) => value?.trim()); const escapedTarget = target?.trim().replace(/[.*+?^${}()|[\\]\\]/g, "\\$&"); const tokenPattern = escapedTarget ? new RegExp(`(https?:\\/\\/[^\\s]+|@${escapedTarget})`, "gi") : /(https?:\/\/[^\s]+)/gi; const parts = rawContent.split(tokenPattern);
