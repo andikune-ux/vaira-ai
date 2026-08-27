@@ -2,7 +2,7 @@ import { and, count, desc, eq, gt, isNotNull, isNull, lt, or } from "drizzle-orm
 import { drizzle } from "drizzle-orm/mysql2";
 import { administratorAuditLogs, airaAccessTokens, airaConversationHistories, airaxCloudBackups, financeSnapshots, globalRoomBlocks, globalRoomConsents, globalRoomMessages, globalRoomModeration, globalRoomPresence, globalRoomReports, globalRoomSettings, globalRoomUserSettings, globalRoomMessageReactions, globalRoomProfileComments, globalRoomProfileLoves, globalRoomUserStatus, administratorTokenSettings, householdFinanceAnalyses, InsertAdministratorAuditLog, InsertAiraXCloudBackup, InsertManualAccount, InsertUser, manualAccounts, manualAccountSessions, manualFinanceSnapshots, spcaDiagnosticReports, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
-import { storageGetSignedUrl } from "./storage";
+import { refreshAiraMessages, refreshMediaMarker, refreshMediaReference, normalizeAiraMessagesForStorage, normalizeProfileMediaReference, normalizeProfileMediaReferences } from "./media-storage";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -240,7 +240,7 @@ const parseAiraMessages = (value: string) => { try { const parsed = JSON.parse(v
 export async function saveAiraConversationHistory(accountId: number, payload: AiraHistoryPayload) {
   const database = await getDb();
   if (!database) throw new Error("Database riwayat Aira belum tersedia.");
-  const messagesJson = JSON.stringify(payload.messages);
+  const messagesJson = JSON.stringify(normalizeAiraMessagesForStorage(payload.messages));
   if (messagesJson.length > 8_000_000) throw new Error("Riwayat percakapan terlalu besar untuk satu sesi. Mulai percakapan baru agar sinkronisasi tetap aman.");
   const values = { accountId, conversationId: payload.conversationId, mode: payload.mode, title: payload.title.slice(0, 160), messagesJson, isPrivate: Boolean(payload.isPrivate), createdAt: new Date(payload.createdAt), updatedAt: new Date(payload.updatedAt) };
   await database.insert(airaConversationHistories).values(values).onDuplicateKeyUpdate({ set: { mode: values.mode, title: values.title, messagesJson: values.messagesJson, isPrivate: values.isPrivate, updatedAt: values.updatedAt } });
@@ -250,7 +250,7 @@ export async function listAiraConversationHistories(accountId: number, mode?: Ai
   const database = await getDb();
   if (!database) return [];
   const rows = await database.select().from(airaConversationHistories).where(mode ? and(eq(airaConversationHistories.accountId, accountId), eq(airaConversationHistories.mode, mode), isNull(airaConversationHistories.archivedAt)) : and(eq(airaConversationHistories.accountId, accountId), isNull(airaConversationHistories.archivedAt))).orderBy(desc(airaConversationHistories.updatedAt)).limit(40);
-  return rows.map((row) => ({ conversationId: row.conversationId, mode: row.mode, title: row.title, messages: parseAiraMessages(row.messagesJson), createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(), isPrivate: row.isPrivate }));
+  return Promise.all(rows.map(async (row) => ({ conversationId: row.conversationId, mode: row.mode, title: row.title, messages: await refreshAiraMessages(parseAiraMessages(row.messagesJson)), createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(), isPrivate: row.isPrivate })));
 }
 export async function listAiraConversationHistoryPage(accountId: number, options: { mode?: AiraHistoryPayload["mode"]; offset?: number; limit?: number }) {
   const database = await getDb();
@@ -258,14 +258,14 @@ export async function listAiraConversationHistoryPage(accountId: number, options
   const limit = Math.min(40, Math.max(1, options.limit ?? 40));
   const offset = Math.max(0, options.offset ?? 0);
   const rows = await database.select().from(airaConversationHistories).where(options.mode ? and(eq(airaConversationHistories.accountId, accountId), eq(airaConversationHistories.mode, options.mode), isNull(airaConversationHistories.archivedAt)) : and(eq(airaConversationHistories.accountId, accountId), isNull(airaConversationHistories.archivedAt))).orderBy(desc(airaConversationHistories.updatedAt)).limit(limit + 1).offset(offset);
-  const items = rows.slice(0, limit).map((row) => ({ conversationId: row.conversationId, mode: row.mode, title: row.title, messages: parseAiraMessages(row.messagesJson), createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(), isPrivate: row.isPrivate }));
+  const items = await Promise.all(rows.slice(0, limit).map(async (row) => ({ conversationId: row.conversationId, mode: row.mode, title: row.title, messages: await refreshAiraMessages(parseAiraMessages(row.messagesJson)), createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(), isPrivate: row.isPrivate })));
   return { items, hasMore: rows.length > limit };
 }
 export async function listAdministratorAiraConversationHistories(limit = 300) {
   const database = await getDb();
   if (!database) return [];
   const rows = await database.select({ history: airaConversationHistories, account: manualAccounts }).from(airaConversationHistories).innerJoin(manualAccounts, eq(airaConversationHistories.accountId, manualAccounts.id)).where(isNull(airaConversationHistories.archivedAt)).orderBy(desc(airaConversationHistories.updatedAt)).limit(Math.max(1, Math.min(500, limit)));
-  return rows.map(({ history, account }) => ({ id: history.id, accountId: account.id, publicId: account.publicId, fullName: account.fullName, username: account.username, conversationId: history.conversationId, mode: history.mode, title: history.title, messages: parseAiraMessages(history.messagesJson), isPrivate: history.isPrivate, createdAt: history.createdAt.toISOString(), updatedAt: history.updatedAt.toISOString() }));
+  return Promise.all(rows.map(async ({ history, account }) => ({ id: history.id, accountId: account.id, publicId: account.publicId, fullName: account.fullName, username: account.username, conversationId: history.conversationId, mode: history.mode, title: history.title, messages: await refreshAiraMessages(parseAiraMessages(history.messagesJson)), isPrivate: history.isPrivate, createdAt: history.createdAt.toISOString(), updatedAt: history.updatedAt.toISOString() })));
 }
 
 export async function createAiraAccessToken(values: { tokenHash: string; criterion: "pro" | "premium" | "admin"; durationDays: number | null; expiresAt: Date | null; createdBy: string }) {
@@ -564,20 +564,32 @@ export async function listGlobalRoomMessages(accountId: number, limit = 80) {
   const blockedIds = new Set(blocked.map((item) => item.blockedAccountId));
   const rows = await db.select().from(globalRoomMessages).orderBy(desc(globalRoomMessages.createdAt)).limit(Math.min(Math.max(limit, 1), 100));
   const accounts = await db.select({ id: manualAccounts.id, featuredPhotoUris: manualAccounts.featuredPhotoUris, isVerified: manualAccounts.isVerified }).from(manualAccounts);
-  const avatarByAccountId = new Map(accounts.map((account) => {
+  const avatarEntries = await Promise.all(accounts.map(async (account) => {
     let avatarUri: string | null = null;
     if (account.featuredPhotoUris) {
-      try { const parsed = JSON.parse(account.featuredPhotoUris); avatarUri = Array.isArray(parsed) && typeof parsed[0] === "string" ? parsed[0] : null; } catch { avatarUri = null; }
+      try { const parsed = JSON.parse(account.featuredPhotoUris); avatarUri = Array.isArray(parsed) && typeof parsed[0] === "string" ? await refreshMediaReference(parsed[0]) : null; } catch { avatarUri = null; }
     }
     return [account.id, avatarUri] as const;
   }));
+  const avatarByAccountId = new Map(avatarEntries);
   const reactionRows = await db.select().from(globalRoomMessageReactions);
   const reactionSummary = new Map<number, Record<string, number>>();
   for (const reaction of reactionRows) { const current = reactionSummary.get(reaction.messageId) ?? {}; current[reaction.emoji] = (current[reaction.emoji] ?? 0) + 1; reactionSummary.set(reaction.messageId, current); }
-  return rows.filter((row) => !blockedIds.has(row.accountId)).reverse().map((row) => ({ ...row, avatarUri: avatarByAccountId.get(row.accountId) ?? null, isVerified: row.accountId === 0 ? true : Boolean(accounts.find((account) => account.id === row.accountId)?.isVerified), reactions: reactionSummary.get(row.id) ?? {} }));
+  return Promise.all(rows.filter((row) => !blockedIds.has(row.accountId)).reverse().map(async (row) => {
+    let content = row.content;
+    const mediaUrl = row.mediaStorageKey ? await refreshMediaReference(row.mediaStorageKey) : null;
+    if (row.mediaStorageKey) {
+      const label = content.includes("[Room photo") ? "Room photo" : "Voice note";
+      content = await refreshMediaMarker(content, label, mediaUrl ?? row.mediaStorageKey);
+    } else {
+      content = await refreshMediaMarker(content, "Room photo", null);
+      content = await refreshMediaMarker(content, "Voice note", null);
+    }
+    return { ...row, content, mediaUrl, avatarUri: avatarByAccountId.get(row.accountId) ?? null, isVerified: row.accountId === 0 ? true : Boolean(accounts.find((account) => account.id === row.accountId)?.isVerified), reactions: reactionSummary.get(row.id) ?? {} };
+  }));
 }
 
-export async function createGlobalRoomMessage(values: { accountId: number; publicId: string; displayName: string; content: string; replyToId?: number | null; replyToDisplayName?: string | null; replyToContent?: string | null }) {
+export async function createGlobalRoomMessage(values: { accountId: number; publicId: string; displayName: string; content: string; mediaStorageKey?: string | null; replyToId?: number | null; replyToDisplayName?: string | null; replyToContent?: string | null }) {
   const db = await getDb();
   if (!db) throw new Error("Database Room Global belum tersedia.");
   const result = await db.insert(globalRoomMessages).values(values);
@@ -714,7 +726,9 @@ export async function unblockGlobalRoomAccount(blockerAccountId: number, blocked
 export async function updateManualAccountProfile(accountId: number, values: { bio: string; avatarUri?: string | null; featuredPhotoUris: string[] }) {
   const db = await getDb();
   if (!db) throw new Error("Database profil belum tersedia.");
-  await db.update(manualAccounts).set({ bio: values.bio.slice(0, 280), avatarUri: values.avatarUri ?? null, featuredPhotoUris: JSON.stringify(values.featuredPhotoUris) }).where(eq(manualAccounts.id, accountId));
+  const avatarUri = values.avatarUri ? `/manus-storage/${normalizeProfileMediaReference(values.avatarUri)}` : null;
+  const featuredPhotoUris = normalizeProfileMediaReferences(values.featuredPhotoUris).map((key) => `/manus-storage/${key}`);
+  await db.update(manualAccounts).set({ bio: values.bio.slice(0, 280), avatarUri, featuredPhotoUris: JSON.stringify(featuredPhotoUris) }).where(eq(manualAccounts.id, accountId));
 }
 
 
@@ -782,17 +796,8 @@ export async function getGlobalRoomPublicProfile(accountId: number) {
   if (profile.featuredPhotoUris) {
     try { const parsed = JSON.parse(profile.featuredPhotoUris); featuredPhotos = Array.isArray(parsed) ? parsed.filter((uri): uri is string => typeof uri === "string").slice(0, 3) : []; } catch { featuredPhotos = []; }
   }
-  const refreshMediaUrl = async (uri: string) => {
-    try {
-      if (!/^https?:\/\//i.test(uri)) return await storageGetSignedUrl(uri);
-      const parsedUrl = new URL(uri);
-      const storagePath = parsedUrl.searchParams.get("path") ?? parsedUrl.searchParams.get("key");
-      return storagePath ? await storageGetSignedUrl(storagePath) : uri;
-    } catch {
-      return uri;
-    }
-  };
-  const refreshedPhotos = await Promise.all(featuredPhotos.map(refreshMediaUrl));
+      const refreshedPhotos = await Promise.all(featuredPhotos.map((uri) => refreshMediaReference(uri)));
+
   const presence = activeParticipants.find((participant) => participant.accountId === accountId); return { publicId: profile.publicId, displayName: profile.fullName, bio: profile.bio ?? "", avatarUri: refreshedPhotos[0] ?? null, featuredPhotos: refreshedPhotos, isVerified: Boolean(profile.isVerified), lastSeenAt: presence?.lastSeenAt?.toISOString() ?? null };
 }
 
@@ -836,7 +841,8 @@ export async function listGlobalRoomParticipants() {
   if (!database) return [];
   const presenceRows = await database.select().from(globalRoomPresence);
   const accounts = await database.select({ id: manualAccounts.id, publicId: manualAccounts.publicId, fullName: manualAccounts.fullName, username: manualAccounts.username, featuredPhotoUris: manualAccounts.featuredPhotoUris, status: manualAccounts.status }).from(manualAccounts);
-  return selectActiveGlobalRoomParticipants(presenceRows, accounts);
+  const participants = selectActiveGlobalRoomParticipants(presenceRows, accounts);
+  return Promise.all(participants.map(async (participant) => ({ ...participant, avatarUri: await refreshMediaReference(participant.avatarUri) })));
 }
 
 export async function getGlobalRoomParticipantCount() {

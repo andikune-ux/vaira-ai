@@ -9,11 +9,12 @@ describe("unggah foto langsung Room Global", () => {
   it("menggunakan ticket storage langsung tanpa payload foto base64 di aplikasi", () => {
     expect(router).toContain("createPhotoUpload:");
     expect(router).toContain("storageCreateUploadUrl");
-    expect(router).toContain("readUrl: (await storageGet(ticket.key)).url");
+    expect(router).toContain("readUrl: await storageGetSignedUrl(ticket.key)");
     expect(client).toContain("createPhotoUpload.mutateAsync");
     expect(client).toContain("FileSystem.createUploadTask(ticket.uploadUrl");
     expect(client).toContain("sessionType: FileSystem.FileSystemSessionType.BACKGROUND");
     expect(router).toContain("createVoiceUpload:");
+    expect(router).toContain("global-room/voice/${account.id}-");
     expect(client).toContain("createVoiceUpload.mutateAsync");
     expect(client).toContain("Voice note besar tetap dikirim");
   });

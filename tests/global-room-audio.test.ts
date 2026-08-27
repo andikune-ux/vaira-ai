@@ -52,7 +52,7 @@ describe("Room Global audio interaction", () => {
     expect(source).toContain("if (!permission.granted)");
     expect(source).toContain("if (!uri) throw new Error");
     expect(source).toContain("recordingDuration");
-    expect(source).toContain("Voice note audio=");
+    expect(source).toContain("Voice note key=");
     expect(source).toContain("createVoiceUpload");
     expect(source).toContain("TRANSCRIBE_INLINE_MAX_BYTES");
     expect(source).toContain("Laporkan pesan?");
@@ -108,7 +108,7 @@ describe("Room Global social communication additions", () => {
     expect(chat).toContain("searchQuery");
     expect(chat).toContain("visibleMessages");
     expect(router).toContain("upload: publicProcedure");
-    expect(router).toContain("global-room/voice/");
+    expect(router).toContain("global-room/voice/${account.id}-");
   });
 });
 
@@ -118,7 +118,7 @@ describe("Room Global photo posts and mention widget", () => {
     const home = await import("node:fs/promises").then((fs) => fs.readFile("app/(tabs)/index.tsx", "utf8"));
     const router = await import("node:fs/promises").then((fs) => fs.readFile("server/routers.ts", "utf8"));
     expect(chat).toContain("postRoomPhoto");
-    expect(chat).toContain("Room photo url=");
+    expect(chat).toContain("Room photo key=");
     expect(home).toContain("unreadMentionCount");
     expect(home).toContain("widgetMentionBadge");
     expect(router).toContain("mentionSummary");

@@ -11,12 +11,15 @@ describe("lampiran layanan Aira", () => {
     expect(router).toContain("normalizeAiraContent");
     expect(router).toContain("storagePut(`aira-media/");
     expect(router).toContain("storageGetSignedUrl(uploaded.key)");
-    expect(router).toContain('item.id.startsWith("gemini-3-flash")');
+    expect(router).toContain("aira-media/${account.id}/");
+    expect(read("server/aira-generation.ts")).toContain("aira-generated/${accountId}/");
+    expect(router).toContain("/free|flash|mini/i.test(item.id)");
   });
 
   it("mengalihkan lampiran besar dari payload base64 ke unggahan langsung", () => {
     const chat = read("components/aira-chat-screen.tsx");
     expect(chat).toContain("MAX_MEDIA_BYTES");
     expect(chat).toContain("200 MB");
+    expect(read("server/aira-generation.ts")).toContain("aira-generated/${accountId}/");
   });
 });

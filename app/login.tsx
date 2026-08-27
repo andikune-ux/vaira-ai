@@ -10,6 +10,7 @@ import * as Auth from "@/lib/_core/auth";
 import { useFinance } from "@/lib/finance/finance-context";
 import type { FinanceState } from "@/lib/finance/types";
 import { trpc } from "@/lib/trpc";
+import { isLocalMediaReference, migrateAccountLocalMedia } from "@/lib/media-migration";
 import { getUserFacingError } from "@/lib/user-facing-error";
 
 export default function LoginScreen() {
@@ -18,6 +19,10 @@ export default function LoginScreen() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState(""); const [showPassword, setShowPassword] = useState(false);
   const login = trpc.manualAccount.login.useMutation();
+  const syncProfile = trpc.manualAccount.updateProfile.useMutation();
+  const uploadProfileMedia = trpc.manualAccount.uploadProfileAvatar.useMutation();
+  const createAiraMediaUpload = trpc.media.createUpload.useMutation();
+  const pushFinanceSnapshot = trpc.manualAccount.finance.push.useMutation();
   const cloudRestore = trpc.airaxCloud.restoreLatest.useQuery(undefined, { enabled: false, retry: false });
 
   const submit = async () => {
@@ -32,10 +37,26 @@ export default function LoginScreen() {
       const localState = await refreshStorageScope();
       const accountProfile: Partial<FinanceState["profile"]> = { mode: "account", displayName: result.account.fullName, username: result.account.username, bio: result.account.bio, featuredPhotoUris: result.account.featuredPhotoUris, userAvatarUri: result.account.avatarUri ?? localState.profile.userAvatarUri, syncEnabled: true };
       await updateProfile(accountProfile);
+      const localHasAvatar = isLocalMediaReference(localState.profile.userAvatarUri);
+      const localHasFeatured = (localState.profile.featuredPhotoUris ?? []).some((uri) => isLocalMediaReference(uri));
+      const localMigration = await migrateAccountLocalMedia(localState, createAiraMediaUpload.mutateAsync, uploadProfileMedia.mutateAsync);
+      let effectiveState = { ...localMigration.state, profile: { ...localMigration.state.profile, ...accountProfile, mode: "account" as const } } as FinanceState;
       const cloudSnapshot = await cloudRestore.refetch();
       if (cloudSnapshot.data?.payload) {
         const cloudState = JSON.parse(cloudSnapshot.data.payload) as typeof localState;
-        await replaceAllData({ ...cloudState, profile: { ...cloudState.profile, ...accountProfile, mode: "account" as const } } as FinanceState);
+        const mergedConversations = [...cloudState.conversations];
+        for (const localConversation of localMigration.state.conversations) {
+          const existingIndex = mergedConversations.findIndex((conversation) => conversation.id === localConversation.id);
+          if (existingIndex < 0) mergedConversations.push(localConversation);
+          else if (new Date(localConversation.updatedAt).getTime() > new Date(mergedConversations[existingIndex].updatedAt).getTime()) mergedConversations[existingIndex] = localConversation;
+        }
+        effectiveState = { ...cloudState, conversations: mergedConversations, profile: { ...cloudState.profile, ...accountProfile, ...(localHasAvatar ? { userAvatarUri: localMigration.state.profile.userAvatarUri } : {}), ...(localHasFeatured ? { featuredPhotoUris: localMigration.state.profile.featuredPhotoUris } : {}), mode: "account" as const } } as FinanceState;
+        await replaceAllData(effectiveState);
+      }
+      if (localMigration.migratedCount > 0) {
+        await replaceAllData(effectiveState);
+        await syncProfile.mutateAsync({ bio: effectiveState.profile.bio ?? "", avatarUri: effectiveState.profile.userAvatarUri ?? null, featuredPhotoUris: effectiveState.profile.featuredPhotoUris ?? [] });
+        await pushFinanceSnapshot.mutateAsync({ payload: JSON.stringify(effectiveState) });
       }
       router.replace("/(tabs)");
     } catch (error) {

@@ -1,4 +1,4 @@
-import { Document, HeadingLevel, Packer, Paragraph, TextRun } from "docx";
+import { Document, HeadingLevel, Packer, Paragraph } from "docx";
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import pptxgen from "pptxgenjs";
@@ -104,11 +104,11 @@ async function buildPowerPoint(outline: DocumentOutline) {
   const result = await presentation.write({ outputType: "nodebuffer" }); return Buffer.from(result as Buffer);
 }
 
-export async function generateAiraDocument(kind: AiraDocumentKind, prompt: string, language: string) {
+export async function generateAiraDocument(kind: AiraDocumentKind, prompt: string, language: string, accountId: number) {
   const outline = await createOutline(prompt, language); const meta = documentMeta[kind];
   const data = kind === "pdf" ? await buildPdf(outline) : kind === "word" ? await buildWord(outline) : kind === "excel" ? await buildExcel(outline) : kind === "powerpoint" ? await buildPowerPoint(outline) : Buffer.from(kind === "markdown" ? `# ${outlineToText(outline).replace(/\n/g, "\n\n")}` : outlineToText(outline), "utf8");
   const safeTitle = outline.title.toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").slice(0, 48) || "dokumen-aira";
-  const stored = await storagePut(`aira-generated/${Date.now()}-${safeTitle}.${meta.extension}`, data, meta.mimeType);
+  const stored = await storagePut(`aira-generated/${accountId}/${Date.now()}-${safeTitle}.${meta.extension}`, data, meta.mimeType);
   const url = await storageGetSignedUrl(stored.key);
-  return { ...meta, url, title: outline.title, summary: outline.summary };
+  return { ...meta, url, storageKey: stored.key, title: outline.title, summary: outline.summary };
 }

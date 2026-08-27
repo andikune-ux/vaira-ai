@@ -59,6 +59,8 @@ export const globalRoomMessages = mysqlTable("globalRoomMessages", {
   publicId: varchar("publicId", { length: 32 }).notNull(),
   displayName: varchar("displayName", { length: 120 }).notNull(),
   content: text("content").notNull(),
+  /** Kunci object storage stabil untuk foto/audio; URL baca dibuat ulang saat pesan dimuat. */
+  mediaStorageKey: varchar("mediaStorageKey", { length: 320 }),
   replyToId: int("replyToId"),
   replyToDisplayName: varchar("replyToDisplayName", { length: 120 }),
   replyToContent: text("replyToContent"),
@@ -237,6 +239,8 @@ export const privateChatGroupMessages = mysqlTable("privateChatGroupMessages", {
   publicId: varchar("publicId", { length: 32 }).notNull(),
   displayName: varchar("displayName", { length: 120 }).notNull(),
   content: text("content").notNull(),
+  /** Kunci object storage stabil untuk foto/audio; URL baca dibuat ulang saat pesan dimuat. */
+  mediaStorageKey: varchar("mediaStorageKey", { length: 320 }),
   replyToId: int("replyToId"),
   replyToDisplayName: varchar("replyToDisplayName", { length: 120 }),
   replyToContent: text("replyToContent"),

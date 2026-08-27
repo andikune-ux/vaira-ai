@@ -10,6 +10,7 @@ import {
 } from "../drizzle/schema";
 import { getDb } from "./db";
 import { storageGetSignedUrl } from "./storage";
+import { refreshMediaMarker, refreshMediaReference } from "./media-storage";
 
 export const PRIVATE_GROUP_MEMBERSHIP_LIMIT = 10;
 
@@ -102,7 +103,7 @@ export async function getPrivateGroupDetail(groupId: number, viewerAccountId?: n
   const members = await Promise.all(memberRows.map(async (membership) => {
     const accounts = await database.select({ id: manualAccounts.id, publicId: manualAccounts.publicId, fullName: manualAccounts.fullName, username: manualAccounts.username, featuredPhotoUris: manualAccounts.featuredPhotoUris, isVerified: manualAccounts.isVerified }).from(manualAccounts).where(eq(manualAccounts.id, membership.accountId)).limit(1);
     const account = accounts[0];
-    return account ? { accountId: account.id, publicId: account.publicId, displayName: account.fullName, username: account.username, avatarUri: parseFirstPhoto(account.featuredPhotoUris), isVerified: account.isVerified, isAdmin: group.adminAccountId === account.id, joinedAt: membership.joinedAt.toISOString() } : null;
+    return account ? { accountId: account.id, publicId: account.publicId, displayName: account.fullName, username: account.username, avatarUri: await refreshMediaReference(parseFirstPhoto(account.featuredPhotoUris)), isVerified: account.isVerified, isAdmin: group.adminAccountId === account.id, joinedAt: membership.joinedAt.toISOString() } : null;
   }));
   return {
     id: group.id,
@@ -231,16 +232,31 @@ export async function leavePrivateGroup(groupId: number, accountId: number) {
 export async function listPrivateGroupMessages(groupId: number, limit = 100) {
   const database = await databaseOrThrow();
   const messages = await database.select().from(privateChatGroupMessages).where(eq(privateChatGroupMessages.groupId, groupId)).orderBy(desc(privateChatGroupMessages.createdAt)).limit(Math.min(Math.max(limit, 1), 100));
-  return messages.reverse().map((message) => ({ ...message, createdAt: message.createdAt.toISOString(), deletedAt: message.deletedAt?.toISOString() ?? null }));
+  return Promise.all(messages.reverse().map(async (message) => {
+    let content = message.content;
+    const mediaUrl = message.mediaStorageKey ? await refreshMediaReference(message.mediaStorageKey) : null;
+    if (message.mediaStorageKey) {
+      const photoLabel = content.includes("[Group photo") || content.includes("[Private group photo") ? "Group photo" : "Group voice";
+      content = await refreshMediaMarker(content, photoLabel, mediaUrl ?? message.mediaStorageKey);
+      if (photoLabel === "Group photo" && content.includes("[Private group photo")) content = await refreshMediaMarker(content, "Private group photo", mediaUrl ?? message.mediaStorageKey);
+      if (photoLabel === "Group voice" && content.includes("[Private group voice")) content = await refreshMediaMarker(content, "Private group voice", mediaUrl ?? message.mediaStorageKey);
+    } else {
+      content = await refreshMediaMarker(content, "Group photo", null);
+      content = await refreshMediaMarker(content, "Group voice", null);
+      content = await refreshMediaMarker(content, "Private group photo", null);
+      content = await refreshMediaMarker(content, "Private group voice", null);
+    }
+    return { ...message, content, mediaUrl, createdAt: message.createdAt.toISOString(), deletedAt: message.deletedAt?.toISOString() ?? null };
+  }));
 }
 
-export async function sendPrivateGroupMessage(groupId: number, account: { id: number; publicId: string | null; fullName: string }, values: { content: string; replyToId?: number | null; replyToDisplayName?: string | null; replyToContent?: string | null }) {
+export async function sendPrivateGroupMessage(groupId: number, account: { id: number; publicId: string | null; fullName: string }, values: { content: string; mediaStorageKey?: string | null; replyToId?: number | null; replyToDisplayName?: string | null; replyToContent?: string | null }) {
   const database = await databaseOrThrow();
   const group = await groupOrThrow(groupId);
   if (!await getPrivateGroupMembership(groupId, account.id)) throw new Error("Hanya member yang dapat mengirim pesan grup.");
   if (group.status === "deleted") throw new Error("Grup sudah dihapus.");
   if (group.status === "frozen") throw new Error("Grup sedang dibekukan Administrator Vaira dan hanya dapat dibaca.");
-  const result = await database.insert(privateChatGroupMessages).values({ groupId, accountId: account.id, publicId: account.publicId ?? "", displayName: account.fullName, content: values.content, replyToId: values.replyToId ?? null, replyToDisplayName: values.replyToDisplayName ?? null, replyToContent: values.replyToContent ?? null });
+  const result = await database.insert(privateChatGroupMessages).values({ groupId, accountId: account.id, publicId: account.publicId ?? "", displayName: account.fullName, content: values.content, mediaStorageKey: values.mediaStorageKey ?? null, replyToId: values.replyToId ?? null, replyToDisplayName: values.replyToDisplayName ?? null, replyToContent: values.replyToContent ?? null });
   return Number(result[0].insertId);
 }
 

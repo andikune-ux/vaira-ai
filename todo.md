@@ -3645,3 +3645,22 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Simpan foto bukti secara privat per akun di server dan simpan referensinya pada transaksi.
 - [x] Muat kembali foto bukti dari server saat akun login di perangkat lain.
 - [x] Tambahkan kontrol akses, fallback, dan regresi pemulihan foto bukti tanpa checkpoint otomatis.
+- [x] Perbaiki crash `Unable to find tRPC Context` saat FinanceProvider memulai sinkronisasi foto bukti.
+- [x] Pastikan integrasi sinkronisasi berjalan di bawah TRPCProvider tanpa mengganggu mode guest.
+- [x] Validasi startup, sinkronisasi, pemulihan foto, dan checkpoint stabil setelah perbaikan.
+- [x] Audit upload dan pemulihan foto Room Global, grup, bukti transaksi, profil, foto unggulan, dan layanan Aira.
+- [x] Buat penyimpanan media privat berbasis akun dengan referensi yang dapat dipulihkan lintas perangkat.
+- [x] Terapkan migrasi media lokal lama serta URL akses aman pada semua alur media.
+- [x] Uji isolasi media antar akun, fallback offline, dan pemulihan saat ganti perangkat tanpa checkpoint otomatis.
+
+- [x] Selesaikan normalisasi lampiran Aira dengan dataUri dan storageKey stabil.
+- [x] Ubah upload foto dan voice note Room Global menjadi marker storageKey privat.
+- [x] Ubah upload foto dan voice note grup privat menjadi marker storageKey privat.
+- [x] Tambahkan pemulihan signed URL untuk media Room Global dan grup saat riwayat dibaca.
+- [x] Migrasikan media lokal lama pada Room Global, grup, Aira, profil, dan foto unggulan saat akun aktif.
+- [x] Validasi isolasi media antar akun, fallback URL lama, dan pemulihan lintas perangkat.
+
+- [x] Perbaiki gambar hasil generate Aira agar dapat ditampilkan setelah dibuat dan saat riwayat dipulihkan.
+- [x] Perbaiki hydration foto Room Global dan grup agar upload pengguna lain tampil.
+- [x] Perbaiki pemutaran voice note Room Global dan grup untuk media pengguna lain.
+- [x] Tambahkan regresi key/signed URL/render media dan validasi lintas akun.

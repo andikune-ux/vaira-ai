@@ -127,6 +127,8 @@ export default function RootLayout() {
       <SpcaGazeProvider>
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
+          <FinanceProvider>
+          <LanguageProvider><ToastProvider>
           {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
           {/* If a screen needs the native header, explicitly enable it and set a human title via Stack.Screen options. */}
           {/* in order for ios apps tab switching to work properly, use presentation: "fullScreenModal" for login page, whenever you decide to use presentation: "modal*/}
@@ -171,6 +173,8 @@ export default function RootLayout() {
           <SpcaOverlay />
           <AppUpdatePrompt />
           <StatusBar style="auto" />
+          </ToastProvider></LanguageProvider>
+          </FinanceProvider>
         </QueryClientProvider>
       </trpc.Provider>
       </SpcaGazeProvider>
@@ -182,28 +186,20 @@ export default function RootLayout() {
   if (shouldOverrideSafeArea) {
     return (
       <ThemeProvider>
-        <FinanceProvider>
-          <LanguageProvider><ToastProvider>
-            <SafeAreaProvider initialMetrics={providerInitialMetrics}><AppErrorBoundary>
+        <SafeAreaProvider initialMetrics={providerInitialMetrics}><AppErrorBoundary>
               <SafeAreaFrameContext.Provider value={frame}>
                 <SafeAreaInsetsContext.Provider value={insets}>
                   {content}
                 </SafeAreaInsetsContext.Provider>
               </SafeAreaFrameContext.Provider>
-            </AppErrorBoundary></SafeAreaProvider>
-          </ToastProvider></LanguageProvider>
-        </FinanceProvider>
+        </AppErrorBoundary></SafeAreaProvider>
       </ThemeProvider>
     );
   }
 
   return (
     <ThemeProvider>
-      <FinanceProvider>
-        <LanguageProvider><ToastProvider>
-          <SafeAreaProvider initialMetrics={providerInitialMetrics}><AppErrorBoundary>{content}</AppErrorBoundary></SafeAreaProvider>
-        </ToastProvider></LanguageProvider>
-      </FinanceProvider>
+      <SafeAreaProvider initialMetrics={providerInitialMetrics}><AppErrorBoundary>{content}</AppErrorBoundary></SafeAreaProvider>
     </ThemeProvider>
   );
 }

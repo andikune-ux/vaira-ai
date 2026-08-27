@@ -14,7 +14,7 @@ const homePreferences = readFileSync(resolve(process.cwd(), "app/home-preference
   it("menyimpan avatar server secara aditif dan mengembalikannya pada akun publik", () => {
     expect(schema).toContain('avatarUri: text("avatarUri")');
     expect(router).toContain("uploadProfileAvatar");
-    expect(router).toContain("avatarUri: z.string().url().nullable().optional()");
+    expect(router).toContain("avatarUri: z.string().trim().max(400).nullable().optional()");
     expect(auth).toContain("avatarUri: string | null");
   });
 

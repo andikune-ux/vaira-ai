@@ -149,6 +149,10 @@ export type ChatAttachmentInfo = {
   kind: "image" | "audio" | "video" | "document";
   mimeType: string;
   label: string;
+  /** Referensi media privat yang stabil; URL baca boleh berubah. */
+  storageKey?: string;
+  /** URI baca sementara/stabil untuk preview dan pengiriman. */
+  dataUri?: string;
   /** Diisi pada hasil buatan Aira agar prompt asal dapat digunakan kembali. */
   generationPrompt?: string;
   generationKind?: AiraGenerationKind;
@@ -160,6 +164,8 @@ export type ChatAttachmentInfo = {
 export type AiraGeneratedResult = {
   id: string;
   uri: string;
+  /** Referensi object privat hasil generasi untuk pemulihan lintas perangkat. */
+  storageKey?: string;
   kind: "image" | "document";
   mimeType: string;
   label: string;
