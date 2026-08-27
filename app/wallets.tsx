@@ -1,7 +1,7 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router } from "expo-router";
 import * as Clipboard from "expo-clipboard";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { AiraCard, EmptyState, PrimaryButton } from "@/components/aira-ui";
@@ -64,19 +64,19 @@ const OFFICIAL_LOCAL_ASSETS: Record<string, number> = {
   bri: require("@/assets/images/brands/bri-provider.png"),
   bsi: require("@/assets/images/brands/bsi-provider.png"),
   ocbc: require("@/assets/images/brands/ocbc-official.png"),
-  maybank: require("@/assets/images/brands/maybank-official.svg"),
+  maybank: require("@/assets/images/brands/maybank-google.png"),
   btn: require("@/assets/images/brands/btn-official.png"),
   mega: require("@/assets/images/brands/bankmega-official.png"),
   bjb: require("@/assets/images/brands/bjb-official.png"),
   sinarmas: require("@/assets/images/brands/sinarmas-official.png"),
-  seabank: require("@/assets/images/brands/seabank-official.svg"),
+  seabank: require("@/assets/images/brands/seabank-google.png"),
   neo: require("@/assets/images/brands/bnc-official.png"),
   krom: require("@/assets/images/brands/krom-public-wordmark.png"),
   amar: require("@/assets/images/brands/amar-official.webp"),
   raya: require("@/assets/images/brands/raya-official.png"),
   mandiri: require("@/assets/images/brands/mandiri-official.png"),
   cimb: require("@/assets/images/brands/cimb-niaga-provider.png"),
-  jago: require("@/assets/images/brands/jago-official.svg"),
+  jago: require("@/assets/images/brands/jago-google.png"),
   blu: require("@/assets/images/brands/blu-official.png"),
   ovo: require("@/assets/images/brands/ovo-official.png"),
   danamon: require("@/assets/images/brands/danamon-provider.png"),
@@ -85,7 +85,7 @@ const OFFICIAL_LOCAL_ASSETS: Record<string, number> = {
   linkaja: require("@/assets/images/brands/linkaja-official.png"),
   superbank: require("@/assets/images/brands/superbank-official.png"),
   astrapay: require("@/assets/images/brands/astrapay-fixed.webp"),
-  doku: require("@/assets/images/brands/doku-official.svg"),
+  doku: require("@/assets/images/brands/doku-google.png"),
   kaspro: require("@/assets/images/brands/kaspro-official.png"),
   "true money": require("@/assets/images/brands/truemoney-official.png"),
   isaku: require("@/assets/images/brands/isaku-official.png"),
@@ -110,7 +110,13 @@ const WALLET_OPTIONS: { kind: WalletKind; label: string; icon: keyof typeof Mate
 function BrandMark({ entry, size = 44 }: { entry?: BrandEntry; size?: number }) {
   const localAsset = entry ? OFFICIAL_LOCAL_ASSETS[entry.id] : undefined;
   const sourceDomain = entry ? OFFICIAL_DOMAINS[entry.id] : undefined;
-  return <View style={[styles.brandMark, { backgroundColor: entry?.color ?? "#31435F", height: size, width: size }]}><Text style={[styles.brandMarkText, { fontSize: entry && entry.initials.length > 3 ? 8 : 11 }]}>{entry?.initials ?? "?"}</Text>{localAsset ? <Image source={localAsset} accessibilityLabel={`Logo resmi lokal ${entry?.label}${sourceDomain ? ` dari ${sourceDomain}` : ""}`} resizeMode="contain" style={[styles.officialLogo, { height: size - 8, width: size - 8 }]} /> : null}</View>;
+  const [localFailed, setLocalFailed] = useState(false);
+  const [googleFailed, setGoogleFailed] = useState(false);
+  useEffect(() => { setLocalFailed(false); setGoogleFailed(false); }, [entry?.id]);
+  const googleLogoUri = sourceDomain ? `https://www.google.com/s2/favicons?sz=128&domain=${encodeURIComponent(sourceDomain)}` : undefined;
+  const showLocal = Boolean(localAsset) && !localFailed;
+  const showGoogle = !showLocal && Boolean(googleLogoUri) && !googleFailed;
+  return <View style={[styles.brandMark, { backgroundColor: entry?.color ?? "#31435F", height: size, width: size }]}><Text style={[styles.brandMarkText, { fontSize: entry && entry.initials.length > 3 ? 8 : 11 }]}>{entry?.initials ?? "?"}</Text>{showLocal ? <Image source={localAsset} accessibilityLabel={`Logo bank lokal ${entry?.label}`} onError={() => setLocalFailed(true)} resizeMode="contain" style={[styles.officialLogo, { height: size - 8, width: size - 8 }]} /> : showGoogle ? <Image source={{ uri: googleLogoUri }} accessibilityLabel={`Logo ${entry?.label} dari Google`} onError={() => setGoogleFailed(true)} resizeMode="contain" style={[styles.officialLogo, { height: size - 8, width: size - 8 }]} /> : null}</View>;
 }
 
 export default function WalletsScreen() {

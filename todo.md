@@ -3669,3 +3669,12 @@ Current copied-project focus from the source summary: Aira AI Browser, Perchance
 - [x] Tampilkan durasi aktual voice note serta status memuat dan selesai.
 - [x] Tambahkan indikator gagal muat dan tombol Coba lagi untuk foto dan audio.
 - [x] Validasi preview, durasi, error, dan retry pada semua layar media terkait.
+
+- [x] Audit katalog logo bank dan semua pemakaian logo pada transaksi/dompet.
+- [x] Tambahkan sumber logo publik berbasis Google dengan fallback lokal yang aman.
+- [x] Tambahkan indikator gagal muat dan fallback inisial/nama bank.
+- [x] Validasi logo bank pada OCR, form transaksi, dompet, dan laporan.
+
+- [x] Validasi satu per satu aset logo lokal dan catat hanya berkas yang rusak atau hilang.
+- [x] Ganti hanya aset logo bermasalah dengan salinan permanen; pertahankan semua logo valid tanpa perubahan.
+- [x] Jalankan typecheck, tes katalog, dan pemeriksaan visual setelah penggantian selektif.
