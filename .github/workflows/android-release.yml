@@ -2,6 +2,8 @@ name: Build Android APK and Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - "v*"
   workflow_dispatch:
@@ -47,7 +49,9 @@ jobs:
       - name: Prepare Android SDK
         shell: bash
         run: |
+          set -euo pipefail
           SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          test -d "$SDK_ROOT/cmdline-tools"
           SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"
           test -x "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
@@ -71,13 +75,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -n "$ANDROID_KEYSTORE_BASE64"
-          test -n "$ANDROID_KEYSTORE_PASSWORD"
-          test -n "$ANDROID_KEY_ALIAS"
-          test -n "$ANDROID_KEY_PASSWORD"
+          : "${ANDROID_KEYSTORE_BASE64:?Missing GitHub secret ANDROID_KEYSTORE_BASE64}"
+          : "${ANDROID_KEYSTORE_PASSWORD:?Missing GitHub secret ANDROID_KEYSTORE_PASSWORD}"
+          : "${ANDROID_KEY_ALIAS:?Missing GitHub secret ANDROID_KEY_ALIAS}"
+          : "${ANDROID_KEY_PASSWORD:?Missing GitHub secret ANDROID_KEY_PASSWORD}"
           mkdir -p android/app/keystores
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/keystores/vaira-release.keystore
+          test -s android/app/keystores/vaira-release.keystore
           chmod 600 android/app/keystores/vaira-release.keystore
+          keytool -list -keystore android/app/keystores/vaira-release.keystore -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null
           printf '%s\n' \
             "VAIRA_RELEASE_STORE_FILE=keystores/vaira-release.keystore" \
             "VAIRA_RELEASE_STORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" \
@@ -90,10 +96,22 @@ jobs:
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon --stacktrace
 
+      - name: Verify APK output
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          APKSIGNER="$SDK_ROOT/build-tools/35.0.0/apksigner"
+          test -x "$APKSIGNER"
+          "$APKSIGNER" verify --verbose "$APK"
+
       - name: Prepare release asset
         id: asset
         shell: bash
         run: |
+          set -euo pipefail
           VERSION=$(node -p "require('./package.json').version")
           mkdir -p release
           cp android/app/build/outputs/apk/release/app-release.apk "release/V A I R A A I-${VERSION}-android-release.apk"
@@ -120,8 +138,6 @@ jobs:
           body: |
             APK release V A I R A  A I bertanda tangan dengan identitas aplikasi kanonik:
             - Package Android: dev.andikune.vairaio
-            - Developer: Andi (andikune)
-            - Tagline: V A I R A  I O
 
             Unduh APK pada bagian Assets, lalu pasang di Android. Pembaruan versi berikutnya akan menggunakan package dan keystore release yang sama.
         env:
