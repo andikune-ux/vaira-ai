@@ -1,7 +1,7 @@
 import QRCode from "qrcode";
 
-const donationUrl = "https://airaxai-6vcs6pth.manus.space/donasi.html";
-const appDeepLink = "manusairaxai://";
+const donationUrl = "https://vairaiapp-n9sw5cvx.manus.space/donasi.html";
+const appDeepLink = "manusvairaio://";
 
 await QRCode.toFile("assets/images/donation-qr.png", donationUrl, {
   color: { dark: "#0B1220", light: "#FFFFFF" },

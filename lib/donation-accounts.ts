@@ -18,4 +18,4 @@ export const DONATION_ACCOUNTS: DonationAccount[] = [
 ];
 
 /** Halaman HTML mandiri yang dapat dibuka pemindai QR tanpa bergantung pada rute aplikasi. */
-export const DONATION_DETAILS_URL = "https://airaxai-6vcs6pth.manus.space/donasi.html";
+export const DONATION_DETAILS_URL = "https://vairaiapp-n9sw5cvx.manus.space/donasi.html";

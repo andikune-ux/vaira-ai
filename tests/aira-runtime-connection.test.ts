@@ -17,7 +17,7 @@ describe("koneksi runtime layanan Aira", () => {
 
   it("memiliki fallback backend produksi untuk APK standalone", () => {
     const oauth = source("constants/oauth.ts");
-    expect(oauth).toContain('const PRODUCTION_API_BASE_URL = "https://airaxai-6vcs6pth.manus.space"');
+    expect(oauth).toContain('const PRODUCTION_API_BASE_URL = "https://vairaiapp-n9sw5cvx.manus.space"');
     expect(oauth).toContain("isManagedPreviewApiBaseUrl");
     expect(oauth).toContain("!nativeHost && isManagedPreviewApiBaseUrl(API_BASE_URL)");
     expect(oauth).toContain("return PRODUCTION_API_BASE_URL");

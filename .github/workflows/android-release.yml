@@ -18,6 +18,9 @@ concurrency:
 env:
   EXPO_NO_DOCTOR: "1"
   CI: "1"
+  EXPO_PUBLIC_API_BASE_URL: https://vairaiapp-n9sw5cvx.manus.space
+  EXPO_PUBLIC_OAUTH_PORTAL_URL: https://manus.im
+  EXPO_PUBLIC_OAUTH_SERVER_URL: https://api.manus.im
 
 jobs:
   build-android:

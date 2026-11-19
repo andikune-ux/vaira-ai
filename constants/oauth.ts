@@ -5,8 +5,8 @@ import Constants from "expo-constants";
 
 // Extract scheme from bundle ID (last segment timestamp, prefixed with "manus")
 // e.g., "space.manus.my.app.t20240115103045" -> "manus20240115103045"
-const bundleId = "com.app.airaxai";
-const PRODUCTION_API_BASE_URL = "https://airaxai-6vcs6pth.manus.space";
+const bundleId = "dev.andikune.vairaio";
+const PRODUCTION_API_BASE_URL = "https://vairaiapp-n9sw5cvx.manus.space";
 const timestamp = bundleId.split(".").pop()?.replace(/^t/, "") ?? "";
 const schemeFromBundleId = `manus${timestamp}`;
 

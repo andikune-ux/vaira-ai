@@ -42,7 +42,7 @@ describe("status profil dan donasi QR", () => {
     const script = source("scripts/generate-donation-qr.mjs");
     expect(publicPage).toContain("Buka aplikasi V A I R A  A I");
     expect(publicPage).toContain("vaira-ai-app-qr.png");
-    expect(publicPage).toContain("manusairaxai://");
+    expect(publicPage).toContain("manusvairaio://");
     expect(script).toContain('public/vaira-ai-app-qr.png');
     expect(fs.existsSync(path.resolve(__dirname, "../public/vaira-ai-app-qr.png"))).toBe(true);
   });
