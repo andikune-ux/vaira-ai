@@ -19,7 +19,7 @@ env:
 
 jobs:
   build-android:
-    name: Build V A I R A A I APK
+    name: Build V A I R A A I signed APK
     runs-on: ubuntu-24.04
 
     steps:
@@ -62,9 +62,67 @@ jobs:
       - name: Generate Android project
         run: pnpm exec expo prebuild --platform android --no-install --non-interactive
 
-      - name: Build installable APK
+      - name: Configure canonical release signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEY_PASSWORD"
+          mkdir -p android/app/keystores
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/keystores/vaira-release.keystore
+          chmod 600 android/app/keystores/vaira-release.keystore
+          cat >> android/gradle.properties <<EOF
+VAIRA_RELEASE_STORE_FILE=keystores/vaira-release.keystore
+VAIRA_RELEASE_STORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD
+VAIRA_RELEASE_KEY_ALIAS=$ANDROID_KEY_ALIAS
+VAIRA_RELEASE_KEY_PASSWORD=$ANDROID_KEY_PASSWORD
+EOF
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("android/app/build.gradle")
+          source = path.read_text()
+          marker = "signingConfigs {"
+          start = source.index(marker)
+          depth = 0
+          end = None
+          for position in range(start, len(source)):
+              char = source[position]
+              if char == "{":
+                  depth += 1
+              elif char == "}":
+                  depth -= 1
+                  if depth == 0:
+                      end = position
+                      break
+          if end is None:
+              raise SystemExit("signingConfigs block not found")
+          release_config = '''
+        release {
+            storeFile file(project.findProperty("VAIRA_RELEASE_STORE_FILE"))
+            storePassword project.findProperty("VAIRA_RELEASE_STORE_PASSWORD")
+            keyAlias project.findProperty("VAIRA_RELEASE_KEY_ALIAS")
+            keyPassword project.findProperty("VAIRA_RELEASE_KEY_PASSWORD")
+        }
+'''
+          source = source[:end] + release_config + source[end:]
+          old = "release {\n            signingConfig signingConfigs.debug"
+          if old not in source:
+              raise SystemExit("release build type signing config not found")
+          source = source.replace(old, "release {\n            signingConfig signingConfigs.release", 1)
+          path.write_text(source)
+          PY
+
+      - name: Build installable signed APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Prepare release asset
         id: asset
@@ -72,14 +130,14 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           mkdir -p release
-          cp android/app/build/outputs/apk/debug/app-debug.apk "release/V A I R A A I-${VERSION}-android.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "release/V A I R A A I-${VERSION}-android-release.apk"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "asset=release/V A I R A A I-${VERSION}-android.apk" >> "$GITHUB_OUTPUT"
+          echo "asset=release/V A I R A A I-${VERSION}-android-release.apk" >> "$GITHUB_OUTPUT"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vaira-ai-android-apk
+          name: vaira-ai-android-release
           path: release/*.apk
           if-no-files-found: error
           retention-days: 30
@@ -94,13 +152,11 @@ jobs:
           prerelease: false
           name: V A I R A  A I ${{ github.ref_name }}
           body: |
-            APK Android V A I R A  A I siap dipasang.
+            APK release V A I R A  A I bertanda tangan dengan identitas aplikasi kanonik:
+            - Package Android: dev.andikune.vairaio
+            - Developer: Andi (andikune)
+            - Tagline: V A I R A  I O
 
-            1. Unduh file APK pada bagian Assets.
-            2. Buka file APK di perangkat Android.
-            3. Izinkan pemasangan dari sumber ini jika Android memintanya.
-            4. Pasang atau perbarui aplikasi V A I R A  A I.
-
-            Catatan: APK ini ditujukan untuk pemasangan langsung dari GitHub Release. Untuk distribusi Google Play, diperlukan proses signing Play Store terpisah.
+            Unduh APK pada bagian Assets, lalu pasang di Android. Pembaruan versi berikutnya akan menggunakan package dan keystore release yang sama.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
