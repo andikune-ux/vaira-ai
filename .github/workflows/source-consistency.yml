@@ -1,0 +1,59 @@
+name: Validate GitHub Source Consistency
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: source-consistency-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-source:
+    name: Validate VAIRA AI source consistency
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate TypeScript
+        run: pnpm run check
+
+      - name: Run focused regression tests
+        run: pnpm exec vitest run tests/aira-runtime-connection.test.ts tests/profile-donation-qr.test.ts
+
+      - name: Verify canonical identity and production endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'dev.andikune.vairaio' app.config.ts
+          grep -q 'V A I R A  A I' app.config.ts
+          grep -q 'vairaiapp-n9sw5cvx.manus.space' constants/oauth.ts
+          ! grep -R --exclude-dir=node_modules --exclude-dir=.git --exclude='*.md' \
+            -E 'airaxai-6vcs6pth\.manus\.space|manusairaxai://|dev\.andik\.une' \
+            app components constants hooks lib server scripts tests
