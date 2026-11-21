@@ -1,0 +1,129 @@
+name: Build Native Android APK and Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-native-release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  EXPO_NO_DOCTOR: "1"
+  CI: "1"
+  EXPO_PUBLIC_API_BASE_URL: https://vairaiapp-n9sw5cvx.manus.space
+  EXPO_PUBLIC_OAUTH_PORTAL_URL: https://manus.im
+  EXPO_PUBLIC_OAUTH_SERVER_URL: https://api.manus.im
+
+jobs:
+  build-android:
+    name: Build V A I R A A I native Android APK
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Prepare Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate TypeScript and regressions
+        run: |
+          pnpm run check
+          pnpm exec vitest run tests/aira-runtime-connection.test.ts tests/profile-donation-qr.test.ts
+
+      - name: Configure canonical release signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${ANDROID_KEYSTORE_BASE64:?Missing GitHub secret ANDROID_KEYSTORE_BASE64}"
+          : "${ANDROID_KEYSTORE_PASSWORD:?Missing GitHub secret ANDROID_KEYSTORE_PASSWORD}"
+          : "${ANDROID_KEY_ALIAS:?Missing GitHub secret ANDROID_KEY_ALIAS}"
+          : "${ANDROID_KEY_PASSWORD:?Missing GitHub secret ANDROID_KEY_PASSWORD}"
+          mkdir -p android/app/keystores
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/keystores/vaira-release.keystore
+          test -s android/app/keystores/vaira-release.keystore
+          chmod 600 android/app/keystores/vaira-release.keystore
+          keytool -list -keystore android/app/keystores/vaira-release.keystore \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null
+          printf '\nVAIRA_RELEASE_STORE_FILE=keystores/vaira-release.keystore\n' >> android/gradle.properties
+          python3 scripts/configure-android-signing.py
+
+      - name: Build native release APK
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Verify signed APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          "$SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose "$APK"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vaira-ai-android-release
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: android/app/build/outputs/apk/release/app-release.apk
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+          name: V A I R A  A I ${{ github.ref_name }}
+          body: |
+            APK native release V A I R A  A I.
+            - Package Android: dev.andikune.vairaio
+            - Backend: Manus production
+            - Build: native Gradle dari proyek Android yang tersimpan di repository
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

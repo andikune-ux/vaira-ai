@@ -41,9 +41,8 @@ yarn-error.*
 
 app-example
 
-# generated native folders
+# generated iOS folder; Android native project is versioned for GitHub Gradle builds
 /ios
-/android
 
 # IDE
 .vscode/
