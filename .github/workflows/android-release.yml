@@ -98,7 +98,18 @@ jobs:
 
       - name: Build installable signed APK
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if ./gradlew assembleRelease --no-daemon --stacktrace; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "Gradle build attempt $attempt failed; retrying after dependency backoff..."
+              sleep 20
+            fi
+          done
+          exit 1
 
       - name: Verify APK output
         shell: bash
