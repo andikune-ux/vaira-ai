@@ -70,7 +70,8 @@ release_body, replacements = re.subn(
     count=1,
 )
 if replacements == 0:
-    raise SystemExit("release build type signing config not found")
+    if "signingConfig signingConfigs.release" not in release_body:
+        raise SystemExit("release build type signing config not found")
 
 source = source[: release_open + 1] + release_body + source[release_close:]
 path.write_text(source)

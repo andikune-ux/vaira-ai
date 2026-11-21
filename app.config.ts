@@ -39,7 +39,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
-  version: "1.0.33",
+  version: "1.0.34",
   orientation: "default",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
