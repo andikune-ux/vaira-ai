@@ -87,6 +87,7 @@ jobs:
           test -s android/app/keystores/vaira-release.keystore
           chmod 600 android/app/keystores/vaira-release.keystore
           keytool -list -keystore android/app/keystores/vaira-release.keystore -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null
+          printf '\n' >> android/gradle.properties
           printf '%s\n' \
             "VAIRA_RELEASE_STORE_FILE=keystores/vaira-release.keystore" \
             "VAIRA_RELEASE_STORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" \
