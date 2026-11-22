@@ -1,28 +1,35 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { Image, type ImageProps } from "expo-image";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
 interface RetryableMediaImageProps extends Omit<ImageProps, "source" | "onError" | "onLoad"> {
   uri: string;
   previewLabel?: string;
-  onPreview: (uri: string) => void;
+  onPreview?: (uri: string) => void;
 }
 
-export function RetryableMediaImage({ uri, previewLabel = "Pratinjau foto", onPreview, style, ...props }: RetryableMediaImageProps) {
+export function RetryableMediaImage({ uri, previewLabel = "Pratinjau foto", onPreview, style, cachePolicy = "memory-disk", ...props }: RetryableMediaImageProps) {
   const [attempt, setAttempt] = useState(0);
   const [failed, setFailed] = useState(false);
+  const [localPreviewOpen, setLocalPreviewOpen] = useState(false);
 
   const retry = () => {
     setFailed(false);
     setAttempt((value) => value + 1);
   };
 
+  const openPreview = () => {
+    if (onPreview) onPreview(uri);
+    else setLocalPreviewOpen(true);
+  };
+
   return (
     <>
-      <Pressable accessibilityRole="button" accessibilityLabel={previewLabel} disabled={failed} onPress={() => onPreview(uri)} style={styles.imagePressable}>
+      <Pressable accessibilityRole="button" accessibilityLabel={previewLabel} disabled={failed} onPress={openPreview} style={styles.imagePressable}>
         <Image
           {...props}
+          cachePolicy={cachePolicy}
           key={`${uri}-${attempt}`}
           source={{ uri }}
           style={style}
@@ -40,6 +47,16 @@ export function RetryableMediaImage({ uri, previewLabel = "Pratinjau foto", onPr
           </View>
         ) : null}
       </Pressable>
+      {!onPreview ? (
+        <Modal visible={localPreviewOpen} transparent animationType="fade" onRequestClose={() => setLocalPreviewOpen(false)}>
+          <View style={styles.previewBackdrop}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Tutup pratinjau foto" onPress={() => setLocalPreviewOpen(false)} style={styles.previewClose}>
+              <MaterialIcons name="close" size={25} color="#FFFFFF" />
+            </Pressable>
+            <Image {...props} cachePolicy={cachePolicy} source={{ uri }} contentFit="contain" style={styles.previewImage} />
+          </View>
+        </Modal>
+      ) : null}
     </>
   );
 }
@@ -50,4 +67,7 @@ const styles = StyleSheet.create({
   errorText: { color: "#FFFFFF", fontSize: 11, fontWeight: "800", textAlign: "center" },
   retryButton: { alignItems: "center", backgroundColor: "#8DEBFF", borderRadius: 8, flexDirection: "row", gap: 4, paddingHorizontal: 9, paddingVertical: 6 },
   retryText: { color: "#06101E", fontSize: 10, fontWeight: "900" },
+  previewBackdrop: { alignItems: "center", backgroundColor: "rgba(0,0,0,.94)", flex: 1, justifyContent: "center", padding: 18 },
+  previewClose: { alignSelf: "flex-end", padding: 8 },
+  previewImage: { flex: 1, maxHeight: "88%", width: "100%" },
 });
