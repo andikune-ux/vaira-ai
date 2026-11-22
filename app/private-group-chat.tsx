@@ -149,7 +149,7 @@ export default function PrivateGroupChatScreen() {
   const askLeave = () => Alert.alert("Keluar grup?", group?.isAdmin ? "Jika masih ada member, admin otomatis berpindah ke member yang paling awal bergabung." : "Anda dapat bergabung kembali melalui link undangan admin.", [{ text: "Batal", style: "cancel" }, { text: "Keluar grup", style: "destructive", onPress: () => { void leave.mutateAsync({ groupId }); } }]);
   const renderContent = (content: string, mediaUrl?: string | null) => {
     const photo = content.match(/^\[(?:Group photo|Private group photo) (?:url|key)=([^\s]+)\]\s*(.*)$/s);
-    if (photo) return <View style={styles.mediaPost}><RetryableMediaImage uri={mediaUrl ?? photo[1]} previewLabel="Buka pratinjau foto grup" contentFit="cover" cachePolicy="none" style={styles.photo} /><Text style={styles.mediaCaption}>{photo[2] || "Foto"}</Text></View>;
+    if (photo) return <View style={styles.mediaPost}><RetryableMediaImage uri={mediaUrl ?? photo[1]} previewLabel="Buka pratinjau foto grup" contentFit="cover" cachePolicy="memory-disk" style={styles.photo} /><Text style={styles.mediaCaption}>{photo[2] || "Foto"}</Text></View>;
     const voice = content.match(/^\[(?:Group voice|Private group voice) (?:(?:url|key)=([^\s]+)|audio=([^\s]+)) · (\d+s)\]\s*(.*)$/s);
     if (voice) return <GroupVoiceNote uri={mediaUrl ?? voice[1] ?? voice[2]} duration={voice[3]} label={voice[4] || "Pesan suara"} />;
     const parts = content.split(/((?:https?:\/\/|www\.)[^\s]+)/gi);
