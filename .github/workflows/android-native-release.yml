@@ -81,7 +81,7 @@ jobs:
       - name: Validate TypeScript and regressions
         run: |
           pnpm run check
-          pnpm exec vitest run tests/aira-runtime-connection.test.ts tests/profile-donation-qr.test.ts tests/app-update-server.test.ts tests/spca-features.test.ts
+          pnpm exec vitest run tests/aira-runtime-connection.test.ts tests/profile-donation-qr.test.ts tests/app-update-server.test.ts tests/spca-features.test.ts tests/global-room-media.test.ts
 
       - name: Configure canonical release signing
         env:
