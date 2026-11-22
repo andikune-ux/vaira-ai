@@ -81,6 +81,10 @@ def enableMinifyInReleaseBuilds = (findProperty('android.enableMinifyInReleaseBu
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+def appVersionName = System.getenv("APP_VERSION") ?: "1.0.36"
+def appVersionParts = appVersionName.tokenize(".").collect { it.toInteger() }
+def appVersionCode = appVersionParts.take(3).inject(0) { code, part -> code * 1000 + part }
+
 android {
     ndkVersion rootProject.ext.ndkVersion
 
@@ -92,8 +96,8 @@ android {
         applicationId 'dev.andikune.vairaio'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0.35"
+        versionCode appVersionCode
+        versionName appVersionName
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
