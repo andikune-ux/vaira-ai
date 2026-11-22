@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const KEY = "airax.last-bug-diagnostic";
-export type BugDiagnostic = { message: string; stack?: string; createdAt: string };
+export type BugDiagnostic = { message: string; stack?: string; nativeCrashLog?: string; createdAt: string };
 
 /** Menghapus pola rahasia dan data percakapan dari data diagnostik yang boleh disimpan lokal. */
 export function redactDiagnosticText(value: string) {
@@ -23,4 +23,23 @@ export async function captureBugDiagnostic(error: unknown, componentStack?: stri
   };
   await AsyncStorage.setItem(KEY, JSON.stringify(diagnostic));
 }
-export async function getLastBugDiagnostic(): Promise<BugDiagnostic | null> { try { const raw = await AsyncStorage.getItem(KEY); return raw ? JSON.parse(raw) as BugDiagnostic : null; } catch { return null; } }
+
+export async function saveNativeCrashDiagnostic(nativeCrashLog: string) {
+  const previous = await getLastBugDiagnostic();
+  const diagnostic: BugDiagnostic = {
+    message: previous?.message ?? "Native Android crash terdeteksi.",
+    stack: previous?.stack,
+    nativeCrashLog,
+    createdAt: previous?.createdAt ?? new Date().toISOString(),
+  };
+  await AsyncStorage.setItem(KEY, JSON.stringify(diagnostic));
+}
+
+export async function getLastBugDiagnostic(): Promise<BugDiagnostic | null> {
+  try {
+    const raw = await AsyncStorage.getItem(KEY);
+    return raw ? JSON.parse(raw) as BugDiagnostic : null;
+  } catch {
+    return null;
+  }
+}
