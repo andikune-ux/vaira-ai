@@ -384,7 +384,7 @@ function PassiveSpcaPatrol() {
     void recordSpcaPassiveHistory("appearance", `Patroli pasif muncul (${appearanceCount.current}${sessionLimit > 0 ? `/${sessionLimit}` : ""}).`);
     visibleRef.current = true;
     setVisible(true); setTapCount(0); setEvasive(false); setMood("focused"); setBubble("Memeriksa layar…");
-    patrol.setValue({ x: 0, y: 12 });
+    setAnimatedPoint(patrol, 0, 12);
     patrolAnimation.current?.stop();
     clearBubbleResumeTimer();
     Animated.sequence([
