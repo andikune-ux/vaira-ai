@@ -52,6 +52,14 @@ const FLOAT_MOTION = { subtle: { duration: 2200, glow: 0.32, lift: 3, rotate: "0
 const AURA_COLORS = { cyan: "#4DDFFF", violet: "#A78BFA", rose: "#FB7185", gold: "#FBBF24" } as const;
 const SCANNER_COLORS = { blue: "#4DDFFF", violet: "#A78BFA", green: "#4ADE80", gold: "#FBBF24" } as const;
 const ANIMATION_SPEED = { slow: 1.35, normal: 1, fast: 0.7 } as const;
+type AnimatedPoint = { x: Animated.Value; y: Animated.Value };
+const setAnimatedPoint = (point: AnimatedPoint, x: number, y: number) => { point.x.setValue(x); point.y.setValue(y); };
+const stopAnimatedPoint = (point: AnimatedPoint) => { point.x.stopAnimation(); point.y.stopAnimation(); };
+const animatedPointTransform = (point: AnimatedPoint) => [{ translateX: point.x }, { translateY: point.y }];
+const animatePointTo = (point: AnimatedPoint, x: number, y: number, duration: number) => Animated.parallel([
+  Animated.timing(point.x, { toValue: x, duration, useNativeDriver: true }),
+  Animated.timing(point.y, { toValue: y, duration, useNativeDriver: true }),
+]);
 const pause = (milliseconds: number) => new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
 
 export function SpcaOverlay() {
@@ -88,12 +96,12 @@ export function SpcaOverlay() {
   const [bubble, setBubble] = useState<ReminderBubble>(null);
   const positionRef = useRef(position);
   const gestureStart = useRef(position);
-  const patrol = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
-  const dragTail = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const patrol = { x: useRef(new Animated.Value(0)).current, y: useRef(new Animated.Value(0)).current };
+  const dragTail = { x: useRef(new Animated.Value(0)).current, y: useRef(new Animated.Value(0)).current };
   const stretch = useRef(new Animated.Value(0)).current;
   const radar = useRef(new Animated.Value(0)).current;
   const float = useRef(new Animated.Value(0)).current;
-  const scanPatrol = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const scanPatrol = { x: useRef(new Animated.Value(0)).current, y: useRef(new Animated.Value(0)).current };
   const bubbleMotion = useRef(new Animated.Value(0)).current;
   const bubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const announcedFinding = useRef<string | null>(null);
@@ -163,15 +171,15 @@ export function SpcaOverlay() {
       setPosition(next);
       const horizontalTravel = next.left - gestureStart.current.left;
       const verticalTravel = next.top - gestureStart.current.top;
-      dragTail.setValue({ x: -horizontalTravel * 0.18, y: -verticalTravel * 0.18 });
+      setAnimatedPoint(dragTail, -horizontalTravel * 0.18, -verticalTravel * 0.18);
     },
     onPanResponderRelease: () => {
       const next = positionRef.current;
       void updateProfile({ uiPreferences: { ...preferences, spcaPosition: next } });
-      Animated.parallel([Animated.timing(dragTail, { toValue: { x: 0, y: 0 }, duration: 260, useNativeDriver: true }), Animated.timing(stretch, { toValue: 0, duration: 230, useNativeDriver: true })]).start();
+      Animated.parallel([animatePointTo(dragTail, 0, 0, 260), Animated.timing(stretch, { toValue: 0, duration: 230, useNativeDriver: true })]).start();
       showToast("Posisi Robot SPCA disimpan.", "info");
     },
-  }), [clamp, dragTail, preferences, showToast, stretch, updateProfile]);
+  }), [clamp, dragTail.x, dragTail.y, preferences, showToast, stretch, updateProfile]);
 
   useEffect(() => {
     if (!preferences.spcaEnabled || !preferences.spcaAutoPatrol) return;
@@ -181,10 +189,10 @@ export function SpcaOverlay() {
       const target = corners[Math.floor(Math.random() * corners.length)];
       const duration = Math.max(2, preferences.spcaPatrolDurationSeconds) * 1000;
       setMood(PATROL_MOODS[Math.floor(Math.random() * PATROL_MOODS.length)]);
-      Animated.sequence([Animated.timing(patrol, { toValue: { x: target.left - origin.left, y: target.top - origin.top }, duration: duration / 2, useNativeDriver: true }), Animated.timing(patrol, { toValue: { x: 0, y: 0 }, duration: duration / 2, useNativeDriver: true })]).start(() => setMood("happy"));
+      Animated.sequence([animatePointTo(patrol, target.left - origin.left, target.top - origin.top, duration / 2), animatePointTo(patrol, 0, 0, duration / 2)]).start(() => setMood("happy"));
     }, Math.max(5, preferences.spcaPatrolIntervalSeconds) * 1000);
-    return () => { clearInterval(interval); patrol.stopAnimation(); patrol.setValue({ x: 0, y: 0 }); };
-  }, [clamp, height, hitSize, patrol, preferences.spcaAutoPatrol, preferences.spcaEnabled, preferences.spcaPatrolDurationSeconds, preferences.spcaPatrolIntervalSeconds, width]);
+    return () => { clearInterval(interval); stopAnimatedPoint(patrol); setAnimatedPoint(patrol, 0, 0); };
+  }, [clamp, height, hitSize, patrol.x, patrol.y, preferences.spcaAutoPatrol, preferences.spcaEnabled, preferences.spcaPatrolDurationSeconds, preferences.spcaPatrolIntervalSeconds, width]);
 
   const refreshDiagnostic = useCallback(async () => { const [last, cache] = await Promise.all([getLastBugDiagnostic(), getTemporaryCacheSize()]); setDiagnostic(last); setCacheSize(cache); return { last, cache }; }, []);
   const scan = useCallback(async () => {
@@ -194,15 +202,15 @@ export function SpcaOverlay() {
     const scanStartedAt = Date.now();
     const progressTimer = setInterval(() => setScanPercent(Math.min(97, Math.round(((Date.now() - scanStartedAt) / 1550) * 100))), 90);
     const rotation = Animated.loop(Animated.timing(radar, { toValue: 1, duration: 720, useNativeDriver: true })); rotation.start();
-    scanPatrol.setValue({ x: 0, y: 0 });
-    const freeScan = Animated.loop(Animated.sequence([Animated.timing(scanPatrol, { toValue: { x: 54, y: -32 }, duration: 320, useNativeDriver: true }), Animated.timing(scanPatrol, { toValue: { x: -42, y: 18 }, duration: 380, useNativeDriver: true }), Animated.timing(scanPatrol, { toValue: { x: 28, y: 44 }, duration: 330, useNativeDriver: true }), Animated.timing(scanPatrol, { toValue: { x: -22, y: -22 }, duration: 350, useNativeDriver: true }), Animated.timing(scanPatrol, { toValue: { x: 0, y: 0 }, duration: 280, useNativeDriver: true })]));
+    setAnimatedPoint(scanPatrol, 0, 0);
+    const freeScan = Animated.loop(Animated.sequence([animatePointTo(scanPatrol, 54, -32, 320), animatePointTo(scanPatrol, -42, 18, 380), animatePointTo(scanPatrol, 28, 44, 330), animatePointTo(scanPatrol, -22, -22, 350), animatePointTo(scanPatrol, 0, 0, 280)]));
     freeScan.start();
-    const { last, cache } = await refreshDiagnostic(); const runtime = await activeDiagnostics.scan(); await pause(1550); clearInterval(progressTimer); setScanPercent(100); rotation.stop(); freeScan.stop(); scanPatrol.setValue({ x: 0, y: 0 });
+    const { last, cache } = await refreshDiagnostic(); const runtime = await activeDiagnostics.scan(); await pause(1550); clearInterval(progressTimer); setScanPercent(100); rotation.stop(); freeScan.stop(); setAnimatedPoint(scanPatrol, 0, 0);
     const findings = runtime ? createSpcaFindings(runtime) : activeDiagnostics.findings;
     const details = findings.length ? findings.map((item) => `${item.title}: ${item.summary}`).join("\n") : last ? `SPCA menemukan ringkasan kesalahan runtime pada ${new Date(last.createdAt).toLocaleString("id-ID")}. Isi teknis telah disaring demi privasi.` : previewUri ? "Tidak ada crash JavaScript tersimpan. Tangkapan layar telah dibuat dan siap Anda tinjau secara visual." : "Tidak ada masalah utama yang tercatat. Status cache dan izin perangkat diperiksa tanpa mengubah data.";
     const result = `${details}\nCache sementara: ${formatCacheSize(cache)}.\nTindakan aman tersedia di Pusat SPCA: coba ulang, periksa izin, bersihkan cache, atau buat laporan aman untuk Administrator.`;
     setAnalysis(result); setReportDraft(`SPCA — Laporan Pemindaian\nWaktu: ${new Date().toLocaleString("id-ID")}\n\n${result}`); setMood(last ? "crying" : "happy"); setAnalyzing(false); scanInFlight.current = false;
-  }, [activeDiagnostics, previewUri, radar, refreshDiagnostic, scanPatrol]);
+  }, [activeDiagnostics, previewUri, radar, refreshDiagnostic, scanPatrol.x, scanPatrol.y]);
   const openAssistant = () => {
     setVisible(true);
     void scan().catch(() => {
@@ -261,7 +269,7 @@ export function SpcaOverlay() {
   if (!preferences.spcaEnabled) return preferences.spcaPassivePatrolEnabled === false ? null : <PassiveSpcaPatrol />;
 
   return <>
-    <Animated.View {...panResponder.panHandlers} style={[styles.floatingArea, { height: hitSize, left: position.left, opacity: transparency, top: position.top, transform: [...patrol.getTranslateTransform(), ...scanPatrol.getTranslateTransform()], width: hitSize }]}><Animated.View pointerEvents="box-none" style={[styles.floatLayer, { height: hitSize, transform: [{ translateY: float.interpolate({ inputRange: [0, 1], outputRange: [0, -floatMotion.lift] }) }, { rotate: float.interpolate({ inputRange: [0, 1], outputRange: [`-${floatMotion.rotate}`, floatMotion.rotate] }) }], width: hitSize }]}>{preferences.spcaAuraEnabled !== false ? <Animated.View pointerEvents="none" style={[styles.floatGlow, { borderColor: `${auraColor}78`, height: iconSize + 12, opacity: float.interpolate({ inputRange: [0, 1], outputRange: [0.18, floatMotion.glow] }), transform: [{ scale: float.interpolate({ inputRange: [0, 1], outputRange: [0.9, floatMotion.scale] }) }], width: iconSize + 12 }]} /> : null}
+    <Animated.View {...panResponder.panHandlers} style={[styles.floatingArea, { height: hitSize, left: position.left, opacity: transparency, top: position.top, transform: [...animatedPointTransform(patrol), ...animatedPointTransform(scanPatrol)], width: hitSize }]}><Animated.View pointerEvents="box-none" style={[styles.floatLayer, { height: hitSize, transform: [{ translateY: float.interpolate({ inputRange: [0, 1], outputRange: [0, -floatMotion.lift] }) }, { rotate: float.interpolate({ inputRange: [0, 1], outputRange: [`-${floatMotion.rotate}`, floatMotion.rotate] }) }], width: hitSize }]}>{preferences.spcaAuraEnabled !== false ? <Animated.View pointerEvents="none" style={[styles.floatGlow, { borderColor: `${auraColor}78`, height: iconSize + 12, opacity: float.interpolate({ inputRange: [0, 1], outputRange: [0.18, floatMotion.glow] }), transform: [{ scale: float.interpolate({ inputRange: [0, 1], outputRange: [0.9, floatMotion.scale] }) }], width: iconSize + 12 }]} /> : null}
       {bubble || analyzing ? (
         <Animated.View style={[
           bubbleMotionStyles.container,
@@ -292,7 +300,7 @@ export function SpcaOverlay() {
           </Pressable>
         </Animated.View>
       ) : null}
-      <Animated.View pointerEvents="none" style={[styles.ghost, { height: hitSize, transform: dragTail.getTranslateTransform(), width: hitSize, opacity: stretch.interpolate({ inputRange: [0, 1], outputRange: [0, 0.28] }) }]}><ExpoImage source={ROBOT_ASSET} contentFit="contain" style={[styles.robotImage, { height: iconSize, width: iconSize }]} /></Animated.View>
+      <Animated.View pointerEvents="none" style={[styles.ghost, { height: hitSize, transform: animatedPointTransform(dragTail), width: hitSize, opacity: stretch.interpolate({ inputRange: [0, 1], outputRange: [0, 0.28] }) }]}><ExpoImage source={ROBOT_ASSET} contentFit="contain" style={[styles.robotImage, { height: iconSize, width: iconSize }]} /></Animated.View>
       <Pressable accessibilityRole="button" accessibilityLabel={`Buka Robot SPCA dengan ekspresi ${face.label} dan mulai analisis`} accessibilityHint="Ketuk untuk membuka pemeriksaan SPCA. Geser untuk memindahkan robot." disabled={captureStage === "capturing"} hitSlop={12} onPress={openAssistant} style={({ pressed }) => [styles.robotButton, { height: hitSize, width: hitSize }, pressed && styles.pressed]}>
         <ExpoImage source={ROBOT_ASSET} contentFit="contain" style={[styles.robotImage, { height: iconSize, width: iconSize }]} />
         <View pointerEvents="none" style={[styles.faceScreen, { borderRadius: 7 * faceScale, height: 19 * faceScale, left: robotInset + 13 * faceScale, top: robotInset + 15 * faceScale, width: 30 * faceScale }]}>{face.brows ? <Text style={[styles.faceBrows, { fontSize: 5.5 * faceScale, lineHeight: 5.5 * faceScale }]}>{face.brows}</Text> : null}<Text style={[styles.faceEyes, { fontSize: (analyzing ? 10 : 7) * faceScale, lineHeight: (analyzing ? 10 : 7) * faceScale, top: analyzing ? 3 * faceScale : 5 * faceScale, transform: [{ translateX: eyeX }, { translateY: eyeY }] }]}>{face.eyes}</Text><Text style={[styles.faceMouth, { fontSize: 8 * faceScale, lineHeight: 8 * faceScale, top: 11 * faceScale }]}>{face.mouth}</Text></View>
@@ -327,7 +335,7 @@ function PassiveSpcaPatrol() {
   const [mood, setMood] = useState<"focused" | "hurt" | "angry">("focused");
   const [evasive, setEvasive] = useState(false);
   const [sessionLimit, setSessionLimit] = useState(3);
-  const patrol = useRef(new Animated.ValueXY({ x: -56, y: 0 })).current;
+  const patrol = { x: useRef(new Animated.Value(-56)).current, y: useRef(new Animated.Value(0)).current };
   const bob = useRef(new Animated.Value(0)).current;
   const radarTrail = useRef(new Animated.Value(0)).current;
   const radarSweep = useRef(new Animated.Value(0)).current;
@@ -347,15 +355,15 @@ function PassiveSpcaPatrol() {
     patrolAnimation.current?.stop();
     const farLeft = -Math.min(280, Math.max(150, width * 0.72));
     patrolAnimation.current = Animated.loop(Animated.sequence([
-      Animated.timing(patrol, { toValue: { x: farLeft, y: -Math.min(210, Math.max(110, width * 0.42)) }, duration: 1350, useNativeDriver: true }),
-      Animated.timing(patrol, { toValue: { x: Math.min(26, width * 0.08), y: -Math.min(210, Math.max(110, width * 0.42)) }, duration: 1250, useNativeDriver: true }),
-      Animated.timing(patrol, { toValue: { x: -Math.min(220, Math.max(120, width * 0.55)), y: -Math.min(72, Math.max(32, width * 0.16)) }, duration: 1200, useNativeDriver: true }),
-      Animated.timing(patrol, { toValue: { x: Math.min(24, width * 0.08), y: -Math.min(72, Math.max(32, width * 0.16)) }, duration: 1100, useNativeDriver: true }),
-      Animated.timing(patrol, { toValue: { x: farLeft, y: Math.min(40, width * 0.12) }, duration: 1250, useNativeDriver: true }),
-      Animated.timing(patrol, { toValue: { x: Math.min(24, width * 0.08), y: Math.min(40, width * 0.12) }, duration: 1250, useNativeDriver: true }),
+      animatePointTo(patrol, farLeft, -Math.min(210, Math.max(110, width * 0.42)), 1350),
+      animatePointTo(patrol, Math.min(26, width * 0.08), -Math.min(210, Math.max(110, width * 0.42)), 1250),
+      animatePointTo(patrol, -Math.min(220, Math.max(120, width * 0.55)), -Math.min(72, Math.max(32, width * 0.16)), 1200),
+      animatePointTo(patrol, Math.min(24, width * 0.08), -Math.min(72, Math.max(32, width * 0.16)), 1100),
+      animatePointTo(patrol, farLeft, Math.min(40, width * 0.12), 1250),
+      animatePointTo(patrol, Math.min(24, width * 0.08), Math.min(40, width * 0.12), 1250),
     ]));
     patrolAnimation.current.start();
-  }, [patrol, width]);
+  }, [patrol.x, patrol.y, width]);
   const clearBubbleResumeTimer = useCallback(() => {
     if (bubbleResumeTimer.current) clearTimeout(bubbleResumeTimer.current);
     bubbleResumeTimer.current = null;
@@ -366,10 +374,10 @@ function PassiveSpcaPatrol() {
     evasionAnimation.current?.stop(); evasionAnimation.current = null;
     patrolAnimation.current?.stop(); patrolAnimation.current = null;
     setBubble(null); setEvasive(false); setMood("focused");
-    const finish = () => { visibleRef.current = false; setVisible(false); setTapCount(0); patrol.setValue({ x: 0, y: 12 }); };
+    const finish = () => { visibleRef.current = false; setVisible(false); setTapCount(0); setAnimatedPoint(patrol, 0, 12); };
     if (immediate || !visibleRef.current) { finish(); return; }
-    Animated.timing(patrol, { toValue: { x: 30, y: 24 }, duration: 460, useNativeDriver: true }).start(finish);
-  }, [clearBubbleResumeTimer, patrol]);
+    animatePointTo(patrol, 30, 24, 460).start(finish);
+  }, [clearBubbleResumeTimer, patrol.x, patrol.y]);
   const appear = useCallback(() => {
     if (visibleRef.current || intervalSeconds <= 0 || durationSeconds <= 0 || (sessionLimit > 0 && appearanceCount.current >= sessionLimit)) return;
     appearanceCount.current += 1;
@@ -380,7 +388,7 @@ function PassiveSpcaPatrol() {
     patrolAnimation.current?.stop();
     clearBubbleResumeTimer();
     Animated.sequence([
-      Animated.timing(patrol, { toValue: { x: 0, y: 0 }, duration: 320, useNativeDriver: true }),
+      animatePointTo(patrol, 0, 0, 320),
       Animated.delay(260),
     ]).start(({ finished }) => {
       if (!finished || !visibleRef.current) return;
@@ -393,7 +401,7 @@ function PassiveSpcaPatrol() {
     });
     if (hideTimer.current) clearTimeout(hideTimer.current);
     hideTimer.current = setTimeout(() => { if (!visibleRef.current) return; setBubble("Pemindaian layar selesai · tidak ada kejanggalan visual yang terdeteksi."); void recordSpcaPassiveHistory("scan-report", "Patroli zigzag selesai; pemeriksaan visual pasif tidak menemukan kejanggalan pada tampilan."); setTimeout(() => dismiss(), 1400); }, durationSeconds * 1000);
-  }, [clearBubbleResumeTimer, dismiss, durationSeconds, intervalSeconds, patrol, sessionLimit, startPatrol]);
+  }, [clearBubbleResumeTimer, dismiss, durationSeconds, intervalSeconds, patrol.x, patrol.y, sessionLimit, startPatrol]);
 
   useEffect(() => { void getSpcaExtraSettings().then((settings) => { setSessionLimit(settings.passiveMaxAppearances); setRadarSettings({ enabled: settings.radarTrailEnabled, color: settings.radarTrailColor }); }); }, []);
 
@@ -422,8 +430,8 @@ function PassiveSpcaPatrol() {
     setEvasive(true); patrolAnimation.current?.stop();
     const farLeft = -Math.min(250, Math.max(142, width * 0.64));
     evasionAnimation.current = Animated.sequence([
-      Animated.timing(patrol, { toValue: { x: farLeft, y: next % 2 ? -30 : 18 }, duration: 260, useNativeDriver: true }),
-      Animated.timing(patrol, { toValue: { x: -Math.min(92, Math.max(54, width * 0.2)), y: next % 2 ? 12 : -28 }, duration: 290, useNativeDriver: true }),
+      animatePointTo(patrol, farLeft, next % 2 ? -30 : 18, 260),
+      animatePointTo(patrol, -Math.min(92, Math.max(54, width * 0.2)), next % 2 ? 12 : -28, 290),
     ]);
     evasionAnimation.current.start(() => { setEvasive(false); setBubble(null); if (visibleRef.current) startPatrol(); });
   };
@@ -446,7 +454,7 @@ function PassiveSpcaPatrol() {
 
   if (!visible) return null;
   const face = mood === "angry" ? { brows: "╲ ╱", eyes: "> <", mouth: "⌁" } : mood === "hurt" ? { brows: "╲ ╱", eyes: "× ×", mouth: "⌢" } : { brows: "— —", eyes: "◉ ◉", mouth: "—" };
-  return <Animated.View pointerEvents="auto" style={[passiveStyles.container, evasive && passiveStyles.evasiveRobot, { transform: [{ translateY: bob.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }) }, ...patrol.getTranslateTransform()] }]}> 
+  return <Animated.View pointerEvents="auto" style={[passiveStyles.container, evasive && passiveStyles.evasiveRobot, { transform: [{ translateY: bob.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }) }, ...animatedPointTransform(patrol)] }]}> 
     {radarSettings.enabled ? <><Animated.View pointerEvents="none" style={[passiveStyles.radarTrail, { borderColor: `${radarColor}D0`, opacity: radarTrail.interpolate({ inputRange: [0, 0.75, 1], outputRange: [0.3, 0.1, 0] }), transform: [{ scale: radarTrail.interpolate({ inputRange: [0, 1], outputRange: [0.64, 1.55] }) }] }]} /><Animated.View pointerEvents="none" style={[passiveStyles.radarTrailInner, { borderColor: `${radarColor}A8`, opacity: radarTrail.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.22, 0.06, 0] }), transform: [{ scale: radarTrail.interpolate({ inputRange: [0, 1], outputRange: [0.44, 1.08] }) }] }]} /><Animated.View pointerEvents="none" style={[passiveStyles.radarSweepLine, { backgroundColor: radarColor, transform: [{ rotate: radarSweep.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] }) }] }]} /></> : null}
     {bubble ? <View pointerEvents="none" style={[passiveStyles.bubble, { backgroundColor: colors.foreground }]}><Text style={[passiveStyles.bubbleText, { color: colors.background }]}>{bubble}</Text></View> : null}
     <Pressable accessibilityRole="button" accessibilityLabel="Buka Pusat SPCA aktif" accessibilityHint="Ketuk untuk membuka pemeriksaan dan solusi SPCA. Tekan tahan untuk reaksi robot." delayLongPress={420} hitSlop={14} onLongPress={onPress} onPress={() => router.push("/spca-diagnostics" as never)} style={passiveStyles.robotButton}><ExpoImage source={ROBOT_ASSET} contentFit="contain" style={passiveStyles.robotImage} /><View pointerEvents="none" style={passiveStyles.faceScreen}><Text style={passiveStyles.faceBrows}>{face.brows}</Text><Text style={passiveStyles.faceEyes}>{face.eyes}</Text><Text style={passiveStyles.faceMouth}>{face.mouth}</Text></View><MaterialIcons pointerEvents="none" name="search" size={34} color="#A3F8FF" style={passiveStyles.magnifier} /></Pressable>
