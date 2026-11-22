@@ -59,4 +59,15 @@ describe("fitur status koneksi dan SPCA", () => {
     expect(studio).toContain("spcaPatrolDurationSeconds");
     expect(studio).toContain("spcaReminderBubbleEnabled");
   });
+  it("uses scalar native animated values for SPCA X/Y transforms", () => {
+    const overlay = source("components/spca-overlay.tsx");
+    expect(overlay).not.toContain("Animated.ValueXY");
+    expect(overlay).not.toContain("getTranslateTransform");
+    expect(overlay).toContain("new Animated.Value(0)");
+    expect(overlay).toContain("translateX: point.x");
+    expect(overlay).toContain("translateY: point.y");
+    expect(overlay).toContain("Animated.timing(point.x");
+    expect(overlay).toContain("Animated.timing(point.y");
+  });
+
 });
