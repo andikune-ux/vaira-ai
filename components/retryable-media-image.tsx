@@ -40,7 +40,6 @@ export function RetryableMediaImage({ uri, previewLabel = "Pratinjau foto", onPr
           </View>
         ) : null}
       </Pressable>
-Modal>
     </>
   );
 }
