@@ -83,6 +83,10 @@ jobs:
           chmod 600 android/app/keystores/vaira-release.keystore
           keytool -list -keystore android/app/keystores/vaira-release.keystore \
             -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null
+          keytool -certreq -keystore android/app/keystores/vaira-release.keystore \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" -keypass "$ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$ANDROID_KEY_ALIAS" -file /tmp/vaira-release-verify.csr >/dev/null
+          rm -f /tmp/vaira-release-verify.csr
           printf '\nVAIRA_RELEASE_STORE_FILE=keystores/vaira-release.keystore\n' >> android/gradle.properties
           python3 scripts/configure-android-signing.py
 
@@ -91,7 +95,9 @@ jobs:
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          # The canonical release keystore is PKCS12; Android requires the
+          # private-key password to match the store password for this format.
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Verify signed APK

@@ -33,9 +33,9 @@ if not re.search(r"(?m)^\s*release\s*\{", signing_body):
     release_config = """
         release {
             storeFile file(project.findProperty("VAIRA_RELEASE_STORE_FILE"))
-            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: project.findProperty("VAIRA_RELEASE_STORE_PASSWORD")
-            keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: project.findProperty("VAIRA_RELEASE_KEY_ALIAS")
-            keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: project.findProperty("VAIRA_RELEASE_KEY_PASSWORD")
+            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            keyAlias System.getenv("ANDROID_KEY_ALIAS")
+            keyPassword System.getenv("ANDROID_KEY_PASSWORD")
         }
 """
     source = source[:signing_close] + release_config + source[signing_close:]
