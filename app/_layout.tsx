@@ -16,6 +16,7 @@ import { AppErrorBoundary } from "@/components/app-error-boundary";
 import { SpcaOverlay } from "@/components/spca-overlay";
 import { SpcaGazeProvider } from "@/components/spca-gaze";
 import { AppUpdatePrompt } from "@/components/app-update-prompt";
+import { NativeCrashPrompt } from "@/components/native-crash-prompt";
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -172,6 +173,7 @@ export default function RootLayout() {
           </Stack>
           <SpcaOverlay />
           <AppUpdatePrompt />
+          <NativeCrashPrompt />
           <StatusBar style="auto" />
           </ToastProvider></LanguageProvider>
           </FinanceProvider>
